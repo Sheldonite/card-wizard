@@ -331,3 +331,69 @@ body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
   background:#901c32; color:white; outline:1px solid #fff2d4;
   width:1em; height:1em; text-align:center; font:bold 16px/1 Arial,sans-serif;
 }
+
+.moon-purse .stat-money::before, .spoils-line .stat-money::before {display:none}
+
+/* The finish stays attached to the artwork through redraws and saved runs. */
+:is(.item-card,.cw-owned-emblem,.cw-item-image):has(> .familiar-finish) {position:relative;isolation:isolate}
+.familiar-finish {
+  --glaze:linear-gradient(125deg,transparent 18%,var(--glint) 48%,transparent 68%);
+  position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;
+  background:var(--glaze);box-shadow:inset 0 0 0 2px var(--rim),inset 0 0 12px var(--rim);
+}
+.finish-polychrome {
+  --rim:#ffe2a2;
+  --glaze:linear-gradient(125deg,#ff5b9f70,#ffbd5560,#a7ff755c,#36f7e973,#9391ff75,#ff80cb72,#ff5b9f70);
+  background-size:210% 210%;animation:familiar-prism 5s ease-in-out infinite alternate;
+}
+.finish-foil {--rim:#b6edff;--glint:#d7faff88}
+.finish-holographic {--rim:#ffadf2;--glaze:repeating-linear-gradient(145deg,#6ef1ff36 0 6%,#fba1ff66 12%,transparent 22%)}
+.finish-negative {--rim:#caabff;--glaze:radial-gradient(ellipse,transparent 32%,#25113980 64%,#d7b7ff99)}
+.finish-chips {--rim:#57c6ff;--glint:#63caff35}
+.finish-mult {--rim:#ff726f;--glint:#ff6d7835}
+.familiar-burst {
+  position:absolute;inset:0;display:grid;place-items:center;color:#fff8c9;font:900 32px/1 serif;
+  text-shadow:0 0 8px white,0 0 15px var(--rim);background:radial-gradient(circle,#fff3b894,transparent 64%);
+  animation:familiar-awaken 1050ms ease-out both;
+}
+@keyframes familiar-prism {to {background-position:100% 100%}}
+@keyframes familiar-awaken {
+  0% {transform:scale(.25) rotate(-45deg);opacity:0}
+  25% {opacity:1}
+  55% {transform:scale(1.25) rotate(8deg);opacity:1}
+  100% {transform:scale(1.8) rotate(18deg);opacity:0}
+}
+body.still .familiar-finish {animation:none}
+body.still .familiar-burst {display:none}
+@media(prefers-reduced-motion:reduce){.familiar-finish {animation:none}.familiar-burst {display:none}}
+
+/* Charged counters keep their blue and red cores inside the gold corona. */
+.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp) {
+  position:relative;isolation:isolate;
+  text-shadow:0 2px 2px #201322,0 0 8px #ffd574;
+}
+.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::before,
+.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::after {
+  content:"";position:absolute;pointer-events:none;
+}
+.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::before {
+  z-index:-1;inset:-32% -10% -8%;
+  background:linear-gradient(0deg,#ff820050,#ffd750aa 40%,#fff6af 88%);
+  clip-path:polygon(0 83%,8% 42%,15% 66%,22% 12%,31% 54%,43% 0,50% 47%,62% 18%,68% 57%,81% 4%,85% 59%,96% 33%,100% 83%,82% 100%,19% 100%);
+  transform-origin:center bottom;animation:score-corona 560ms ease-in-out infinite alternate;
+}
+.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::after {
+  inset:-22% -15%;color:#fffbd4;
+  background:
+    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 10% 65%/10% 60%,
+    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 6% 64%/22% 14%,
+    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 91% 28%/11% 50%,
+    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 96% 33%/22% 14%;
+  background-repeat:no-repeat;filter:drop-shadow(0 0 3px #ffb83e);
+  animation:score-sparks 760ms ease-out infinite;
+}
+.blind-overdrive :is(.cw-fx-mult,.mult-comp)::after {animation-delay:-330ms}
+@keyframes score-corona {from{transform:scale(.96,.78);opacity:.52}to{transform:scale(1.06,1.1);opacity:.9}}
+@keyframes score-sparks {0%{transform:translateY(10%) scale(.7);opacity:.15}40%{opacity:1}100%{transform:translateY(-20%) scale(1.12);opacity:0}}
+body.still .blind-overdrive ::before,body.still .blind-overdrive ::after {animation:none}
+@media(prefers-reduced-motion:reduce){.blind-overdrive ::before,.blind-overdrive ::after{animation:none}}

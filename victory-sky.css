@@ -1,0 +1,159 @@
+/* Engraved brass star dial, lit by the star at its centre. */
+.victory-sky {
+  --dial-x: 26%;
+  --dial-y: 53%;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at var(--dial-x) var(--dial-y), #ab77bc66 0, #804f8e38 21%, transparent 47%),
+    linear-gradient(162deg, transparent 30%, #764c9b22 43%, #ca88ac19 47%, transparent 52%),
+    radial-gradient(ellipse at 13% 12%, #332044, transparent 66%),
+    linear-gradient(130deg, #120f23, #281834 56%, #100d1e);
+}
+.victory-sky::before, .victory-sky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.victory-sky::before {
+  opacity: .62;
+  background:
+    radial-gradient(circle at 28px 44px, #fff2cb 0 .8px, transparent 1.5px) 0 0 / 173px 151px,
+    radial-gradient(circle at 101px 67px, #c1a5dc 0 .7px, transparent 1.5px) 0 0 / 199px 109px,
+    radial-gradient(circle at 56px 9px, #ffe8b3 0 1.3px, #e0b4e74d 1.6px, transparent 3.5px) 0 0 / 283px 231px,
+    radial-gradient(circle at 6px 11px, #c8b7eb99 0 .6px, transparent 1.2px) 0 0 / 79px 97px;
+}
+.victory-sky::after {
+  background: radial-gradient(ellipse at var(--dial-x) var(--dial-y), transparent 32%, #0d091839 78%, #08061185 110%);
+}
+.victory-sky .astrolabe {
+  --brass: conic-gradient(from 38deg, #d59d59, #83543e 11%, #f5d99a 25%, #91603f 38%, #e7be79 51%, #734734 66%, #f5db9c 79%, #b27d4e 93%, #d59d59);
+  position: absolute;
+  left: var(--dial-x);
+  top: var(--dial-y);
+  width: min(39vw, 62vh, 555px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  isolation: isolate;
+  filter: drop-shadow(0 12px 12px #100a20aa);
+  animation: victory-dial-arrives 1.2s ease-out both;
+}
+.victory-sky .astrolabe::before, .victory-sky .astrolabe::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.victory-sky .astrolabe::before {
+  inset: -10%;
+  border-radius: 50%;
+  border: 1px dashed #f0d09842;
+  outline: 1px solid #d4a57c27;
+  outline-offset: 8px;
+}
+.victory-sky .astrolabe::after {
+  inset: -11.5%;
+  background: linear-gradient(95deg, #74533f, #f1cf91 50%, #8b6349);
+  clip-path: polygon(50% 0, 50.55% 2.3%, 50% 3.7%, 49.45% 2.3%, 50% 0,
+    100% 50%, 97.7% 50.55%, 96.3% 50%, 97.7% 49.45%, 100% 50%,
+    50% 100%, 49.45% 97.7%, 50% 96.3%, 50.55% 97.7%, 50% 100%,
+    0 50%, 2.3% 49.45%, 3.7% 50%, 2.3% 50.55%, 0 50%,
+    50% 0, 0 50%, 50% 100%, 100% 50%);
+}
+.victory-sky .astrolabe > i, .victory-sky .astrolabe > i::before, .victory-sky .astrolabe > i::after {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+}
+.victory-sky .astrolabe > i::before, .victory-sky .astrolabe > i::after { content: ""; }
+.victory-sky .orbit-outer {
+  inset: 0;
+  border: 1px solid #e0bb80;
+  background:
+    radial-gradient(circle, #57374d00 43%, #241929 63%, #3d2632 66%, transparent 66.6%),
+    var(--brass);
+  box-shadow: 0 0 0 2px #432a37, inset 0 0 0 2px #6e4b3e, 0 3px 0 2px #382437;
+}
+.victory-sky .orbit-outer::before {
+  inset: 1.6%;
+  background:
+    repeating-conic-gradient(from -.32deg, #ffe4a5 0 .72deg, transparent .75deg 30deg),
+    repeating-conic-gradient(from -.21deg, #654236 0 .55deg, transparent .6deg 3deg);
+  mask-image: radial-gradient(closest-side, transparent 94%, black 94.4% 99%, transparent 99.4%);
+}
+.victory-sky .orbit-outer::after {
+  inset: 6%;
+  border: 1px solid #dfaf75;
+  background:
+    radial-gradient(circle, #d9abd633, transparent 47%),
+    repeating-conic-gradient(from -.1deg, #dfc69738 0 .3deg, transparent .4deg 30deg),
+    repeating-radial-gradient(closest-side, transparent 0 24%, #e0c7a33b 24.3% 24.6%, transparent 25%),
+    radial-gradient(ellipse at 30% 30%, #514061, #342940 60%, #24192e);
+  box-shadow: 0 0 0 2px #4a3340, inset 0 0 15px #1a132796;
+}
+.victory-sky .orbit-middle {
+  inset: 10%;
+  border: 1px solid #ecc895;
+  box-shadow: 0 0 0 1px #5b3940, inset 0 0 0 1px #a37552;
+  animation: victory-orbit 70s linear infinite;
+}
+.victory-sky .orbit-middle::before {
+  inset: -2.2%;
+  background: repeating-conic-gradient(#ffdfa4 0 1deg, transparent 1.2deg 15deg);
+  mask-image: radial-gradient(closest-side, transparent 94.5%, black 95%);
+}
+.victory-sky .orbit-middle::after {
+  left: 48%; top: -2%; width: 4%; aspect-ratio: 1;
+  border: 1px solid #f3d199;
+  background: radial-gradient(circle at 33% 27%, #e8e5ff, #b09ed8 28%, #5c4677 66%, #3e294f);
+  box-shadow: 0 0 0 2px #694838, 0 1px 6px #160f20;
+}
+.victory-sky .orbit-inner {
+  inset: 18%;
+  border: 1px solid #f0c991a6;
+  box-shadow: 0 0 0 4px #261a2e55, inset 0 0 0 4px #261a2e55;
+}
+.victory-sky .orbit-inner::before, .victory-sky .orbit-inner::after {
+  top: 50%; left: 50%;
+  width: 151%; height: 37%;
+  border: 2px solid #c29666;
+  box-shadow: inset 0 1px 0 #f5dba899, 0 1.5px 0 #482c38;
+  transform: translate(-50%,-50%) rotate(-38deg);
+}
+.victory-sky .orbit-inner::after {
+  transform: translate(-50%,-50%) rotate(61deg);
+  width: 146%; height: 40%;
+  border-color: #a98365;
+}
+.victory-sky .victory-star {
+  inset: 23%;
+  filter: drop-shadow(0 0 6px #ffdca58c) drop-shadow(0 0 16px #ffb86c5c);
+  animation: victory-star-glow 4s ease-in-out infinite alternate;
+}
+.victory-sky .victory-star::before, .victory-sky .victory-star::after {
+  inset: 0;
+  background: conic-gradient(from 0deg, #ffe8a2 0 45deg, #a66c44 45deg 90deg, #ffe2a0 90deg 135deg, #a56c48 135deg 180deg, #ffdc91 180deg 225deg, #b27a4c 225deg 270deg, #fff2cb 270deg 315deg, #b38a59 315deg 360deg);
+  clip-path: polygon(50% 0, 56% 42%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 42%);
+}
+.victory-sky .victory-star::before { transform: rotate(45deg) scale(.72); }
+.victory-sky .victory-star::after {
+  background: radial-gradient(circle, #fffae5 0 1.8%, transparent 9%),
+    conic-gradient(#fff8d8 0 45deg, #dda96d 45deg 90deg, #fff1b6 90deg 135deg, #a67751 135deg 180deg, #ffe6a6 180deg 225deg, #b48a61 225deg 270deg, #fff5c8 270deg 315deg, #d1a46b 315deg);
+}
+@keyframes victory-dial-arrives {
+  from { opacity: .08; transform: translate(-50%,-49%) scale(.94); }
+  to { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+}
+@keyframes victory-orbit { to { transform: rotate(360deg); } }
+@keyframes victory-star-glow {
+  to { filter: drop-shadow(0 0 9px #ffe4b4c4) drop-shadow(0 0 21px #ffa85d73); }
+}
+@media (max-width: 680px) {
+  .victory-sky { --dial-x: 50%; --dial-y: 155px; }
+  .victory-sky .astrolabe { width: min(43vw, 176px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .victory-sky .astrolabe, .victory-sky .astrolabe > i { animation: none; }
+}
+.still .victory-sky .astrolabe, .still .victory-sky .astrolabe > i { animation: none; }

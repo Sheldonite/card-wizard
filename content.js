@@ -219,9 +219,19 @@
   function typeBadge(type, compact = false) {
     if (!type) return '';
     const [name, drawing] = cardTypes[type];
-    return '<span class="type-badge" title="'+name+'"><svg aria-hidden="true" viewBox="0 0 24 24">'+drawing+'</svg><span'+(compact?' class="visually-hidden"':'')+'>'+name+'</span></span>';
+    return '<span class="type-badge"'+(compact?' title="'+name+'"':'')+'><svg aria-hidden="true" viewBox="0 0 24 24">'+drawing+'</svg><span'+(compact?' class="visually-hidden"':'')+'>'+name+'</span></span>';
   }
-  const api = { cardTypes, cardType, typeBadge, familiars, spells, vouchers, packs, get, score, trigger, portrait, colorStats };
+  function familiarFinish(d, elapsed = Infinity) {
+    if (d.kind !== 'familiar') return '';
+    const edition = ['foil','holographic','polychrome','negative'].includes(d.edition) ? d.edition : '';
+    const value = Number(d.stackAmount?.replace(/^x/, ''));
+    const charged = value > (d.stackStat === 'xmult' ? 1 : 0);
+    const finish = edition || (charged && (d.stackStat === 'chips' ? 'chips' : 'mult'));
+    if (!finish) return '';
+    const burst = elapsed < 1050 ? '<i class="familiar-burst" style="animation-delay:-'+elapsed+'ms">✦</i>' : '';
+    return '<span class="familiar-finish finish-'+finish+'" aria-hidden="true">'+burst+'</span>';
+  }
+  const api = { familiarFinish, cardTypes, cardType, typeBadge, familiars, spells, vouchers, packs, get, score, trigger, portrait, colorStats };
   root.CWContent = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);

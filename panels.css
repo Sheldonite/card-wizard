@@ -311,3 +311,16 @@
 .pack-wrapper .booster-face {height:145px;margin:0}
 @keyframes pack-crack {0% {opacity:0;transform:translate(-50%,-40%) scale(.72)} 25% {opacity:1;transform:translate(-50%,-50%) rotate(-7deg)} 45% {opacity:1;transform:translate(-50%,-50%) rotate(5deg);filter:brightness(1.3)} 100% {opacity:0;transform:translate(-50%,-75%) scale(1.2);filter:brightness(2.6)}}
 .still .pack-wrapper {display:none}
+
+.pack-playing-cards {
+  display:flex; flex-wrap:wrap; justify-content:center; align-items:end;
+  gap:7px; padding:12px 0 9px;
+}
+.pack-playing-cards .playing-card {
+  width:clamp(54px,8vw,86px); max-height:none; margin:0;
+}
+.pack-playing-cards .corner-rank {font-size:clamp(14px,2vw,20px)}
+.pack-playing-cards button[aria-pressed="true"] {
+  transform:translateY(-8px); outline:3px solid var(--cw-gold);
+}
+.pack-playing-cards button:disabled {opacity:.55; cursor:default}

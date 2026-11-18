@@ -53,6 +53,12 @@
     ...catalog.tags
   };
   const BASE_STAKE = Object.keys(STAKES)[0];
+  const legacyTagFamilies = {coins:"money",fortune:"money",doubled:"money",stars:"handLevel",reroll:"freeReroll"};
+  const tagFamily = id => {
+    const effect = TAGS[id]?.effect;
+    return legacyTagFamilies[id] || (effect === "cash" || effect === "bonus" ? "money" : effect);
+  };
+  const differentReward = (first,pool) => pool.find(id=>tagFamily(id) !== tagFamily(first));
   const DEFAULT_RULES = {money:4,hands:4,discards:3,handSize:8,starter:["merlin"],anteLimit:8};
   const hash = text => {
     let value = 2166136261;
@@ -103,7 +109,8 @@
     s.bossDisabled = false;
     s.bossRerollsUsed = 0;
     s.bossDisablesUsed = 0;
-    s.tags = shuffle(s, Object.keys(TAGS)).slice(0, 2);
+    const pool = shuffle(s,Object.keys(TAGS));
+    s.tags = [pool[0],differentReward(pool[0],pool)];
     s.anteVoucher = null;
     s.voucherSold = false;
   }
@@ -170,6 +177,10 @@
   }
   function restore(s) {
     if (!s || !DECKS[s.deckId] || !Array.isArray(s.deck) || !BOSSES[s.bossId]) return null;
+    if (s.tags?.length === 2 && s.blind < 2 && tagFamily(s.tags[0]) === tagFamily(s.tags[1])) {
+      const pool = shuffle({rng:hash(s.seed + ":" + s.ante)},Object.keys(TAGS));
+      s.tags[1] = differentReward(s.tags[0],pool);
+    }
     s.rules = {...DEFAULT_RULES,...DECKS[s.deckId],...CHALLENGES[s.challengeId]?.rules,...s.rules};
     s.stakeId = STAKES[s.stakeId] ? s.stakeId : BASE_STAKE;
     s.regularBosses ??= [];

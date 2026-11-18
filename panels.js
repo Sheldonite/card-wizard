@@ -50,7 +50,10 @@
     const base = api()?.item(offer) || api()?.item(id) || {id,name:id,kind:'item',description:''};
     return offer && typeof offer === 'object' ? {...base,...offer} : base;
   }
-  function ownedItem(s, category, i) { return api().ownedItem?.(s,category,i) || item(s[category][i]); }
+  function ownedItem(s, category, i) {
+    const d = api().ownedItem?.(s,category,i) || item(s[category][i]);
+    return d?.kind === 'familiar' ? {...d,upgradeAge:options.upgradeAge?.(d)} : d;
+  }
   function readPhase(s) {
     if (options.wantsLobby?.()) return 'lobby';
     return s?.pack ? 'pack' : s && mandatory.has(s.phase) ? s.phase : '';
@@ -74,10 +77,10 @@
     const description = esc(d.description);
     return hand ? description.replace(esc(hand), '<strong class="constellation-hand">'+esc(hand)+'</strong>') : description;
   }
-  function cardTip(card) {
+  function cardTip(card, descriptionVisible = false) {
     const run = state();
     const muted = card.suit && run?.phase === 'play' && api().debuffed(run,card);
-    return global.CWCardTip.attribute(global.CWCardTip.details(card,muted));
+    return global.CWCardTip.attribute(global.CWCardTip.details(card,muted,descriptionVisible));
   }
   function picture(d, compact = false) {
     if(d.kind==='card' && options.cardPreview) return '<div class="card-display">'+options.cardPreview(d)+'</div>';
@@ -97,7 +100,7 @@
     const type=global.CWContent.cardType(d);
     const accent = /^#[a-f\d]{3,8}$/i.test(d.color || '') ? d.color : '#c3abdc';
     const edition = ['foil','holographic','polychrome','negative'].includes(d.edition) ? ' cw-edition-'+d.edition : '';
-    return '<div class="' + css + edition + '"'+cardTip(d)+' data-family="'+type+'" style="--item-color:' + accent + '">' + content + global.CWContent.typeBadge(type,compact) + (d.bossMuted?global.CWCardTip.cross:'') + '</div>';
+    return '<div class="' + css + edition + '" data-family="'+type+'" style="--item-color:' + accent + '">' + content + global.CWContent.familiarFinish(d,d.upgradeAge) + global.CWContent.typeBadge(type,compact) + (d.bossMuted?global.CWCardTip.cross:'') + '</div>';
   }
   function badges(d) {
     const edition = d.edition && (api().EDITIONS?.[d.edition]?.name || global.CWMarket?.editions?.[d.edition]?.name || d.edition);
@@ -115,16 +118,23 @@
     layer.hidden = true;
     layer.innerHTML = '<section class="cw-dialog" role="dialog" aria-modal="true" aria-labelledby="cw-panel-title" tabindex="-1"><header class="cw-head"></header><div class="cw-message" aria-live="polite"></div><div class="cw-body"></div><footer class="cw-footer"></footer></section>';
     document.body.append(layer);
+    const fitTrials = () => {
+      const panel = dialog();
+      if (layer.hidden || panel.dataset.page !== 'select' || !panel.offsetHeight) return;
+      const style = getComputedStyle(layer);
+      const room = layer.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      panel.style.setProperty('--trial-scale', Math.min(1, room / panel.offsetHeight));
+    };
+    const observer = new ResizeObserver(fitTrials);
+    observer.observe(layer);
+    observer.observe(dialog());
     function inspectCompanion(event) {
       const card = event.target.closest('[data-companion]');
       if (!card) return;
       const rail = card.closest('.companion-rail');
       rail.querySelector('.lit')?.classList.remove('lit');
       card.classList.add('lit');
-      const d = ownedItem(state(),'familiars',Number(card.dataset.companion));
-      const readout = rail.querySelector('.companion-effect');
-      readout.innerHTML = '<b>'+esc(d.name)+'</b><span>'+esc(d.description)+'</span>';
-      global.CWContent.colorStats(readout);
+
     }
     for (const event of ['pointerover','focusin','click']) layer.addEventListener(event, inspectCompanion);
     layer.addEventListener('input', event => {
@@ -246,7 +256,11 @@
     if (!view) return;
     dialog().dataset.page = page;
     layer.querySelector('.cw-head').innerHTML = '<div><p class="cw-kicker">' + esc(view.kicker) + '</p><h2 id="cw-panel-title">' + esc(view.title) + '</h2></div>' + (view.headerEnd || '') + (isDismissible() ? '<button type="button" class="cw-x" data-cw="close" aria-label="Close panel">×</button>' : '');
-    if (view.heroDetail) layer.querySelector('.cw-head').insertAdjacentHTML('beforeend',view.heroDetail);
+    dialog().querySelector(':scope > .victory-sky')?.remove();
+    if (view.victory) {
+      dialog().insertAdjacentHTML('afterbegin','<div class="victory-sky" aria-hidden="true"><div class="astrolabe"><i class="orbit-outer"></i><i class="orbit-middle"></i><i class="orbit-inner"></i><i class="victory-star"></i></div></div>');
+      layer.querySelector('.cw-head').insertAdjacentHTML('beforeend',victoryScore(s));
+    }
     layer.querySelector('.cw-message').textContent = message;
     global.CWContent.colorStats(layer.querySelector('.cw-head'));
     body.innerHTML = view.body;
@@ -279,7 +293,7 @@
     const sounds = {buy:'buy',buyAndUse:'buy',pick:'buy',sell:'buy',sellConsumable:'buy',reroll:'buy',rerollBoss:'buy',cashOut:'shop',startBlind:'deal',endless:'deal'};
     changed(sounds[action]);
     if(origin && amount>0){
-      const purse=layer.querySelector('.cw-purse strong, .vault-stat-wallet strong') || document.getElementById('money');
+      const purse=layer.querySelector('.cw-purse strong, .victory-stat-wallet strong') || document.getElementById('money');
       const end=purse.getBoundingClientRect();
       const dx=end.left+end.width/2-origin.left-origin.width/2;
       const dy=end.top+end.height/2-origin.top-origin.height/2;
@@ -454,7 +468,7 @@
     const summary='<div class="cw-collection-summary"><strong>'+entries.filter(e=>e.discovered).length+' / '+entries.length+' discovered</strong><div class="cw-tabs">'+tab('collection-filter','all','All',collectionFilter)+tab('collection-filter','known','Discovered',collectionFilter)+tab('collection-filter','unknown','Unknown',collectionFilter)+'</div></div>';
     const list=visible.map(entry=>{
       if (!entry.discovered) return '<article class="cw-collection-item unknown"><span class="cw-owned-emblem" aria-hidden="true">'+(entry.locked?'◇':'?')+'</span><div><b>'+esc(entry.locked?'Locked':'Undiscovered')+'</b>'+(entry.unlockHint?'<small>'+esc(entry.unlockHint)+'</small>':'')+'</div></article>';
-      return '<article class="cw-collection-item">'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
+      return '<article class="cw-collection-item"'+cardTip(entry,true)+'>'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
     }).join('');
     return result(data.profile?.name || '','Collection',tabs+summary+(list?'<div class="cw-collection-items">'+list+'</div>':'<p class="cw-empty">No entries match this view.</p>'),button('close','Back'));
   }
@@ -473,7 +487,7 @@
         const canSell=api().canSell?.(s,category,i) ?? true;
         controls+=button('use-item','Use','cw-primary',i,!canUse)+button('sell-consumable','Sell '+cash(price),'',i,!canSell);
       }
-      return '<div class="cw-owned'+(d.id===detail?' cw-highlight-item':'')+'"'+cardTip(d)+'>'+picture(d,true)+'<div class="cw-owned-info"><b>'+esc(d.name)+'</b>'+badges(d)+'<small>'+itemDescription(d)+'</small></div><div class="cw-owned-controls">'+controls+'</div></div>';
+      return '<div class="cw-owned'+(d.id===detail?' cw-highlight-item':'')+'"'+cardTip(d,true)+'>'+picture(d,true)+'<div class="cw-owned-info"><b>'+esc(d.name)+'</b>'+badges(d)+'<small>'+itemDescription(d)+'</small></div><div class="cw-owned-controls">'+controls+'</div></div>';
     }).join('');
     return entries || '<p class="cw-empty">No '+esc(category)+' yet.</p>';
   }
@@ -513,33 +527,30 @@
   function offer(d, control) {
     const family=global.CWContent.cardType(d);
     const rarity=d.rarity && ![family,'booster'].includes(d.rarity.toLowerCase())?'<div class="cw-item-type">'+esc(d.rarity)+'</div>':'';
-    return '<article class="cw-offer"'+cardTip(d)+'>'+picture(d)+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
+    return '<article class="cw-offer"'+cardTip(d,true)+'>'+picture(d)+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
   }
   function companionRail(s) {
     const cap=api().capacity(s).familiars;
-    const first=s.familiars[0] && ownedItem(s,'familiars',0);
     const slots=Array.from({length:cap},(_,i)=>{
       if (!s.familiars[i]) return '<span class="companion-empty" aria-hidden="true">✧</span>';
       const d=ownedItem(s,'familiars',i);
-      return '<button type="button" class="companion-card'+(i===0?' lit':'')+'" data-companion="'+i+'" data-cw="open-inventory" data-value="'+esc(d.id)+'" aria-label="'+esc(d.name+'. '+d.description)+'">'+picture(d,true)+'</button>';
+      return '<button type="button" class="companion-card'+(i===0?' lit':'')+'" data-companion="'+i+'"'+cardTip(d)+' data-cw="open-inventory" data-value="'+esc(d.id)+'" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
     }).join('');
-    return '<section class="companion-rail" aria-label="Equipped familiars"><div><h3>Familiars <small>'+s.familiars.length+' / '+cap+'</small></h3><div class="companion-slots">'+slots+'</div></div><div class="companion-effect">'+(s.familiars.length?'<b>'+esc(first.name)+'</b><span>'+esc(first.description)+'</span>':'')+'</div></section>';
+    return '<section class="companion-rail" aria-label="Equipped familiars"><div><h3>Familiars <small>'+s.familiars.length+' / '+cap+'</small></h3><div class="companion-slots">'+slots+'</div></div>'+marketPurse(s.money)+'</section>';
   }
   function marketFamiliars(s) {
     const cap=api().capacity(s).familiars;
-    if (!cap) return '';
+    if (!cap) return marketPurse(s.money);
     const slots=Array.from({length:cap},(_,i)=>{
       if (!s.familiars[i]) return '<span class="moon-empty-slot" aria-hidden="true">✧</span>';
       const d=ownedItem(s,'familiars',i);
-      return '<button type="button" class="companion-card moon-companion'+(i===0?' lit':'')+'" data-companion="'+i+'" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
+      return '<button type="button" class="companion-card moon-companion'+(i===0?' lit':'')+'" data-companion="'+i+'"'+cardTip(d)+' aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
     }).join('');
-    const first=s.familiars.length && ownedItem(s,'familiars',0);
-    return '<section class="companion-rail moon-roost" aria-label="Equipped familiars"><div class="moon-roost-title"><h3>Your familiars</h3><small>'+s.familiars.length+' / '+cap+' equipped</small></div><div class="companion-slots">'+slots+'</div><div class="companion-effect">'+(first?'<b>'+esc(first.name)+'</b><span>'+esc(first.description)+'</span>':'<b>Empty roost</b><span>Buy a Familiar to equip its ability.</span>')+'</div></section>';
+    return '<section class="companion-rail moon-roost" aria-label="Equipped familiars"><div class="moon-roost-title"><h3>Your familiars</h3><small>'+s.familiars.length+' / '+cap+' equipped</small></div><div class="companion-slots">'+slots+'</div>'+marketPurse(s.money)+'</section>';
   }
 
   function marketPurse(money) {
-    const coins=Array.from({length:Math.min(14,Math.max(0,money))},(_,i)=>'<i style="--pile:'+Math.floor(i/5)+';--level:'+i%5+'"></i>').join('');
-    return '<div class="cw-purse moon-purse"><span class="moon-coins" aria-hidden="true">'+coins+'</span><div><small>Coin purse</small><strong>'+cash(money)+'</strong></div></div>';
+    return '<div class="cw-purse roost-purse" aria-label="Coin purse"><strong class="stat-money">'+cash(money)+'</strong></div>';
   }
 
   function marketFamiliar(d) {
@@ -570,7 +581,7 @@
         else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
         else reason='Unavailable';
       }
-      const priceText='<span class="moon-price"><i aria-hidden="true">✧</i>'+cash(price)+'</span>';
+      const priceText='<span class="moon-price">'+cash(price)+'</span>';
       const buy='<button type="button" class="cw-btn moon-buy" data-cw="buy" data-value="'+i+'" aria-label="'+esc(action+' '+d.name+' for '+cash(price)+(reason?'. '+reason:''))+'"'+(ok?'':' disabled')+'><span>'+esc(reason || action)+'</span>'+priceText+'</button>';
       const cast=mayBuyAndUse(s,i,d)?button('buy-use','Buy & cast','moon-cast',i):'';
       let effect=itemDescription(d);
@@ -579,7 +590,7 @@
         effect='Pick <b>'+d.picks+'</b> of <b>'+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+'</b> '+esc(pool)+'.';
       }
       const rarity=d.kind==='familiar' && d.rarity?' · '+esc(d.rarity):'';
-      return '<article class="moon-item"'+cardTip(d)+' data-stock-type="'+esc(family || d.kind)+'"><div class="moon-art">'+marketObject(d)+'</div><div class="moon-copy"><small>'+esc(type)+rarity+'</small><h4>'+esc(d.name)+'</h4>'+badges(d)+'<p>'+effect+'</p></div><div class="moon-actions">'+buy+cast+'</div></article>';
+      return '<article class="moon-item"'+cardTip(d,true)+' data-stock-type="'+esc(family || d.kind)+'"><div class="moon-art">'+marketObject(d)+'</div><div class="moon-copy"><small>'+esc(type)+rarity+'</small><h4>'+esc(d.name)+'</h4>'+badges(d)+'<p>'+effect+'</p></div><div class="moon-actions">'+buy+cast+'</div></article>';
     }
     const count=s.shopOfferCount ?? Math.max(0,s.offers.length-3);
     const shelf=(name,cls,indices,control='')=>'<section class="moon-shelf '+cls+'"><header><h3>'+name+'</h3>'+control+'</header><div class="moon-goods">'+indices.map(stockCard).join('')+'</div></section>';
@@ -590,9 +601,7 @@
     const voucher=shelf('Voucher','moon-vouchers',[count+2]);
     const rewards=s.rewardPacks?.length?'<div class="cw-rewards">'+button('reward-pack','Open reward pack ('+s.rewardPacks.length+')','cw-primary')+'</div>':'';
     const footer=button('show-menu','Menu')+button('open','Inventory','','inventory')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary moon-next');
-    const view=result('Shop · Ante '+s.ante,'Moonlit Market',marketFamiliars(s)+rewards+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
-    view.headerEnd=marketPurse(s.money);
-    return view;
+    return result('Shop · Ante '+s.ante,'Moonlit Market',marketFamiliars(s)+rewards+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
   }
   let lastPack, dealStart;
   function packView(s) {
@@ -618,8 +627,14 @@
     }).join('');
     const d=active>=0?item(s.pack.choices[active]):null;
     const valid=d && targetsReady(d) && api().canPick?.(s,active,targets)!==false;
-    const dealt=hand.length?'<div class="cw-pack-hand">'+heading(d?targetLabel(d):'Pack hand')+(d?'<div class="cw-targets">'+targetCards(hand,d,'pack-target')+'</div>'+button('pick-cast','Cast '+d.name,'cw-primary',active,!valid):
-      '<div class="cw-targets">'+hand.map(c=>'<span class="cw-dealt'+red(c.suit)+'" tabindex="0"'+cardTip(c)+'>'+esc(rank(c.rank)+suits[c.suit])+'</span>').join('')+'</div>')+'</div>':'';
+    const handCards=hand.map(card=>{
+      const selected=targets.includes(card.id);
+      const target=d && {selected, disabled:!selected && targets.length>=d.maxTargets};
+      return options.cardPreview(card,target);
+    }).join('');
+    const dealt=hand.length?'<div class="cw-pack-hand">'+heading(d?targetLabel(d):'Pack hand')+
+      '<div class="pack-playing-cards">'+handCards+'</div>'+
+      (d?button('pick-cast','Cast '+d.name,'cw-primary',active,!valid):'')+'</div>':'';
     const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
     const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,button('open','Inventory','','inventory')+button('close-pack','Skip remaining'));
     view.headerEnd='<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong>';
@@ -646,27 +661,23 @@
       },delay);
     });
   }
-  function vaultScene(s) {
-    const name = api().blindInfo(s).name;
-    return '<div class="vault-dust" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>'+
-      '<div class="vault-score"><span class="vault-seal" aria-hidden="true">&#10022;</span><div>'+
-      '<b>'+esc(name)+'</b><span><strong>'+num(s.score)+' chips</strong> / '+num(s.target)+' target</span></div></div>';
+  function victoryScore(s) {
+    return '<div class="victory-score"><div><small>Round score</small><b>'+num(s.score)+'</b></div>'+
+      '<div><small>Blind target</small><b>'+num(s.target)+'</b></div></div>';
   }
   function payoutView(s) {
     const p = s.payout;
-    const row = (label,value) => '<li class="spoils-line" data-amount="'+Number(value)+'"><span>'+esc(label)+
-      '</span><span class="spoils-stack" aria-hidden="true">'+ '<i></i>'.repeat(Math.min(7,Math.max(0,value)))+
+    const row = (label,value) => '<li class="spoils-line" data-amount="'+Number(value)+'"><span>'+label+
       '</span><b>'+cash(value)+'</b></li>';
     const ledger = row('Blind bounty',p.blind) + row('Unused hands',p.hands) +
       (!s.rules?.noInterest || p.interest ? row('Interest',p.interest || 0) : '') + (p.bonus ? row('Bonus',p.bonus) : '');
-    const body = '<h3 class="spoils-heading">Round spoils</h3>'+
-      '<div class="spoils-total" aria-label="'+cash(p.total)+' earned"><i class="vault-coin" aria-hidden="true"></i>'+
-      '<strong aria-hidden="true">'+cash(p.total)+'</strong></div><ul class="spoils-lines">'+ledger+'</ul>';
+    const body = '<h3 class="victory-label">Round winnings</h3>'+
+      '<div class="spoils-total" aria-label="'+cash(p.total)+' earned"><strong class="stat-money" aria-hidden="true">'+cash(p.total)+
+      '</strong></div><ul class="spoils-lines">'+ledger+'</ul>';
     const finalBlind = s.ante === s.rules?.anteLimit && s.blind === 2;
-    const footer = '<div class="vault-balance"><span>Current purse</span><b>'+cash(s.money)+'</b></div>'+
-      '<div class="vault-collect">'+button('cash-out','Collect '+cash(p.total)+'  →','cw-primary')+
-      '<small>'+(finalBlind?'Finish run':'Continue to shop')+'</small></div>';
-    return {...result('Ante '+s.ante+'  ·  Round '+s.round,s.blind===2?'Boss defeated!':'Blind defeated!',body,footer),heroDetail:vaultScene(s)};
+    const footer = '<div class="victory-purse"><span>Purse after collection</span><b>'+cash(s.money+p.total)+'</b></div>'+
+      button('cash-out',finalBlind?'Collect & finish run':'Collect & visit shop','cw-primary');
+    return {...result('Ante '+s.ante+'  /  Round '+s.round,api().blindInfo(s).name+' defeated',body,footer),victory:true};
   }
   function selectView(s) {
     const tickets=[0,1,2].map(i=>{
@@ -679,9 +690,9 @@
       const reroll=i===2 && api().canRerollBoss?.(s)?button('reroll-boss','Reroll boss'+bossCost('bossRerollPrice',s)):'';
       const disable=i===2 && api().canDisableBoss?.(s)?button('disable-boss','Disable rule'+bossCost('bossDisablePrice',s)):'';
       const bossTools=reroll || disable?'<div class="cw-boss-tools">'+reroll+disable+'</div>':'';
-      return '<article class="blind-ticket tier-'+i+(active?' current':'')+'"><header>'+esc(blind.kind)+'</header><div class="blind-stamp" aria-hidden="true"><i>'+seal+'</i></div><small class="trial-target" aria-label="Target">&#9678;</small><strong class="blind-goal" aria-label="Target '+num(blind.target)+' chips">'+num(blind.target)+'</strong><div class="blind-prize" aria-label="Reward '+cash(blind.reward)+'">'+('<span class="reward-coin" aria-hidden="true">$</span> '+cash(blind.reward))+'</div>'+(i===2?'<div class="boss-brief"><b>'+esc(blind.name)+'</b><small>'+esc(blind.description)+'</small></div>':'')+'<div class="blind-actions">'+(active?button('start-blind','Play blind','cw-primary'):'<b class="blind-state">'+phase+'</b>')+(active && canSkip?button('skip','Skip blind'):'')+tag+bossTools+'</div></article>';
+      return '<article class="blind-ticket tier-'+i+(active?' current':'')+'"><header>'+esc(blind.kind)+'</header><div class="blind-stamp" aria-hidden="true"><i>'+seal+'</i></div><small class="trial-target" aria-label="Target">&#9678;</small><strong class="blind-goal" aria-label="Target '+num(blind.target)+' chips">'+num(blind.target)+'</strong><div class="blind-prize" aria-label="Reward '+cash(blind.reward)+'">'+cash(blind.reward)+'</div>'+(i===2?'<div class="boss-brief"><b>'+esc(blind.name)+'</b><small>'+esc(blind.description)+'</small></div>':'')+'<div class="blind-actions">'+(active?button('start-blind','Play blind','cw-primary'):'<b class="blind-state">'+phase+'</b>')+(active && canSkip?button('skip','Skip blind'):'')+tag+bossTools+'</div></article>';
     }).join('');
-    return result('Choose your blind · Ante '+s.ante,'The Astral Trials',companionRail(s)+'<div class="blind-board">'+tickets+'</div>',button('show-menu','Menu'));
+    return {...result('Choose your blind · Ante '+s.ante,'The Astral Trials',companionRail(s)+'<div class="blind-board">'+tickets+'</div>',''),headerEnd:button('show-menu','Menu')};
   }
   function bossCost(action,s) {
     const cost=api()[action]?.(s);
@@ -690,13 +701,13 @@
   function endView(s) {
     if(s.phase==='won') {
       const challenge=api().CHALLENGES?.[s.challengeId];
-      const body='<h3 class="spoils-heading">'+esc(challenge?.name || 'Run complete')+'</h3>'+
-        '<div class="vault-achievement">'+num(s.rules?.anteLimit || 8)+' antes cleared</div>'+
-        '<div class="vault-stats">'+stat('Blinds won',num(s.stats.roundsWon))+stat('Best hand score',num(s.stats.bestScore))+
-        '<div class="cw-stat vault-stat-wallet"><span>Final purse</span><strong>'+cash(s.money)+'</strong></div></div>';
+      const body='<h3 class="victory-label">'+esc(challenge?.name || 'Run complete')+'</h3>'+
+        '<div class="victory-achievement">'+num(s.rules?.anteLimit || 8)+' antes cleared</div>'+
+        '<div class="victory-stats">'+stat('Blinds won',num(s.stats.roundsWon))+stat('Best hand score',num(s.stats.bestScore))+
+        '<div class="cw-stat victory-stat-wallet"><span>Final purse</span><strong>'+cash(s.money)+'</strong></div></div>';
       const footer=button('show-menu','Menu')+button('open','New run',s.challengeId?'cw-primary':'','restart')+
-        (!s.challengeId?button('endless','Continue endless →','cw-primary'):'');
-      return {...result('The final blind','Victory!',body,footer),heroDetail:vaultScene(s)};
+        (!s.challengeId?button('endless','Continue endless','cw-primary'):'');
+      return {...result('The final blind','Run victory',body,footer),victory:true};
     }
     const note='Your score reached '+num(s.score)+' of the '+num(s.target)+' chips required.';
     return result('Run complete','Run over','<div class="cw-hero"><span class="cw-hero-emblem" aria-hidden="true">♠</span><h3 class="cw-hero-title">Out of hands</h3><p class="cw-explain">'+esc(note)+'</p></div><div class="cw-stats">'+stat('Ante reached',s.ante)+stat('Blinds won',s.stats.roundsWon)+stat('Best hand score',num(s.stats.bestScore))+'</div>',button('show-menu','Menu')+button('open','New run','cw-primary','restart'));
@@ -732,7 +743,7 @@
         const i=bag.indexOf(ref);
         if (i>=0) { bag.splice(i,1); continue; }
         const reward=item(ref);
-        push('',picture(reward),reward.name+(d.effect==='inventoryEdition'?' · Negative':''),'copy');
+        push('',picture({...reward,upgradeAge:0}),reward.name+(d.effect==='inventoryEdition'?' · Negative':''),'copy');
       }
     }
     if (!results.length) {

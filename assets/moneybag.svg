@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 154">
+ <defs>
+  <linearGradient id="silk" x2=".85" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#d5896c"/><stop offset=".26" stop-color="#914451"/><stop offset=".58" stop-color="#642e46"/><stop offset=".84" stop-color="#45213a"/><stop offset="1" stop-color="#291b32"/></linearGradient>
+  <linearGradient id="cord" x2="0" y2="1"><stop stop-color="#fff1a9"/><stop offset=".52" stop-color="#e7ac54"/><stop offset="1" stop-color="#97512e"/></linearGradient>
+ </defs>
+ <g stroke-linejoin="round">
+ <path fill="url(#silk)" stroke="#d09a69" stroke-width="2.5" d="M70 44 56 17q7-8 18-3l10 5Q90 3 99 7l14 11q11-13 26-6l-11 32c19 13 53 44 55 65 4 28-30 39-82 39-54 0-85-10-85-35 0-23 28-54 54-69Z"/>
+ <path fill="none" stroke="#dd9878" opacity=".55" stroke-width="3" d="m75 18 12 23m12-28 2 26m23-18-11 20M77 49Q31 94 34 111m93-61q36 36 41 57"/>
+ <path fill="#452237" stroke="#bd825a" stroke-width="1.5" d="M29 91q69-18 140 0l1 29q-66 21-141 0Z"/>
+ <g fill="none" stroke="url(#cord)" stroke-width="5" stroke-linecap="round"><path d="M69 40q29 9 61 0m-60 7q32 10 60-1m-2-1q20 3 20 21l6 7m-26-28q23-22 26-11 3 12-24 11"/></g>
+ <g fill="#f6cc79"><path d="m155 68 5 9-5 8-5-8zM99 57l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/><circle cx="39" cy="105" r="2"/><circle cx="160" cy="105" r="2"/></g>
+ </g>
+</svg>

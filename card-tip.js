@@ -2,22 +2,24 @@
   'use strict';
   const ranks = {11:'Jack',12:'Queen',13:'King',14:'Ace'};
   const suits = {S:'Spades',H:'Hearts',C:'Clubs',D:'Diamonds'};
-  function details(card, debuffed) {
+  function details(card, debuffed, descriptionVisible = false) {
     const playing = Boolean(card.suit && card.rank);
     const name = playing ? (card.enhancement === 'stone' ? 'Stone Card' : (ranks[card.rank] || card.rank)+' of '+suits[card.suit]) : card.name;
     const lines = [name];
-    if (!playing && card.description) lines.push(card.description);
+    if (!descriptionVisible && !playing && card.description) lines.push(card.description);
     for (const [field, catalog] of [['enhancement','enhancements'],['edition','editions'],['seal','seals'],['sticker','stickers']]) {
       const effect = root.CWMarket[catalog][card[field]];
       if (effect) lines.push(effect.name+' — '+effect.description);
     }
-    if (card.perishRounds != null) lines.push(card.perishRounds+' winning blinds remaining.');
+    if (!descriptionVisible && card.perishRounds != null) lines.push(card.perishRounds+' winning blinds remaining.');
     if (debuffed || card.debuffed) lines.push('Debuffed — Effects are inactive.');
+    if (descriptionVisible && lines.length === 1) return "";
     if (playing && lines.length === 1) lines.push('Standard playing card.');
     return lines.join('\n');
   }
-  function attribute(value) {
-    return ' data-card-tip="'+value.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'"';
+  function attribute(value, key = "data-card-tip") {
+    if (!value) return "";
+    return ' '+key+'="'+value.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'"';
   }
   const cross = '<span class="boss-cross" aria-hidden="true">&times;</span>';
   root.CWCardTip = {details, attribute, cross};
@@ -33,11 +35,15 @@
     tip.hidden = true;
   }
   function show(node, x, y) {
-    if (!node) { hide(); return; }
+    let content = node?.dataset.cardTip;
+    if (node?.closest('#familiars') && document.getElementById('relic-readout')?.offsetWidth) {
+      content = node.dataset.extraTip;
+    }
+    if (!content) { hide(); return; }
     if (active !== node) {
       hide();
       active = node;
-      const [name,...lines] = node.dataset.cardTip.split('\n');
+      const [name,...lines] = content.split('\n');
       const heading = document.createElement('b');
       heading.textContent = name;
       tip.replaceChildren(heading);
