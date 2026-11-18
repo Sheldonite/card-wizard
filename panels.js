@@ -11,8 +11,7 @@
   let deckTab = 'draw';
   let targets = [];
   let castSourceRect;
-  let restartDeck = 'arcane';
-  let restartStake = '';
+  let restartDeck = '';
   let restartChallenge = '';
   let restartSeed = '';
   let collectionTab = '';
@@ -188,6 +187,20 @@
     const observer = new ResizeObserver(fitTrials);
     observer.observe(layer);
     observer.observe(dialog());
+    let swipe;
+    layer.addEventListener('pointerdown', event => {
+      const card = event.target.closest('.deck-slide');
+      if (!card || card.dataset.fixed || !event.isPrimary || event.button !== 0) return;
+      swipe = {id:event.pointerId, x:event.clientX, y:event.clientY};
+      card.setPointerCapture(event.pointerId);
+    });
+    layer.addEventListener('pointerup', event => {
+      if (swipe?.id !== event.pointerId) return;
+      const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
+      swipe = null;
+      if (Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy) * 1.3) stepDeck(dx < 0 ? 1 : -1);
+    });
+    layer.addEventListener('lostpointercapture', () => { swipe = null; });
     layer.addEventListener('input', event => {
       if (event.target.id === 'cw-run-seed') {
         restartSeed = event.target.value;
@@ -201,8 +214,6 @@
     layer.addEventListener('change', event => {
       const key = event.target.dataset.select;
       const value = event.target.value;
-      if (key === 'deck') restartDeck = value;
-      if (key === 'stake') restartStake = value;
       if (key === 'challenge') restartChallenge = value;
       if (key) paint(false);
       const preference = event.target.dataset.setting;
@@ -226,7 +237,12 @@
     });
     document.addEventListener('keydown', event => {
       if (!page) return;
-      if (event.key === 'Escape') {
+      if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') &&
+          (page === 'lobby' || page === 'restart') && !event.altKey && !event.metaKey && !event.ctrlKey &&
+          (document.activeElement === dialog() || event.target.closest('.deck-carousel'))) {
+        event.preventDefault();
+        stepDeck(event.key === 'ArrowRight' ? 1 : -1);
+      } else if (event.key === 'Escape') {
         event.preventDefault(); event.stopImmediatePropagation();
         if (isDismissible()) close();
       } else if (event.key === 'Tab') {
@@ -276,8 +292,6 @@
     if (page === next && value === detail) return;
     if (page !== next && page) backStack.push([page,detail]);
     if (next === 'restart') {
-      restartDeck = s?.deckId || 'arcane';
-      restartStake = s?.stakeId || '';
       restartChallenge = '';
       restartSeed = '';
     }
@@ -482,59 +496,100 @@
   }
   function resumable() { return options.hasSavedRun?.() ?? options.hasRun?.() ?? Boolean(state()?.seed); }
   function runChoices() {
-    const decks = api().DECKS || {};
-    const stakes = api().STAKES || {};
-    const challenges = api().CHALLENGES || {};
-    const profile = progress();
-    const unlocked = profile.unlocked || {};
-    const available = (options,category,id) => Object.hasOwn(options,id) && (!unlocked[category] || unlocked[category].includes(id));
-    const current = (options,category,id) => available(options,category,id) ? id : Object.keys(options).find(key=>available(options,category,key));
-    const challengeId = available(challenges,'challenges',restartChallenge) ? restartChallenge : '';
+    const {DECKS:decks, STAKES:stakes, CHALLENGES:challenges} = api();
+    const profile = progress(), unlocked = profile.unlocked;
+    const deckIds = Object.keys(decks), stakeIds = Object.keys(stakes);
+    const challengeId = page === 'restart' && unlocked.challenges.includes(restartChallenge) ? restartChallenge : '';
     const challenge = challenges[challengeId];
-    return {decks,stakes,challenges,unlocked,unlockHints:profile.unlockHints || {},challengeId,challenge,
-      deckId:challenge?.deck ?? challenge?.deckId ?? current(decks,'decks',restartDeck) ?? 'arcane',
-      stakeId:challenge?.stake ?? challenge?.stakeId ?? current(stakes,'stakes',restartStake)};
+    const lastDeck = resumable() && state()?.deckId;
+    const wonDeck = deckIds.find(id => profile.stats.deckWins[id] > 0);
+    const deckId = challenge?.deck || restartDeck || lastDeck || wonDeck || deckIds[0];
+    const wins = profile.stats.deckStakeWins[deckId] || {};
+    const available = stakeIds.filter(id => unlocked.stakes.includes(id));
+    const preferred = profile.deckDifficulties?.[deckId];
+    const stakeId = challenge?.stake || (available.includes(preferred) ? preferred :
+      available.find(id => !wins[id]) || available.at(-1));
+    const locked = !challenge && !unlocked.decks.includes(deckId);
+    return {decks, stakes, challenges, deckIds, stakeIds, deckId, stakeId, challengeId, challenge, wins, profile, locked};
   }
-  function runSelect(label,key,values,selected,unlocked,forced=false) {
-    const id='cw-run-'+key;
-    const list=Object.entries(values).map(([value,d])=>{
-      const locked=!!unlocked && !unlocked.includes(value) && value!==selected;
-      return '<option value="'+esc(value)+'"'+(value===selected?' selected':'')+(locked?' disabled':'')+'>'+esc(d.name+(locked?' · Locked':''))+'</option>';
+
+  function stepDeck(direction) {
+    const {deckIds, deckId, challenge} = runChoices();
+    if (challenge?.deck) return;
+    restartDeck = deckIds[(deckIds.indexOf(deckId) + direction + deckIds.length) % deckIds.length];
+    paint(false);
+    const slide = layer.querySelector('.deck-slide');
+    if (slide?.animate && !options.getSettings?.()?.reducedMotion && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      slide.animate([{transform:'translateX('+direction*12+'px)',opacity:.5},{transform:'none',opacity:1}],{duration:170,easing:'ease-out'});
+    }
+    layer.querySelector('.cw-familiar-announcement').textContent = slide.innerText;
+  }
+
+  function deckCarousel(choices) {
+    const {decks, deckId, deckIds, stakes, stakeIds, wins, profile, locked, challenge} = choices;
+    const deck = decks[deckId];
+    const fixed = Boolean(challenge?.deck);
+    const cleared = stakeIds.filter(id => wins[id] > 0);
+    const emblem = ({arcane:'grimoire',alchemist:'potion',oracle:'orb'})[deckId] ||
+      (deck.starter?.length ? item(deck.starter[0]).art : 'owl');
+    const art = '<div class="run-deck-art" data-deck="'+esc(deckId)+'" aria-hidden="true"><i></i><i></i><i><img draggable="false" src="' +
+      esc(global.CWContent.portrait(emblem)) + '" alt=""></i></div>';
+    const record = cleared.length ? '<span class="record-label">Cleared</span>' +
+      cleared.map(id => '<span class="cleared-stake"><i aria-hidden="true">&#10003;</i> '+esc(stakes[id].name)+'</span>').join('') :
+      (profile.stats.deckWins[deckId] > 0 ? num(profile.stats.deckWins[deckId])+' '+(profile.stats.deckWins[deckId]===1?'win':'wins')+' &middot; Difficulty unrecorded' : 'No campaign wins yet');
+    const position = deckIds.indexOf(deckId) + 1;
+    const arrow = (step,label) => '<button type="button" class="deck-arrow" data-cw="step-deck" data-value="'+step+
+      '" aria-label="'+label+' deck"'+(fixed?' disabled':'')+'><i aria-hidden="true"></i></button>';
+    return '<section class="deck-carousel" aria-label="Deck record">'+arrow(-1,'Previous')+
+      '<div class="deck-slide"'+(fixed?' data-fixed="true"':'')+'>'+art+'<div class="deck-caption">'+
+      '<div class="deck-folio">'+(fixed?'Challenge deck':'Deck')+' <span>'+position+' / '+deckIds.length+'</span></div>'+
+      '<h3>'+esc(deck.name)+'</h3><div class="deck-record">'+(locked?'<b>Locked</b> '+esc(profile.unlockHints[deckId]):record)+
+      '</div></div></div>'+arrow(1,'Next')+'</section>';
+  }
+
+  function difficultyPicker(choices) {
+    const {stakes, stakeIds, stakeId, wins, profile, locked, challenge} = choices;
+    const buttons = stakeIds.map(id => {
+      const selected = id === stakeId;
+      const available = !locked && (challenge ? selected : profile.unlocked.stakes.includes(id));
+      const cleared = wins[id] > 0;
+      const status = cleared ? 'Cleared' : available ? 'Open' : 'Locked';
+      const hint = challenge ? 'Difficulty set by '+challenge.name : locked ? profile.unlockHints[choices.deckId] : profile.unlockHints[id];
+      return '<button type="button" class="difficulty-chip" data-cw="pick-stake" data-value="'+esc(id)+'" aria-pressed="'+
+        (selected && !locked)+'"'+(!available || challenge?' disabled':'')+' title="'+esc(hint || stakes[id].description)+'">'+
+        '<b>'+esc(stakes[id].name)+'</b><small>'+(cleared?'&#10003; ':'')+status+'</small></button>';
     }).join('');
-    const standard=key==='challenge'?'<option value=""'+(selected?'':' selected')+'>Standard run</option>':'';
-    const choice=values[selected];
-    return '<div class="cw-run-field"><label for="'+id+'">'+label+'</label><select id="'+id+'" class="cw-select" data-select="'+key+'"'+(forced?' disabled':'')+'>'+standard+list+'</select>'+(choice && key!=='challenge'?'<small>'+esc(choice.description)+'</small>':'')+'</div>';
+    return '<fieldset class="deck-difficulties"><legend>Difficulty</legend><div>'+buttons+'</div></fieldset>'+
+      (locked?'':'<p class="stake-rule"><b>'+esc(stakes[stakeId].name)+'</b> &middot; '+esc(stakes[stakeId].description)+'</p>');
   }
-  function startForm(s) {
-    const {decks,stakes,challenges,unlocked,unlockHints,deckId,stakeId,challengeId,challenge}=runChoices();
-    const deck=decks[deckId];
-    const forcedDeck=!!(challenge?.deck || challenge?.deckId);
-    const available=Object.entries(decks).filter(([id])=>id===deckId || !unlocked.decks || unlocked.decks.includes(id));
-    const deckOptions=available.map(([id,d])=>'<option value="'+esc(id)+'"'+(id===deckId?' selected':'')+'>'+esc(d.name)+'</option>').join('');
-    const deckSelect='<select id="cw-run-deck" data-select="deck" aria-label="Starting deck"'+(forcedDeck?' disabled':'')+'>'+deckOptions+'</select>';
-    const seed = '<div class="cw-seed-form"><label for="cw-run-seed">Practice seed <small>Optional</small></label><div><input id="cw-run-seed" type="text" maxlength="'+seedLimit+'" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(restartSeed)+'" placeholder="Random seed">'+(resumable() && s.seed?button('repeat-seed','Reuse seed'):'')+'</div></div>';
-    const locked=Object.entries(decks).filter(([id])=>unlocked.decks && !unlocked.decks.includes(id));
-    const deckHints=locked.length?'<details class="deck-unlocks" id="deck-unlocks"><summary>Locked decks ('+locked.length+')</summary><dl>'+
-      locked.map(([id,d])=>'<div><dt>'+esc(d.name)+'</dt><dd>'+esc(unlockHints[id] || d.unlockText || 'Locked')+'</dd></div>').join('')+'</dl></details>':'';
-    const starters=challenge?.rules?.starter ?? deck.starter ?? ['merlin'];
-    const companions=starters.map(id=>{
-      const d=item(id);
+
+  function startForm(s, choices) {
+    const {decks, deckId, profile, challenges, challengeId, challenge} = choices;
+    const deck = decks[deckId];
+    const starters = challenge?.rules?.starter ?? deck.starter ?? ['merlin'];
+    const companions = starters.map(id => {
+      const d = item(id);
       return '<span><img alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
     }).join('');
-    const emblem=({arcane:'grimoire',alchemist:'potion',oracle:'orb'})[deckId] || (deck.starter?.length ? item(deck.starter[0]).art : 'owl');
-    const selector='<div class="deck-selector'+(forcedDeck?' fixed':'')+'">'+deckSelect+'</div>';
-    const preview='<div class="deck-preview"><div class="run-deck-art" aria-hidden="true"><i></i><i></i><i><img src="'+esc(global.CWContent.portrait(emblem))+'" alt=""></i></div>'+
-      '<div class="deck-choice">'+selector+'<p>'+esc(challenge?.description || deck.description)+'</p></div></div>'+
-      '<div class="deck-companions"><small>Starting familiar'+(starters.length>1?'s':'')+'</small>'+(companions || '<span>None</span>')+'</div>';
-    const settings=[stakes[stakeId]?.name,challenge?.name].filter(Boolean).map(esc).join(' · ');
-    return '<form id="cw-new-run">'+preview+'<details class="run-options" id="run-options"><summary>Run options <small>'+settings+
-      '<span class="seed-indicator"'+(restartSeed.trim()?'':' hidden')+'> · Seeded</span></small></summary><div class="run-settings">'+
-      (Object.keys(stakes).length?runSelect('Difficulty','stake',stakes,stakeId,unlocked.stakes,!!(challenge?.stake || challenge?.stakeId)):'')+
-      (Object.keys(challenges).length?runSelect('Challenge','challenge',challenges,challengeId,unlocked.challenges):'')+seed+deckHints+'</div></details></form>';
+    const trialOptions = Object.entries(challenges).map(([id,d]) => {
+      const locked = !profile.unlocked.challenges.includes(id);
+      return '<option value="'+esc(id)+'"'+(id===challengeId?' selected':'')+(locked?' disabled':'')+'>'+
+        esc(d.name)+(locked?' &middot; Locked':'')+'</option>';
+    }).join('');
+    const trial = '<div class="cw-run-field"><label for="cw-run-challenge">Challenge</label>'+
+      '<select id="cw-run-challenge" class="cw-select" data-select="challenge"><option value="">Standard run</option>'+trialOptions+'</select></div>';
+    const seed = '<div class="cw-seed-form"><label for="cw-run-seed">Practice seed <small>Optional</small></label><div><input id="cw-run-seed" type="text" maxlength="'+seedLimit+'" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(restartSeed)+'" placeholder="Random seed">'+(resumable() && s.seed?button('repeat-seed','Reuse seed'):'')+'</div></div>';
+    return '<form id="cw-new-run">'+deckCarousel(choices)+'<p class="deck-description">'+esc(challenge?.description || deck.description)+'</p>'+
+      '<div class="deck-companions"><small>Starting familiar'+(starters.length>1?'s':'')+'</small>'+(companions || '<span>None</span>')+'</div>'+
+      difficultyPicker(choices)+'<details class="run-options" id="run-options"><summary>Run options <small>'+
+      esc(challenge?.name || '')+'<span class="seed-indicator"'+(restartSeed.trim()?'':' hidden')+'>Seeded practice</span></small></summary>'+
+      '<div class="run-settings">'+trial+seed+'</div></details></form>';
   }
-  function startButton() { return '<button class="cw-btn cw-primary" type="submit" form="cw-new-run">Start run</button>'; }
   function restartView(s) {
-    return result('','Choose your deck',startForm(s)+(resumable() && !['won','lost'].includes(s.phase)?'<p class="cw-explain">Starting a new run replaces your active run.</p>':''),button('close','Back')+startButton());
+    const choices = runChoices();
+    const start = '<button class="cw-btn cw-primary" type="submit" form="cw-new-run"'+(choices.locked?' disabled':'')+'>'+
+      (choices.locked?'Deck locked':'Start run')+'</button>';
+    return result('','Choose your deck',startForm(s,choices)+(resumable() && !['won','lost'].includes(s.phase)?'<p class="cw-explain">Starting a new run replaces your active run.</p>':''),button('close','Back')+start);
   }
   function parlorCard(rank,suit,extra='') {
     return '<i class="parlor-card '+extra+'"><b>'+rank+'</b><span>'+suit+'</span><small>'+suit+'</small></i>';
@@ -561,12 +616,17 @@
   }
   function lobbyView(s) {
     const saved=resumable(), live=saved && !['won','lost'].includes(s.phase);
+    const choices=runChoices();
     const main=live ? button('continue-run','Resume Run','parlor-play') : button('open','Play','parlor-play','restart');
     const secondary=live ? button('open','New Run','parlor-secondary','restart') :
       saved ? button('continue-run','Last Result','parlor-secondary') : '';
-    const links='<nav class="parlor-links" aria-label="Main menu">'+button('learn','How to play')+button('open','Menu','','menu')+'</nav>';
+    const decksWon=choices.deckIds.filter(id=>choices.profile.stats.deckWins[id]>0).length;
+    const links='<nav class="parlor-links" aria-label="Main menu">'+
+      button('open',decksWon+' / '+choices.deckIds.length+' decks won','','career')+button('learn','How to play')+button('open','Menu','','menu')+'</nav>';
+    const resumeDetail=live?'<p class="resume-detail">In progress &middot; '+esc(choices.decks[s.deckId].name)+
+      ' &middot; '+esc(choices.stakes[s.stakeId].name)+'</p>':'';
     const title='<div class="parlor-hero"><h1 class="parlor-logo"><em>Card</em> <strong>Wizard</strong></h1>'+
-      '<div class="parlor-actions">'+main+secondary+'</div>'+links+'</div>';
+      deckCarousel(choices)+'<div class="parlor-actions">'+main+secondary+'</div>'+resumeDetail+links+'</div>';
     return result('','Card Wizard',title+parlorScene());
   }
   function menuView() {
@@ -591,9 +651,17 @@
       return '<div class="cw-profile-row"><b>'+esc(definitions?.[id]?.name || id)+'</b><span>'+num(wins)+' wins</span></div>';
     }).join('');
     const milestones=(data.achievements || []).map(a=>'<div class="cw-achievement'+(a.earned?' unlocked':'')+'"><span aria-label="'+(a.earned?'Earned':'Locked')+'">'+(a.earned?'✦':'◇')+'</span><div><b>'+esc(a.name)+'</b><small>'+esc(a.description)+'</small></div></div>').join('');
-    const decks=rows(st.deckWins,api().DECKS), stakes=rows(st.stakeWins,api().STAKES), challenges=rows(st.challengeWins,api().CHALLENGES);
+    const decks=Object.entries(api().DECKS).filter(([id])=>st.deckWins?.[id]>0).map(([id,deck])=>{
+      const cleared=Object.entries(api().STAKES).filter(([stake])=>st.deckStakeWins?.[id]?.[stake]>0);
+      const names=cleared.map(([,stake])=>esc(stake.name)).join(' &middot; ');
+      const wins=st.deckWins[id];
+      return '<div class="cw-profile-row"><div><b>'+esc(deck.name)+'</b><small class="career-clears">'+
+        (names?'&#10003; '+names:'Difficulty unrecorded')+'</small></div><span>'+num(wins)+(wins===1?' win':' wins')+'</span></div>';
+    }).join('');
+    const stakes=rows(st.stakeWins,api().STAKES), challenges=rows(st.challengeWins,api().CHALLENGES);
     const usage=Object.entries(st.itemUses || {}).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([id,count])=>'<div class="cw-profile-row"><b>'+esc(item(id).name)+'</b><span>'+num(count)+'</span></div>').join('');
-    return result(data.profile?.name || '','Career',grid+counts+(decks?heading('Deck wins')+decks:'')+(stakes?heading('Difficulty wins')+stakes:'')+
+    return result(data.profile?.name || '','Career',grid+counts+heading('Deck wins')+(decks || '<p class="cw-explain">Beat the Ante 8 boss in an unseeded standard run to earn your first deck win.</p>')+
+      (stakes?heading('Difficulty wins')+stakes:'')+
       (challenges?heading('Challenge wins')+challenges:'')+(usage?heading('Most used items')+usage:'')+(milestones?heading('Achievements')+'<div class="cw-achievements">'+milestones+'</div>':''),button('close','Back')+button('open','Collection','','collection'));
   }
   function collectionView() {
@@ -965,6 +1033,13 @@
     const s=state() || {};
     const index=Number(value);
     if(name==='close') return close();
+    if(name==='step-deck') return stepDeck(index);
+    if(name==='pick-stake') {
+      const choices=runChoices();
+      if(choices.locked || choices.challenge || !choices.profile.unlocked.stakes.includes(value)) return;
+      options.setDeckDifficulty(choices.deckId,value);
+      return paint(false);
+    }
     if(name==='deal-trick' && page==='lobby') return dealParlorTrick();
     if(name==='learn') { guideTab='rules'; return open('guide'); }
     if(name==='replay' && (s.phase==='won' || s.phase==='lost')) {
@@ -977,11 +1052,13 @@
     if(name==='collection-tab') { collectionTab=value; collectionFilter='all'; return paint(false); }
     if(name==='collection-filter') { collectionFilter=value; return paint(false); }
     if(name==='show-menu') {
+      restartDeck='';
       if (options.wantsLobby?.()) { backStack.length=0; return route('lobby'); }
       if (options.showMenu) { options.showMenu(); return sync(); }
       return open('lobby');
     }
     if(name==='continue-run') {
+      restartDeck='';
       backStack.length=0;
       if(options.continueRun) { options.continueRun(); sync(); }
       else route(readPhase(s));
@@ -990,8 +1067,7 @@
     if(name==='change-profile' || name==='create-profile') {
       const action=name==='change-profile'?'changeProfile':'createProfile';
       if (!options[action]?.(value.trim())) { announce('Choose a valid profile name or profile.'); return; }
-      restartDeck='arcane';
-      restartStake=restartChallenge=restartSeed=collectionTab='';
+      restartDeck=restartChallenge=restartSeed=collectionTab='';
       collectionFilter='all';
       backStack.length=0;
       route('lobby');
@@ -1011,9 +1087,11 @@
     if(name==='restart') {
       const seed=restartSeed.trim();
       if (seed.length>seedLimit) { announce('Choose a seed of up to '+seedLimit+' characters.'); return; }
-      const {deckId,stakeId,challengeId}=runChoices();
+      const {deckId,stakeId,challengeId,locked}=runChoices();
+      if (locked) return;
       if(options.restart?.(deckId,seed || undefined,stakeId,challengeId || undefined)===false) { announce('Choose an available run setup.'); return; }
       restartSeed='';
+      restartDeck='';
       backStack.length=0;
       sync();
       return;

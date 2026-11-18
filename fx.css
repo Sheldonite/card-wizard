@@ -263,15 +263,23 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 }
 .ace-orbit .pip.ace {width:80%;height:62%}
 .court-window {
-  position:absolute;inset:21% 21% 20%;border:1px solid #ac895e;border-radius:52% 52% 42% 42% / 34% 34% 25% 25%;
-  background:radial-gradient(circle at 24% 30%,#ffdf96 0 1%,transparent 2%),
-    radial-gradient(circle at 78% 37%,#f9d7a1 0 1%,transparent 2%),
-    radial-gradient(circle at 66% 19%,#f4ddad 0 1%,transparent 2%),
-    repeating-conic-gradient(from 14deg at 50% 75%,transparent 0deg 12deg,#f6da9e29 13deg,transparent 14deg 25deg),
-    radial-gradient(ellipse at 50% 100%,#c2a175,var(--court-sky) 76%);
-  box-shadow:0 0 0 1px #f6ddaf,inset 0 0 0 1px #e9c5896b;
+  position:absolute;inset:20% 19% 21%;border:1px solid #a68b69;border-radius:52% 52% 8% 8% / 34% 34% 6% 6%;
+  background:radial-gradient(ellipse at 50% 30%,#f7e9ce,color-mix(in srgb,var(--court-sky) 30%,#e7d3b2));
+  box-shadow:0 0 0 1px #f1e2c5;
 }
-.playing-card .court {inset:22% 17% auto;width:66%;height:57%;filter:drop-shadow(0 1px 1px #251a27a0)}
+.playing-card .court {inset:19% 16% auto;width:68%;height:60%;object-position:center bottom}
+.playing-card[data-enhanced=true] .court-window {
+  border-color:var(--edge);box-shadow:0 0 0 1px var(--paper),inset 0 0 0 1px #fff7;
+  background:radial-gradient(ellipse at 50% 30%,#fff8,transparent 72%),var(--engraving,none),var(--paper);
+}
+.playing-card[data-enhancement=glass] .court-window {background:linear-gradient(122deg,#8ad6d580 22%,#eeffffb3 23% 27%,#a6e7e266 28% 62%,#fff9 63% 65%,#9adbd74d 66%)}
+.playing-card[data-enhancement=steel] .court-window {background:linear-gradient(110deg,#596774,#c7ced4 33%,#f4f1e5 46%,#8a939b 64%,#56616a)}
+.playing-card[data-enhancement=wild] .court-window {background:transparent;border-color:#9e7b98}
+.court-suits {
+  position:absolute;left:30%;right:30%;bottom:17%;height:8%;display:flex;align-items:center;justify-content:space-evenly;
+  background:#f9edda;border:1px solid #896785;border-radius:30% / 90%;pointer-events:none;
+}
+.court-suits svg {width:19%;height:82%}
 .wild-ink {position:absolute;inset:0;border-radius:inherit;background:url("assets/wild-ink.png") center / 100% 100% no-repeat;pointer-events:none}
 .card-tally {
   position:absolute;bottom:3.5%;left:50%;transform:translateX(-50%);z-index:2;
@@ -340,7 +348,6 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .card-display .card-preview {height:100%;width:auto;max-height:none;cursor:inherit;--lift:0}
 .card-display .corner-rank {font-size:17px}
 .market-art .card-display {height:76px}
-.market-art .card-display .court {height:57%}
 .cw-fx-card .card-enhance b,.card-display .card-enhance b {display:none}
 @media(max-width:600px) {
   #hand .card-tally {font-size:7px;padding:1px 2px}

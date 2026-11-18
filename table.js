@@ -112,9 +112,16 @@
     });
   }
   function art(card){
-    if(card.enhancement==='wild') return '<span class="wild-ink" aria-hidden="true"></span>';
+    const wildInk=card.enhancement==='wild'?'<span class="wild-ink" aria-hidden="true"></span>':'';
+    if(card.rank>=11 && card.rank<=13){
+      const portrait=window.CWContent.portrait(faceNames[card.rank].toLowerCase());
+      const suitsBand=wildInk?'<span class="court-suits" aria-hidden="true">'+
+        Object.keys(suits).map(suit=>pip(suit,'style="color:'+suits[suit].color+'"')).join('')+'</span>':'';
+      return '<span class="court-window" aria-hidden="true"></span>'+wildInk+
+        '<img alt="" class="court" src="'+portrait+'">'+suitsBand;
+    }
+    if(wildInk) return wildInk;
     if(card.rank===14) return '<div class="pips ace-orbit">'+stampedPip(card.suit,50,50,'ace')+'<svg class="ace-spark" viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="m5 0 1.2 3.7L10 5 6.2 6.3 5 10 3.8 6.3 0 5l3.8-1.3z"/></svg></div>';
-    if(card.rank>10) return '<span class="court-window" aria-hidden="true"></span><img alt="" class="court" src="'+window.CWContent.portrait(faceNames[card.rank].toLowerCase())+'">';
     return '<div class="pips">'+spots[card.rank].map(([x,y])=>stampedPip(card.suit,x,y,y>50?'invert':'')).join('')+'</div>';
   }
   const enhancementIcons={bonus:'chip',mult:'mult',wild:'stars',glass:'diamond',steel:'steel',stone:'diamond',gold:'coin',lucky:'lucky'};
@@ -979,6 +986,7 @@
     getSelection:()=>selectedInPlayOrder(),
     getSettings:()=>({...prefs}),
     getProgress:()=>profileStore.getProgress(),
+    setDeckDifficulty:(deckId,stakeId)=>profileStore.setDeckDifficulty(deckId,stakeId),
     getProfiles:()=>profileStore.profiles(),
     changeProfile:id=>changeProfile(profileStore.switchProfile(id)),
     createProfile:name=>changeProfile(profileStore.createProfile(name)),

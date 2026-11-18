@@ -349,6 +349,15 @@
         refresh();
         return active().run ? copy(active().run) : null;
       },
+      setDeckDifficulty(deckId, stakeId) {
+        const game = dataForGame();
+        if (!own(game.decks, deckId) || !own(game.stakes, stakeId)) return false;
+        refresh();
+        const profile = active();
+        profile.deckDifficulties ||= {};
+        profile.deckDifficulties[deckId] = stakeId;
+        return persist();
+      },
       saveRun(run) {
         if (!validRun(run)) return false;
         refresh();
@@ -378,7 +387,8 @@
         const game = dataForGame();
         const availability = getAvailability(game, stats, achievements);
         const collection = buildCollection(game, discovered, availability);
-        return { profile: summarize(profile), stats, discovered, ...availability, achievements, collection };
+        return { profile: summarize(profile), deckDifficulties: { ...profile.deckDifficulties },
+          stats, discovered, ...availability, achievements, collection };
       }
     };
   }
