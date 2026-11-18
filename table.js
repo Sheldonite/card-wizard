@@ -29,6 +29,22 @@
     diamond:'<path d="m10 2 6 8-6 8-6-8z"/><path d="m10 6 3 4-3 4-3-4z"/>',check:'<path d="m3 10 4 4L17 4"/>'
   };
   function icon(key) {return '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[key] || paths.spark)+'</svg>';}
+  function scorePotion(stat){
+    return '<svg class="score-potion potion-'+stat+'" viewBox="0 0 34 38" aria-hidden="true" focusable="false">'+
+      '<path d="M13 7h8v8c0 3 8 7 8 13 0 6-5 8-12 8S5 34 5 28c0-6 8-10 8-13z" fill="#243040" stroke="#dceaea" stroke-width="1.6"/>'+
+      '<path class="potion-liquid" d="M7 25q4-3 10 0t10-1q4 10-10 10T7 25Z"/>'+
+      '<path class="potion-rising" d="M14 8h6v8c0 3 8 7 8 12q0 7-11 7T6 28c0-5 8-9 8-12Z"/>'+
+      '<path d="M13 19q-5 4-5 8m1 3 1 1" fill="none" stroke="#f2ffff" opacity=".85" stroke-linecap="round" stroke-width="1.7"/>'+
+      '<path d="M22 29q-1 2-4 2" stroke="var(--elixir-light)" fill="none" stroke-linecap="round" stroke-width="1.5"/>'+
+      '<rect x="11.5" y="5.5" width="11" height="4" rx="1.5" fill="#ca9d66" stroke="#543d3c"/>'+
+      '<path d="M13 6.6h8" stroke="#ffe5ae" stroke-linecap="round"/>'+
+      '<g class="potion-spill"><path class="potion-stream" pathLength="1" d="M16 5q-5-2-5 3t.2 6q.4 3-2.4 5" />'+
+      '<path class="potion-foam" d="M11 6q-1-3 2-3 2-4 5-1 5-2 5 3 2 3 0 5-2 1-2-2 0-2-3-1-3 1-5-1Z"/>'+
+      '<circle class="potion-bubble" cx="14" cy="4" r="1.65"/><circle class="potion-bubble second" cx="20" cy="4" r="1.25"/>'+
+      '<circle class="potion-drip" cx="9" cy="18" r="1.5"/></g></svg>';
+  }
+  document.querySelector('.chip-comp .stat-chips').insertAdjacentHTML('afterbegin',scorePotion('chips'));
+  document.querySelector('.mult-comp .stat-mult').insertAdjacentHTML('afterbegin',scorePotion('mult'));
   document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});
   const suits = {
     S:{name:'Spades',color:'#363346',path:'M10 1C7.9 4.4 1.7 7.9 1.7 12.1c0 4.2 4.8 5.4 7.6 2.1-.4 2.3-1.2 3.7-3.1 5h7.6c-1.9-1.3-2.7-2.7-3.1-5 2.8 3.3 7.6 2.1 7.6-2.1C18.3 7.9 12.1 4.4 10 1Z'},
@@ -327,136 +343,17 @@
   function dismissGhosts(ghosts){
     for(const {ghost,animation} of ghosts){animation?.cancel();ghost.remove();}
   }
-  function victoryFireworks(chips,mult,total){
-    const canvas=document.createElement('canvas');
-    canvas.className='victory-fireworks';
-    canvas.setAttribute('aria-hidden','true');
-    const ctx=canvas.getContext('2d');
-    if(!ctx)return;
-    document.body.append(canvas);
-    const start=performance.now(), speed=Number(prefs.speed)||1;
-    const clock=()=>((performance.now()-start)*speed)/1000;
-    const palettes=[['#3763ff','#00d9ff','#c6ffff'],['#fb284d','#ff8737','#fff5a5'],['#ff9800','#ffcf46','#fff8d0']];
-    const shells=[];
-    const tau=Math.PI*2;
-    let frame,width,height;
-    function launch(node,side,color,delay,large=false){
-      const box=node.getBoundingClientRect();
-      const x=box.left+box.width/2,y=box.top;
-      const radius=Math.min(innerWidth*.18,innerHeight*.19,145)*(large?1:.76);
-      const endX=Math.max(radius*.65,Math.min(innerWidth-radius*.65,x+side*radius*1.25));
-      const endY=Math.max(radius*.65,y-radius*(large?1.35:1));
-      shells.push({x,y,endX,endY,radius,color,side,at:clock()+delay,large});
-    }
-    function star(x,y,size){
-      ctx.beginPath();
-      for(let i=0;i<8;i++){
-        const angle=i*Math.PI/4, r=i%2?size*.24:size;
-        const px=x+Math.cos(angle)*r,py=y+Math.sin(angle)*r;
-        if(i)ctx.lineTo(px,py);else ctx.moveTo(px,py);
-      }
-      ctx.closePath();ctx.fill();
-    }
-    function flames(node,index,t){
-      const box=node.getBoundingClientRect(), palette=palettes[index];
-      const w=Math.max(24,box.width),base=box.top+box.height*.25;
-      for(let j=0;j<9;j++){
-        const phase=t*7+j*2.3;
-        const x=box.left+w*(j+.5)/9;
-        const h=Math.min(74,box.height*1.6)*(1-.45*Math.abs(j-4)/4)*(.76+.24*Math.sin(phase));
-        const lean=Math.cos(phase*.7)*h*.28;
-        for(let k=0;k<3;k++){
-          const r=(.19-k*.05)*w,tip=h*(1-k*.27);
-          ctx.fillStyle=palette[k];ctx.globalAlpha=k===0?.48:.85;
-          ctx.beginPath();ctx.moveTo(x-r,base);
-          ctx.bezierCurveTo(x-r,base-tip*.55,x+lean+r*.6,base-tip*.62,x+lean,base-tip);
-          ctx.bezierCurveTo(x+lean+r,base-tip*.78,x+r,base-tip*.29,x+r,base);
-          ctx.quadraticCurveTo(x,base+4,x-r,base);ctx.fill();
-        }
-        const rise=(t*1.25+j*.31)%1;
-        ctx.globalAlpha=1-rise;ctx.fillStyle=palette[2];
-        star(x+lean*rise,base-h-rise*22,2.8*(1-rise));
-      }
-    }
-    function drawShell(shell,t){
-      const {x,y,endX,endY,radius,color,side,large}=shell;
-      const age=t-shell.at,flight=.36;
-      if(age<0 || age>flight+1.1)return;
-      const palette=palettes[color];
-      if(age<flight){
-        const pos=u=>[x+(endX-x)*u+Math.sin(Math.PI*u)*side*16,y+(endY-y)*Math.sin(u*Math.PI/2)];
-        for(let j=6;j>=0;j--){
-          const u=Math.max(0,(age-j*.014)/flight),[px,py]=pos(u);
-          ctx.globalAlpha=1-j/8;ctx.fillStyle=palette[j%3];star(px,py,7-j*.7);
-        }
-        return;
-      }
-      const u=(age-flight)/1.1,spread=1-Math.pow(1-u,3),n=large?52:34;
-      ctx.lineCap='round';
-      for(let j=0;j<n;j++){
-        const angle=tau*j/n+side*.27;
-        const length=radius*(j%2===0?1:.58)*(1+.09*Math.sin(5*angle));
-        const point=(v,d)=>[endX+Math.cos(angle+d*.12*side)*length*v,
-          endY+Math.sin(angle+d*.12*side)*length*v+radius*.42*d*d];
-        const [px,py]=point(spread,u);
-        const tail=Math.max(0,u-.085);
-        const [tx,ty]=point(1-Math.pow(1-tail,3),tail);
-        ctx.globalAlpha=(1-u*u)*(.83+.17*Math.sin(j+t*16));
-        ctx.strokeStyle=palette[j%3];ctx.lineWidth=large?2.5:1.8;
-        ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(px,py);ctx.stroke();
-        ctx.fillStyle=palette[2];star(px,py,(j%5===0?5:2.3)*(1-u*.7));
-      }
-    }
-    function draw(){
-      if(width!==innerWidth || height!==innerHeight){
-        width=innerWidth;height=innerHeight;
-        const ratio=Math.min(devicePixelRatio||1,1.5);
-        canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);
-        ctx.setTransform(ratio,0,0,ratio,0,0);
-      }
-      const t=clock();
-      ctx.clearRect(0,0,width,height);ctx.globalCompositeOperation='lighter';
-      flames($('chips'),0,t);flames($('mult'),1,t);
-      if(chips.isConnected){flames(chips,0,t);flames(mult,1,t);}
-      for(const shell of shells)drawShell(shell,t);
-      ctx.globalAlpha=1;
-      frame=requestAnimationFrame(draw);
-    }
-    launch(chips,-1,0,0);launch(mult,1,1,.09);
-    frame=requestAnimationFrame(draw);
-    return {
-      finale(){launch(total,-1,0,0,true);launch(total,1,1,.06,true);launch(total,0,2,.18,true);},
-      stop(){cancelAnimationFrame(frame);canvas.remove();}
-    };
-  }
-  function openVictoryPortal(source){
-    const box=source.getBoundingClientRect();
-    const veil=document.createElement('div');
-    veil.className='victory-portal';
-    veil.setAttribute('aria-hidden','true');
-    veil.innerHTML='<div class="portal-disc"><i class="portal-orbit"></i><i class="portal-star"></i></div>';
-    document.body.append(veil);
-    const disc=veil.firstElementChild;
-    const pose=(x,y,scale,angle)=>'translate('+x+'px,'+y+'px) translate(-50%,-50%) rotate('+angle+'deg) scale('+scale+')';
-    const x=box.left+box.width/2, y=box.top+box.height/2;
-    const center=pose(innerWidth/2,innerHeight/2,1,32);
-    const cover=disc.animate([
-      {transform:pose(x,y,.012,-22),opacity:0},
-      {transform:pose(x,y,.065,0),opacity:1,offset:.36},
-      {transform:center,opacity:1}
-    ],{duration:fxTime(540),easing:'cubic-bezier(.42,0,.68,1)',fill:'forwards'});
-    return {
-      covered:cover.finished.catch(()=>{}),
-      reveal(){
-        const star=document.querySelector('.victory-sky .victory-star')?.getBoundingClientRect();
-        const endX=star?star.left+star.width/2:x, endY=star?star.top+star.height/2:y;
-        const arrival=disc.animate([
-          {transform:center,opacity:1},
-          {transform:pose(endX,endY,.09,64),opacity:.9,offset:.65},
-          {transform:pose(endX,endY,.008,78),opacity:0}
-        ],{duration:fxTime(450),easing:'ease-out',fill:'forwards'});
-        arrival.finished.then(()=>veil.remove(),()=>veil.remove());
-      }
+  async function dimTableForRewards(){
+    const dusk=document.createElement('div');
+    dusk.className='rewards-dissolve';
+    dusk.setAttribute('aria-hidden','true');
+    document.body.append(dusk);
+    const timing={duration:fxTime(210),easing:'ease-in-out',fill:'both'};
+    const fade=dusk.animate([{opacity:0},{opacity:1}],timing);
+    await fade.finished.catch(()=>{});
+    return ()=>{
+      const reveal=dusk.animate([{opacity:1},{opacity:0}],{...timing,duration:fxTime(340)});
+      reveal.finished.then(()=>dusk.remove(),()=>dusk.remove());
     };
   }
   async function commit(discarding=false){
@@ -472,7 +369,7 @@
     };
     const pointsNeeded=run.target-run.score;
     const counters=$('chips').closest('.score-components');
-    let fireworks, portal;
+    let revealRewards;
     let ghosts=[];
     busy=true;
     try{
@@ -491,7 +388,7 @@
         return;
       }
       area.classList.add('scoring','cw-fx-cast');
-      area.innerHTML='<div class="cw-fx-lane" aria-hidden="true"></div><div class="cw-fx-receipt" aria-hidden="true"><div class="cw-fx-name"></div><div class="cw-fx-equation"><b class="cw-fx-chips"></b><span>×</span><b class="cw-fx-mult"></b></div><div class="cw-fx-call"></div></div>';
+      area.innerHTML='<div class="cw-fx-lane" aria-hidden="true"></div><div class="cw-fx-receipt" aria-hidden="true"><div class="cw-fx-name"></div><div class="cw-fx-equation"><div class="potion-value">'+scorePotion('chips')+'<b class="cw-fx-chips"></b></div><span>×</span><div class="potion-value">'+scorePotion('mult')+'<b class="cw-fx-mult"></b></div></div><div class="cw-fx-call"></div></div>';
       const receipt=area.querySelector('.cw-fx-receipt');
       const title=area.querySelector('.cw-fx-name');
       const equation=area.querySelector('.cw-fx-equation');
@@ -519,7 +416,7 @@
         if(cleared && Math.floor(chips*mult)>=pointsNeeded && !equation.classList.contains('blind-overdrive')){
           equation.classList.add('blind-overdrive');
           counters.classList.add('blind-overdrive');
-          if(moving)fireworks=victoryFireworks(chipText,multText,equation);
+          for(const group of [equation,counters]) group.style.setProperty('--brew-cycle',fxTime(880)+'ms');
           pulse(equation,[{scale:'.94'},{scale:'1.12',offset:.38},{scale:'1'}],285);
         }
         chipText.textContent=$('chips').textContent=compact(chips);
@@ -584,26 +481,21 @@
       if(moving){
         $('round-score').classList.add('score-pop');
         pulse(equation,[{scale:'.9'},{scale:'1.09',offset:.4},{scale:'1'}],260);
-        fireworks?.finale();
       }
       $('announce').textContent=result.name+', '+num(result.total)+' chips. Round score '+num(run.score)+'.'+(cleared?' Blind cleared.':'');
       if(cleared)audio.event('win');
       if(run.phase==='lost')audio.event('lose');
       const toRewards=moving && run.phase==='payout';
       await wait(cleared?(moving?(toRewards?1100:1640):460):(moving?380:160));
-      if(toRewards){
-        portal=openVictoryPortal(equation);
-        await portal.covered;
-      }
+      if(toRewards)revealRewards=await dimTableForRewards();
     }finally{
-      fireworks?.stop();
       counters.classList.remove('blind-overdrive');
       dismissGhosts(ghosts);
       area.classList.remove('cw-fx-cast','scoring');
       $('round-score').classList.remove('score-pop');
       busy=false;
       render(false);
-      portal?.reveal();
+      revealRewards?.();
       if(run.phase==='play'){
         audio.event('deal');
         if(discarding && moving){

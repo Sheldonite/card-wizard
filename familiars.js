@@ -36,10 +36,8 @@
   const black = card => suited("S")(card) || suited("C")(card);
   const numbered = card => card.rank <= 10;
   const low = card => card.rank <= 5;
-  const odd = card => numbered(card) && card.rank % 2 === 1;
   const even = card => numbered(card) && card.rank % 2 === 0;
   const onCard = (key, value, test) => when(c => c.card && test(c.card, c), add(key, value));
-  const handIs = name => c => c.name === name;
   const size = c => c.cards?.length || 0;
   const held = c => c.held?.length || 0;
   const scored = c => c.scoring?.length || 0;
@@ -49,165 +47,300 @@
     [event](c, memory) {
       if (test(c)) memory.bonus = Math.min(limit, (memory.bonus || 0) + step);
     },
-    hand: (c, memory) => add(key, baseline + (memory.bonus || 0))
+    hand: (c, memory) => add(key, baseline + Math.min(limit, memory.bonus || 0))
   });
 
   register("Common", [
-    ["Candle Wisp", "moth", "+22 Chips when your first card scores.", "scoredCard", onCard("chips", 22, (_, c) => c.cardIndex === 0)],
-    ["Cricket Courier", "moth", "+17 Chips for each scoring card ranked 2–5.", "scoredCard", onCard("chips", 17, low)],
-    ["Ivory Mite", "moth", "+2 Mult for each scoring even-numbered card.", "scoredCard", onCard("mult", 2, even)],
-    ["Copper Plover", "owl", "+18 Chips for each scoring odd-numbered card.", "scoredCard", onCard("chips", 18, odd)],
-    ["Umbra Kit", "owl", "+2 Mult for every black card held in hand.", "heldCard", onCard("mult", 2, black)],
-    ["Daybreak Minnow", "orb", "+5 Chips for every red card held in hand.", "heldCard", onCard("chips", 5, red)],
-    ["Window Basilisk", "dragon", "+3 Mult for each scoring 5 or 10.", "scoredCard", onCard("mult", 3, card => [5, 10].includes(card.rank))],
-    ["Bramble Newt", "potion", "+12 Chips for each scoring Diamond.", "scoredCard", onCard("chips", 12, suited("D"))],
-    ["Sorrel Finch", "owl", "+16 Chips for each scoring Club.", "scoredCard", onCard("chips", 16, suited("C"))],
-    ["Ruby Jay", "owl", "+13 Chips for each scoring Heart.", "scoredCard", onCard("chips", 13, suited("H"))],
-    ["Plume Ferret", "owl", "+3 Mult for each scoring Spade ranked 9 or lower.", "scoredCard", onCard("mult", 3, card => suited("S")(card) && card.rank <= 9)],
-    ["Twilit Vole", "owl", "+5 Mult when red and black cards both score.", "hand", when(c => opposite(c.scoring), { mult: 5 })],
-    ["Mantle Rabbit", "owl", "+38 Chips when exactly four cards are played.", "hand", when(c => size(c) === 4, { chips: 38 })],
-    ["Tin Echo", "grimoire", "+34 Chips when exactly two cards score.", "hand", when(c => scored(c) === 2, { chips: 34 })],
-    ["Mist Hare", "moth", "+6 Mult when exactly five cards are played.", "hand", when(c => size(c) === 5, { mult: 6 })],
-    ["Dustfin", "moth", "+12 Chips per nonscoring card played.", "hand", c => ({ chips: 12 * (size(c) - scored(c)) })],
-    ["Lattice Toad", "potion", "+5 Mult when you hold at least four cards after playing.", "hand", when(c => held(c) >= 4, { mult: 5 })],
-    ["Marrow Lark", "owl", "+3 Mult for every pair of cards left in hand.", "hand", c => ({ mult: 3 * Math.floor(held(c) / 2) })],
-    ["Crooked Tern", "owl", "+25 Chips on the first hand of a blind.", "hand", when(c => c.playedCount === 1, { chips: 25 })],
-    ["Wicker Lamp", "orb", "+8 Mult on the second hand of a blind.", "hand", when(c => c.playedCount === 2, { mult: 8 })],
-    ["Ripple Snail", "potion", "+40 Chips when you have no hands left.", "hand", when(c => c.handsLeft === 0, { chips: 40 })],
-    ["Briar Lamprey", "dragon", "+7 Mult when you have exactly one discard left.", "hand", when(c => c.discardsLeft === 1, { mult: 7 })],
-    ["Parchment Bee", "grimoire", "+9 Chips for every discard still available.", "hand", c => ({ chips: 9 * (c.discardsLeft || 0) })],
-    ["Briar Piper", "merlin", "+5 Mult if you’ve discarded at least once this blind.", "hand", when(c => c.discardCount > 0, { mult: 5 })],
-    ["Moss Badger", "owl", "+32 Chips on a Pair.", "hand", when(handIs("Pair"), { chips: 32 })],
-    ["Juniper Kite", "owl", "+7 Mult on Two Pair.", "hand", when(handIs("Two Pair"), { mult: 7 })],
-    ["Basalt Sprite", "orb", "+35 Chips on a Straight.", "hand", when(handIs("Straight"), { chips: 35 })],
-    ["Willow Cricket", "moth", "+9 Mult on a Full House.", "hand", when(handIs("Full House"), { mult: 9 })],
-    ["Alabaster Finch", "owl", "+24 Chips on High Card if your scoring card is a face card.", "hand", when(c => c.name === "High Card" && includes(c.scoring, face), { chips: 24 })],
-    ["Fox in Ink", "grimoire", "+8 Mult on Three of a Kind.", "hand", when(handIs("Three of a Kind"), { mult: 8 })],
-    ["Swamp Lantern", "orb", "+40 Chips on any hand ranked above Full House.", "hand", when(c => ["Four of a Kind", "Straight Flush", "Five of a Kind", "Flush House", "Flush Five"].includes(c.name), { chips: 40 })],
-    ["Ochre Scribe", "merlin", "+18 Chips per enhanced scoring card.", "scoredCard", onCard("chips", 18, card => Boolean(card.enhancement))],
-    ["Milkglass Fawn", "owl", "+3 Mult per unenhanced face card that scores.", "scoredCard", onCard("mult", 3, card => !card.enhancement && face(card))],
-    ["Veil Firefly", "moth", "+7 Chips for each held 6, 7, or 8.", "heldCard", onCard("chips", 7, card => [6, 7, 8].includes(card.rank))],
-    ["Rookery Gecko", "dragon", "+4 Mult when you hold both a Jack and a King.", "hand", when(c => includes(c.held, card => card.rank === 11) && includes(c.held, card => card.rank === 13), { mult: 4 })],
-    ["Coin Cicada", "key", "Earn $1 when your first discard contains exactly one card.", "discard", when(c => c.discardCount === 1 && size(c) === 1, { money: 1 })],
-    ["Linen Sprite", "grimoire", "Earn $1 when you discard a four-card set of different ranks.", "discard", when(c => size(c) === 4 && new Set(c.cards.map(card => card.rank)).size === 4, { money: 1 })],
-    ["Nimble Wren", "owl", "Earn $1 when you win a blind with no discards left.", "roundEnd", when(c => c.succeeded !== false && c.discardsLeft === 0, { money: 1 })],
-    ["Satchel Mouse", "key", "Earn $1 when you enter a shop with $6 or less.", "shop", when(c => c.money <= 6, { money: 1 })],
-    ["Lacquer Eel", "potion", "+6 Mult when you have even cash.", "hand", when(c => c.money % 2 === 0, { mult: 6 })],
-    ["Ribbon Crow", "owl", "+33 Chips when you have an odd number of familiars.", "hand", when(c => c.ownedCount % 2 === 1, { chips: 33 })],
-    ["Soot Aphid", "moth", "+31 Chips on odd-numbered antes.", "hand", when(c => c.ante % 2 === 1, { chips: 31 })]
+    ["Candle Wisp", "moth", "Your first scoring card lights up for +25 Chips and +2 Mult.", "scoredCard", when(c => c.cardIndex === 0, { chips: 25, mult: 2 })],
+    ["Cricket Courier", "moth", "Number cards score +12 Chips. Ranks 2-5 score +30 instead.", "scoredCard", c => ({ chips: !numbered(c.card) ? 0 : low(c.card) ? 30 : 12 })],
+    ["Ivory Mite", "moth", "Each scoring card gives +1 Mult, or +3 Mult if its rank is even (2-10).", "scoredCard", c => ({ mult: even(c.card) ? 3 : 1 })],
+    ["Copper Plover", "owl", "Your last scoring card gives +30 Chips. Every time it retriggers, earn $1.", "scoredCard", c => c.cardIndex === scored(c) - 1 ? { chips: 30, money: c.retrigger ? 1 : 0 } : {}],
+    ["Umbra Kit", "owl", "Each held card gives +1 Mult. Black cards give +2 instead.", "heldCard", c => ({ mult: black(c.card) ? 2 : 1 })],
+    ["Daybreak Minnow", "orb", "Each held card gives +7 Chips. Red cards give +14 instead.", "heldCard", c => ({ chips: red(c.card) ? 14 : 7 })],
+    ["Window Basilisk", "dragon", "Your last scoring card gives +4 Mult, doubled if it has an enhancement, seal, or edition.", "scoredCard", c => c.cardIndex === scored(c) - 1 ? { mult: c.card.enhancement || c.card.seal || c.card.edition ? 8 : 4 } : {}],
+    ["Bramble Newt", "potion", "Scoring red cards give +15 Chips. Diamonds also give +2 Mult.", "scoredCard", c => ({ chips: red(c.card) ? 15 : 0, mult: suited("D")(c.card) ? 2 : 0 })],
+    ["Sorrel Finch", "owl", "Scoring black cards give +20 Chips. Clubs give +35 instead.", "scoredCard", c => ({ chips: suited("C")(c.card) ? 35 : black(c.card) ? 20 : 0 })],
+    ["Ruby Jay", "owl", "Your first scoring red card each hand earns $1. Every scoring Heart gives +2 Mult.", {
+      scoredCard(c, memory) {
+        const first = red(c.card) && memory.paidHand !== c.totalHands;
+        if (first) memory.paidHand = c.totalHands;
+        return { money: first ? 1 : 0, mult: suited("H")(c.card) ? 2 : 0 };
+      }
+    }],
+    ["Plume Ferret", "owl", "Each scoring black card gives +2 Mult. Spades also give +12 Chips.", "scoredCard", c => ({ mult: black(c.card) ? 2 : 0, chips: suited("S")(c.card) ? 12 : 0 })],
+    ["Twilit Vole", "owl", "+3 Mult for each color that scores. Score both colors for +25 Chips too.", "hand", c => ({ mult: 3 * (Number(includes(c.scoring, red)) + Number(includes(c.scoring, black))), chips: opposite(c.scoring) ? 25 : 0 })],
+    ["Mantle Rabbit", "owl", "+12 Chips per card played, including cards outside the scoring hand.", "hand", c => ({ chips: 12 * size(c) })],
+    ["Tin Echo", "grimoire", "Retrigger the last scoring card of every hand.", "scoredCard", when(c => c.cardIndex === scored(c) - 1, { retriggers: 1 })],
+    ["Mist Hare", "moth", "+2 Mult per card played. Fill all five spots for +20 Chips too.", "hand", c => ({ mult: 2 * size(c), chips: size(c) === 5 ? 20 : 0 })],
+    ["Dustfin", "moth", "+15 Chips. Each extra card played outside the scoring hand adds +15 more.", "hand", c => ({ chips: 15 * (1 + size(c) - scored(c)) })],
+    ["Lattice Toad", "potion", "+3 Mult for each different rank you keep in hand, up to +12.", "hand", c => ({ mult: 3 * Math.min(4, new Set(c.held.map(card => card.rank).filter(Number.isInteger)).size) })],
+    ["Marrow Lark", "owl", "Your first held card gives +4 Mult. Each other held card gives +1.", "heldCard", c => ({ mult: c.cardIndex === 0 ? 4 : 1 })],
+    ["Crooked Tern", "owl", "Start each blind at +70 Chips. Lose 15 Chips with each hand played, down to +10.", "hand", c => ({ chips: Math.max(10, 70 - 15 * (c.playedCount - 1)) })],
+    ["Wicker Lamp", "orb", "Start each blind at +3 Mult. Each hand played adds +3 more for the next hand.", "hand", c => ({ mult: 3 * c.playedCount })],
+    ["Ripple Snail", "potion", "+25 Chips every hand. Double that with one hand left after playing, or quadruple it on your last hand.", "hand", c => ({ chips: c.handsLeft === 0 ? 100 : c.handsLeft === 1 ? 50 : 25 })],
+    ["Briar Lamprey", "dragon", "+3 Mult. Each discard used this blind adds +3 more.", "hand", c => ({ mult: 3 + 3 * c.discardCount })],
+    ["Parchment Bee", "grimoire", "+15 Chips for each discard left. Win with any discards left to earn $1.", {
+      hand: c => ({ chips: 15 * c.discardsLeft }),
+      roundEnd: when(c => c.succeeded !== false && c.discardsLeft > 0, { money: 1 })
+    }],
+    ["Briar Piper", "merlin", "Each discarded card banks +2 Mult for your next hand, up to +14.", {
+      trackedStat: "mult",
+      discard(c, memory) { memory.charge = Math.min(14, (memory.charge || 0) + 2 * size(c)); },
+      hand(c, memory) { const mult = memory.charge || 0; memory.charge = 0; return { mult }; },
+      blindStart(c, memory) { memory.charge = 0; }
+    }],
+    ["Moss Badger", "owl", "+25 Chips per scoring card that shares its rank with another scoring card.", "scoredCard", onCard("chips", 25, (card, c) => card.rank && count(c.scoring, other => other.rank === card.rank) >= 2)],
+    ["Juniper Kite", "owl", "+2 Mult for each different rank you play. Extra cards count too.", "hand", c => ({ mult: 2 * new Set(c.cards.map(card => card.rank).filter(Number.isInteger)).size })],
+    ["Basalt Sprite", "orb", "+20 Chips for each different rank that scores.", "hand", c => ({ chips: 20 * new Set(c.scoring.map(card => card.rank).filter(Number.isInteger)).size })],
+    ["Willow Cricket", "moth", "After your first scoring card, every scoring card adds +3 Mult.", "scoredCard", when(c => c.cardIndex > 0, { mult: 3 })],
+    ["Alabaster Finch", "owl", "Your first scoring card gives +30 Chips. If it's your only scoring card, gain +4 Mult too.", "scoredCard", c => c.cardIndex === 0 ? { chips: 30, mult: scored(c) === 1 ? 4 : 0 } : {}],
+    ["Fox in Ink", "grimoire", "+4 Mult. Each consumable you cast adds +1 Mult for the run, up to +12 more.", growth("cast", () => true, 1, 12, "mult", 4)],
+    ["Swamp Lantern", "orb", "+15 Chips for each different hand type you've played this blind, including this one.", "hand", c => ({ chips: 15 * Object.keys(c.handCounts).filter(name => c.handCounts[name] > 0).length })],
+    ["Ochre Scribe", "merlin", "Each scoring card gives +8 Chips, plus +15 per enhancement, seal, or edition on it.", "scoredCard", c => ({ chips: 8 + 15 * [c.card.enhancement, c.card.seal, c.card.edition].filter(Boolean).length })],
+    ["Milkglass Fawn", "owl", "Each scoring card without an enhancement gives +2 Mult. Unenhanced faces give +5 instead.", "scoredCard", c => ({ mult: c.card.enhancement ? 0 : face(c.card) ? 5 : 2 })],
+    ["Veil Firefly", "moth", "+20 Chips. Each different suit you hold adds +10 more. Wild cards count as every suit.", "hand", c => ({ chips: 20 + 10 * ["S", "H", "C", "D"].filter(suit => includes(c.held, suited(suit))).length })],
+    ["Rookery Gecko", "dragon", "Held face cards give +3 Mult each. If any face card scores, gain +25 Chips too.", {
+      heldCard: onCard("mult", 3, face),
+      hand: when(c => includes(c.scoring, face), { chips: 25 })
+    }],
+    ["Coin Cicada", "key", "Your first discard each blind earns $2, whatever you throw away.", "discard", when(c => c.discardCount === 1, { money: 2 })],
+    ["Linen Sprite", "grimoire", "Your first discard each blind creates a Spell if you have room.", "discard", when(c => c.discardCount === 1, { generate: "spell" })],
+    ["Nimble Wren", "owl", "Win a blind to earn $1, plus $1 for each unspent hand (up to $4 total).", "roundEnd", c => ({ money: c.succeeded === false ? 0 : Math.min(4, 1 + c.handsLeft) })],
+    ["Satchel Mouse", "key", "Find $2 on entering a shop, or $4 if you arrive with $8 or less.", "shop", c => ({ money: c.money <= 8 ? 4 : 2 })],
+    ["Lacquer Eel", "potion", "+3 Mult, plus +1 per $3 you hold, up to +12 Mult total.", "hand", c => ({ mult: Math.min(12, 3 + Math.floor(c.money / 3)) })],
+    ["Ribbon Crow", "owl", "+12 Chips per equipped familiar, including itself. Each carried consumable adds +10 more.", "hand", c => ({ chips: 12 * c.ownedCount + 10 * c.consumableCount })],
+    ["Soot Aphid", "moth", "+15 Chips. Each blind you win with Soot Aphid adds +5 Chips for the run, up to +75 more.", growth("roundEnd", c => c.succeeded !== false, 5, 75, "chips", 15)]
   ]);
 
   register("Uncommon", [
-    ["Mantled Viper", "dragon", "x1.45 Mult when exactly three cards score.", "hand", when(c => scored(c) === 3, { xmult: 1.45 })],
-    ["Glimmer Orca", "potion", "x1.65 Mult when you play five cards and only two score.", "hand", when(c => size(c) === 5 && scored(c) === 2, { xmult: 1.65 })],
-    ["Cinder Coil", "dragon", "x1.5 Mult when no face card is played.", "hand", when(c => !includes(c.cards, face), { xmult: 1.5 })],
-    ["Pale Axolotl", "potion", "x1.5 Mult when an enhanced card is held and a plain card scores.", "hand", when(c => includes(c.held, card => card.enhancement) && includes(c.scoring, card => !card.enhancement), { xmult: 1.5 })],
-    ["Clover Adder", "dragon", "x1.6 Mult when three or more Clubs score.", "hand", when(c => count(c.scoring, suited("C")) >= 3, { xmult: 1.6 })],
-    ["Carmine Crab", "potion", "+4 Mult for each pair of Hearts in hand.", "hand", c => ({ mult: 4 * Math.floor(count(c.held, suited("H")) / 2) })],
-    ["Slate Salamander", "dragon", "x1.55 Mult when every scoring card is red and at least two score.", "hand", when(c => scored(c) >= 2 && c.scoring.every(red), { xmult: 1.55 })],
-    ["Coalwing Roc", "owl", "x1.55 Mult when every scoring card is black and at least two score.", "hand", when(c => scored(c) >= 2 && c.scoring.every(black), { xmult: 1.55 })],
-    ["Kettle Hag", "merlin", "+10 Chips per played rank that also appears in your held cards.", "hand", c => ({ chips: 10 * new Set((c.cards || []).filter(card => card.rank && includes(c.held, other => other.rank === card.rank)).map(card => card.rank)).size })],
-    ["Furnace Mink", "potion", "+10 Mult when you play two or more cards of the same rank as a held card.", "hand", when(c => includes(c.held, card => card.rank && count(c.cards, other => other.rank === card.rank) >= 2), { mult: 10 })],
-    ["Vesper's Twin", "moth", "x1.55 Mult if you have exactly one hand left after this play.", "hand", when(c => c.handsLeft === 1, { xmult: 1.55 })],
-    ["Kiln Crawler", "dragon", "+13 Chips per card discarded this action the next time you play.", {
-      discard(c, memory) { memory.fuel = size(c); },
-      hand(c, memory) { const chips = 13 * (memory.fuel || 0); memory.fuel = 0; return { chips }; },
+    ["Mantled Viper", "dragon", "Gain x1.2 Mult for each card that scores, up to five cards.", "hand",
+      c => ({ xmult: 1.2 ** Math.min(5, scored(c)) })],
+    ["Glimmer Orca", "potion", "+4 Mult. Each played card that doesn't score adds another +4 Mult.", "hand",
+      c => ({ mult: 4 + 4 * (size(c) - scored(c)) })],
+    ["Cinder Coil", "dragon", "The first scoring card gives +6 Mult each time it triggers.", "scoredCard",
+      onCard("mult", 6, (_, c) => c.cardIndex === 0)],
+    ["Pale Axolotl", "potion", "x1.25 Mult. Raise it to x1.75 if an enhanced card scores or stays in hand.", "hand",
+      c => ({ xmult: [...c.scoring, ...c.held].some(card => card.enhancement) ? 1.75 : 1.25 })],
+    ["Clover Adder", "dragon", "Earn $1 per scoring Club, up to $3 per hand. Wild cards count.", "hand",
+      c => ({ money: Math.min(3, count(c.scoring, suited("C"))) })],
+    ["Carmine Crab", "potion", "Each red card held gives +3 Mult. Wild cards count.", "heldCard", onCard("mult", 3, red)],
+    ["Slate Salamander", "dragon", "Each red card that scores gives +12 Chips and +2 Mult.", "scoredCard",
+      when(c => red(c.card), { chips: 12, mult: 2 })],
+    ["Coalwing Roc", "owl", "Scoring a black card gives x1.5 Mult for the hand. Two or more give x1.8.", "hand",
+      c => ({ xmult: [1, 1.5, 1.8][Math.min(2, count(c.scoring, black))] })],
+    ["Kettle Hag", "merlin", "After a discard, the last scoring card of your next hand this blind retriggers once.", {
+      discard(c, memory) { memory.brewed = true; },
+      scoredCard(c, memory) {
+        if (memory.brewed && !c.retrigger && c.cardIndex === scored(c) - 1) return { retriggers: 1 };
+      },
+      hand(c, memory) { memory.brewed = false; },
+      blindStart(c, memory) { memory.brewed = false; }
+    }],
+    ["Furnace Mink", "potion", "Play a pair anywhere in your hand for +8 Mult. Three matching ranks give +16 instead.", "hand",
+      c => {
+        const ranks = c.cards.map(card => card.rank).filter(Number.isInteger);
+        const copies = Math.max(0, ...ranks.map(rank => ranks.filter(other => other === rank).length));
+        return { mult: copies >= 3 ? 16 : copies === 2 ? 8 : 0 };
+      }],
+    ["Vesper's Twin", "moth", "x1.3 Mult on your opening hand. All later hands this blind get x1.7.", "hand",
+      c => ({ xmult: c.playedCount <= 1 ? 1.3 : 1.7 })],
+    ["Kiln Crawler", "dragon", "+20 Chips. Each discarded card adds +10 Chips to your next hand this blind.", {
+      trackedStat: "chips",
+      discard(c, memory) { memory.fuel = (memory.fuel || 0) + size(c); },
+      hand(c, memory) { const chips = 20 + 10 * (memory.fuel || 0); memory.fuel = 0; return { chips }; },
       blindStart(c, memory) { memory.fuel = 0; }
     }],
-    ["Memorist Owlet", "owl", "+15 Mult every third hand you play in this run.", "hand", when(c => every(3, c.totalHands), { mult: 15 })],
-    ["Orbit Scribe", "merlin", "+11 Mult every second hand of the blind.", "hand", when(c => every(2, c.playedCount), { mult: 11 })],
-    ["Cloud Quill", "grimoire", "x1.6 Mult when you repeat a hand type within this blind.", "hand", when(c => (c.handCounts?.[c.name] || 0) >= 2, { xmult: 1.6 })],
-    ["Ivory Chamberlain", "merlin", "+24 Chips and +2 Mult for each held King.", "heldCard", when(c => c.card?.rank === 13, { chips: 24, mult: 2 })],
-    ["Cradle Mantis", "moth", "+20 Chips and +1 Mult for each scoring 4, 6, or 8.", "scoredCard", when(c => [4, 6, 8].includes(c.card?.rank), { chips: 20, mult: 1 })],
-    ["Needle Crow", "owl", "x1.18 Mult for every scoring 9.", "scoredCard", onCard("xmult", 1.18, card => card.rank === 9)],
-    ["Beacon Urchin", "orb", "x1.2 Mult if a Heart scores last.", "scoredCard", onCard("xmult", 1.2, (card, c) => suited("H")(card) && c.cardIndex === scored(c) - 1)],
-    ["Quarry Gull", "owl", "+70 Chips if at least one Glass card scores.", "hand", when(c => includes(c.scoring, card => card.enhancement === "glass"), { chips: 70 })],
-    ["Iron Dormouse", "owl", "+4 Mult for each held Steel card.", "heldCard", onCard("mult", 4, card => card.enhancement === "steel")],
-    ["Velvet Scarab", "moth", "x1.12 Mult for each held card with an edition.", "heldCard", onCard("xmult", 1.12, card => Boolean(card.edition))],
-    ["Chalk Beetle", "moth", "+2 Mult per unenhanced scoring card without a seal or edition.", "scoredCard", onCard("mult", 2, card => !card.enhancement && !card.edition && !card.seal)],
-    ["Citrine Spider", "potion", "+27 Chips for every sealed card that scores.", "scoredCard", onCard("chips", 27, card => Boolean(card.seal))],
-    ["Mercury Skink", "dragon", "+8 Mult when you play a hand at level 3 or higher.", "hand", when(c => c.level >= 3, { mult: 8 })],
-    ["Dust Telescope", "orb", "+12 Chips per hand level, up to 120 Chips.", "hand", c => ({ chips: Math.min(120, 12 * (c.level || 0)) })],
-    ["Good Omen", "grimoire", "+3 Mult per familiar equipped, capped at +15 Mult.", "hand", c => ({ mult: Math.min(15, 3 * (c.ownedCount || 0)) })],
-    ["Silt Phoenix", "dragon", "+3 Mult for each dollar below $12.", "hand", c => ({ mult: 3 * Math.max(0, 12 - (c.money || 0)) })],
-    ["Marmalade Bat", "moth", "Earn $2 when you discard three even-numbered cards in one draw.", "discard", when(c => count(c.cards, even) >= 3, { money: 2 })],
-    ["Pearl Pigeon", "owl", "Earn $2 when you clear with two or more hands remaining.", "roundEnd", when(c => c.succeeded !== false && c.handsLeft >= 2, { money: 2 })],
-    ["Shopbell Sprite", "orb", "Earn $2 the first time you reroll stock in a shop.", {
-      shop(c, memory) { memory.paid = false; },
+    ["Memorist Owlet", "owl", "Each different hand type played this blind gives +5 Mult, including this hand.", "hand",
+      c => ({ mult: 5 * Object.values(c.handCounts).filter(Boolean).length })],
+    ["Orbit Scribe", "merlin", "Alternates each blind: odd hands give +8 Mult, even hands give x1.7 Mult.", "hand",
+      c => c.playedCount % 2 ? { mult: 8 } : { xmult: 1.7 }],
+    ["Cloud Quill", "grimoire", "+6 Mult the first time you play a hand type each blind. Repeats give x1.75 Mult instead.", "hand",
+      c => c.handCounts[c.name] > 1 ? { xmult: 1.75 } : { mult: 6 }],
+    ["Ivory Chamberlain", "merlin", "Each face card held gives +20 Chips and +2 Mult.", "heldCard",
+      when(c => face(c.card), { chips: 20, mult: 2 })],
+    ["Cradle Mantis", "moth", "Each scoring card ranked 2 through 10 gives +12 Chips and +2 Mult.", "scoredCard",
+      when(c => c.card.rank >= 2 && c.card.rank <= 10, { chips: 12, mult: 2 })],
+    ["Needle Crow", "owl", "Every time a scoring card retriggers, it adds +8 Mult.", "scoredCard",
+      when(c => c.retrigger, { mult: 8 })],
+    ["Beacon Urchin", "orb", "Your last scoring card gets +20 Chips and x1.35 Mult each time it triggers.", "scoredCard",
+      when(c => c.cardIndex === scored(c) - 1, { chips: 20, xmult: 1.35 })],
+    ["Quarry Gull", "owl", "+30 Chips. Each enhanced card that scores adds +30 more.", "hand",
+      c => ({ chips: 30 + 30 * count(c.scoring, card => card.enhancement) })],
+    ["Iron Dormouse", "owl", "Each held card gives +6 Chips. Held enhanced cards give +18 instead.", "heldCard",
+      c => ({ chips: c.card.enhancement ? 18 : 6 })],
+    ["Velvet Scarab", "moth", "x1.25 Mult. Each scoring or held card with an edition adds x0.25, up to x2.5.", "hand",
+      c => ({ xmult: 1.25 + 0.25 * Math.min(5, count([...c.scoring, ...c.held], card => card.edition)) })],
+    ["Chalk Beetle", "moth", "Each scoring card gives +1 Mult, or +3 Mult if it has no enhancement.", "scoredCard",
+      c => ({ mult: c.card.enhancement ? 1 : 3 })],
+    ["Citrine Spider", "potion", "Each scoring card gives +10 Chips. Sealed cards also earn $1 each time they score.", "scoredCard",
+      c => ({ chips: 10, money: c.card.seal ? 1 : 0 })],
+    ["Mercury Skink", "dragon", "+4 Mult per level of the hand you play, up to +24 Mult.", "hand",
+      c => ({ mult: Math.min(24, 4 * c.level) })],
+    ["Dust Telescope", "orb", "+30 Chips. Casting a consumable permanently adds +8 Chips, up to +110 total.",
+      growth("cast", () => true, 8, 80, "chips", 30)],
+    ["Good Omen", "grimoire", "Each equipped familiar gives +3 Mult. Each carried consumable gives +2 more.", {
+      trackedStat: "mult", hand: c => ({ mult: 3 * c.ownedCount + 2 * c.consumableCount })
+    }],
+    ["Silt Phoenix", "dragon", "+6 Mult. Each dollar below $10 adds +2 more.", {
+      trackedStat: "mult", hand: c => ({ mult: 6 + 2 * Math.max(0, 10 - c.money) })
+    }],
+    ["Marmalade Bat", "moth", "Earn $2 for the first discard of each blind and $1 for each later discard.", "discard",
+      c => ({ money: c.discardCount === 1 ? 2 : 1 })],
+    ["Pearl Pigeon", "owl", "Win a blind to earn $2, plus $1 per consumable you carry.", "roundEnd",
+      c => ({ money: 2 + c.consumableCount })],
+    ["Shopbell Sprite", "orb", "Entering a shop pays $1. Your first reroll there pays another $2.", {
+      shop(c, memory) { memory.paid = false; return { money: 1 }; },
       reroll(c, memory) { if (!memory.paid) { memory.paid = true; return { money: 2 }; } }
     }],
-    ["Silken Broker", "key", "Refund $2 for the first booster you open each shop.", {
-      shop(c, memory) { memory.paid = false; },
-      packOpen(c, memory) { if (!memory.paid) { memory.paid = true; return { money: 2 }; } }
+    ["Silken Broker", "key", "Opening any booster earns $2. Casting any consumable earns $1.", {
+      packOpen: () => ({ money: 2 }),
+      cast: () => ({ money: 1 })
     }],
-    ["Garden Almanac", "grimoire", "Create a Spell after your third discard of a blind, if there is room.", "discard", when(c => c.discardCount === 3, { generate: "spell" })],
-    ["Clockwork Mage", "merlin", "Create a Constellation after every third won blind, if there is room.", {
-      roundEnd(c, memory) {
-        if (c.succeeded === false) return;
-        memory.wins = (memory.wins || 0) + 1;
-        if (every(3, memory.wins)) return { generate: "star" };
+    ["Garden Almanac", "grimoire", "Every second consumable you cast grows a Constellation if you have room.", {
+      cast(c, memory) {
+        memory.casts = (memory.casts || 0) + 1;
+        if (every(2, memory.casts)) return { generate: "star" };
       }
     }],
-    ["Tallow Idol", "orb", "+4 Mult. Gain +1 Mult when you discard exactly three cards, up to +15 more.", growth("discard", c => size(c) === 3, 1, 15, "mult", 4)],
-    ["Mire Printer", "grimoire", "+22 Chips. Gain +8 Chips each time you sell something, up to +72 more.", growth("sell", () => true, 8, 72, "chips", 22)],
-    ["Granite Tinker", "merlin", "+25 Chips. Gain +5 Chips for every booster opened, up to +65 more.", growth("packOpen", () => true, 5, 65, "chips", 25)],
-    ["Ash Ledger", "grimoire", "+6 Mult. Gain +1 Mult every time you start a Boss Blind, up to +10 more.", growth("blindStart", c => c.blind === 2, 1, 10, "mult", 6)],
-    ["Root Harp", "grimoire", "Gain +9 Chips for each blind won with a discard remaining, up to +108.", growth("roundEnd", c => c.succeeded !== false && c.discardsLeft > 0, 9, 108, "chips")],
-    ["Ivy Telescope", "orb", "+17 Chips per held Ace.", "heldCard", onCard("chips", 17, card => card.rank === 14)],
-    ["Hush Raven", "owl", "+40 Chips if a Queen scores and another Queen stays in your hand.", "hand", when(c => includes(c.scoring, card => card.rank === 12) && includes(c.held, card => card.rank === 12), { chips: 40 })],
-    ["Glass Kestrel", "owl", "x1.45 Mult with exactly three different suits among played cards.", "hand", when(c => new Set((c.cards || []).map(card => card.suit)).size === 3, { xmult: 1.45 })],
-    ["Porcelain Octopus", "potion", "+9 Mult when at least five cards remain held in hand.", "hand", when(c => held(c) >= 5, { mult: 9 })],
-    ["Jasper Clock", "orb", "+12 Chips for each 5 cards missing from a 52-card deck.", "hand", c => ({ chips: 12 * Math.floor(Math.max(0, 52 - (c.deckSize || 52)) / 5) })],
-    ["Quilted Elk", "owl", "+10 Mult when both played and held cards contain red and black suits.", "hand", when(c => opposite(c.cards) && opposite(c.held), { mult: 10 })]
+    ["Clockwork Mage", "merlin", "Wins alternate between $2 and a Constellation. Leave a slot for the card.", {
+      roundEnd(c, memory) {
+        memory.wins = (memory.wins || 0) + 1;
+        return memory.wins % 2 ? { money: 2 } : { generate: "star" };
+      }
+    }],
+    ["Tallow Idol", "orb", "+4 Mult. Every discard adds +1 Mult permanently, up to +18 total.",
+      growth("discard", () => true, 1, 14, "mult", 4)],
+    ["Mire Printer", "grimoire", "+28 Chips. Selling an item adds +15 Chips permanently, up to +118 total.",
+      growth("sell", () => true, 15, 90, "chips", 28)],
+    ["Granite Tinker", "merlin", "+35 Chips. Opening a booster adds +12 Chips permanently, up to +131 total.",
+      growth("packOpen", () => true, 12, 96, "chips", 35)],
+    ["Ash Ledger", "grimoire", "+5 Mult. Entering a shop adds +1 Mult permanently, up to +20 total.",
+      growth("shop", () => true, 1, 15, "mult", 5)],
+    ["Root Harp", "grimoire", "+18 Chips. Each blind won adds +9 Chips permanently, up to +126 total.",
+      growth("roundEnd", () => true, 9, 108, "chips", 18)],
+    ["Ivy Telescope", "orb", "Your highest held rank gives five times its rank in Chips. Aces count as 14.", "hand",
+      c => ({ chips: 5 * Math.max(0, ...c.held.map(card => card.rank || 0)) })],
+    ["Hush Raven", "owl", "The first face card you score each hand retriggers.", "scoredCard",
+      when(c => face(c.card) && c.cardIndex === c.scoring.findIndex(face), { retriggers: 1 })],
+    ["Glass Kestrel", "owl", "The first time each suit scores in a blind, earn $1 and add +6 Mult. A Wild claims one new suit.", {
+      blindStart(c, memory) { memory.suits = ""; },
+      scoredCard(c, memory) {
+        const seen = memory.suits || "";
+        const suit = c.card.enhancement === "wild"
+          ? ["H", "D", "C", "S"].find(s => !seen.includes(s)) : c.card.suit;
+        if (!suit || seen.includes(suit) || c.retrigger) return;
+        memory.suits = seen + suit;
+        return { money: 1, mult: 6 };
+      }
+    }],
+    ["Porcelain Octopus", "potion", "+2 Mult for each card left in hand, up to +16 Mult.", "hand",
+      c => ({ mult: Math.min(16, 2 * held(c)) })],
+    ["Jasper Clock", "orb", "+35 Chips. Each card below a 52-card deck adds +8 more, up to +155 total.", {
+      trackedStat: "chips", hand: c => ({ chips: 35 + 8 * Math.min(15, Math.max(0, 52 - c.deckSize)) })
+    }],
+    ["Quilted Elk", "owl", "Each color that scores gives +5 Mult. Wild cards count as both colors.", "hand",
+      c => ({ mult: 5 * (Number(includes(c.scoring, red)) + Number(includes(c.scoring, black))) })]
   ]);
 
   register("Rare", [
-    ["Porcelain Wyrm", "dragon", "Retrigger the first scoring numbered card each hand if it has an enhancement.", "scoredCard", onCard("retriggers", 1, (card, c) => c.cardIndex === 0 && numbered(card) && card.enhancement)],
-    ["Wisp Weaver", "moth", "Retrigger your last scoring card when exactly three cards score.", "scoredCard", onCard("retriggers", 1, (_, c) => scored(c) === 3 && c.cardIndex === 2)],
-    ["Night Scintilla", "orb", "Retrigger each held 5 with a seal.", "heldCard", onCard("retriggers", 1, card => card.rank === 5 && Boolean(card.seal))],
-    ["Iridescent Loom", "grimoire", "Retrigger unenhanced scoring Aces when you have no discards left.", "scoredCard", onCard("retriggers", 1, (card, c) => card.rank === 14 && !card.enhancement && c.discardsLeft === 0)],
-    ["Marble Wasp", "moth", "Retrigger the last scoring face card if it finishes your first hand.", "scoredCard", onCard("retriggers", 1, (card, c) => c.playedCount === 1 && c.cardIndex === scored(c) - 1 && face(card))],
-    ["Mirror Grebe", "owl", "Copy the hand-scoring effect of the next familiar to the right on your first hand of each blind.", "hand", when(c => c.playedCount === 1, { copy: "next" })],
-    ["Second Shadow", "moth", "Copy the hand-scoring effect of the familiar immediately to the left on the last hand of a blind.", "hand", when(c => c.handsLeft === 0, { copy: "previous" })],
-    ["Thimble Griffin", "dragon", "x2 Mult if all scored cards are 6 or lower and at least two cards score.", "hand", when(c => scored(c) >= 2 && c.scoring.every(card => card.rank <= 6), { xmult: 2 })],
-    ["Amber Magpie", "owl", "x2.25 Mult when Two Pair leaves two or more face cards in hand.", "hand", when(c => c.name === "Two Pair" && count(c.held, face) >= 2, { xmult: 2.25 })],
-    ["Riddle Fox", "owl", "x2 Mult if your Straight includes both red and black scoring cards.", "hand", when(c => c.name === "Straight" && opposite(c.scoring), { xmult: 2 })],
-    ["Flint Lich", "merlin", "x2 Mult when a played hand has three or more unenhanced face cards.", "hand", when(c => count(c.cards, card => face(card) && !card.enhancement) >= 3, { xmult: 2 })],
-    ["Comet Imp", "moth", "x1.3 Mult for every enhanced card that scores.", "scoredCard", onCard("xmult", 1.3, card => Boolean(card.enhancement))],
-    ["Rook of Glass", "orb", "x1.75 Mult when you hold two or more sealed cards.", "hand", when(c => count(c.held, card => card.seal) >= 2, { xmult: 1.75 })],
-    ["Quicksilver Lynx", "potion", "x2 Mult if a card with both a seal and an edition scores.", "hand", when(c => includes(c.scoring, card => card.seal && card.edition), { xmult: 2 })],
-    ["Umbral Tutor", "merlin", "x2 Mult on hand levels ending in 3, 6, or 9, or a positive multiple of 10.", "hand", when(c => c.level >= 3 && [0, 3, 6, 9].includes(c.level % 10), { xmult: 2 })],
-    ["Ebon Sundial", "orb", "x2.25 Mult when the number of hands and discards left are equal.", "hand", when(c => c.handsLeft === c.discardsLeft, { xmult: 2.25 })],
-    ["Sugar Locust", "moth", "x2 Mult from the second hand onward while you’ve used no discards this blind.", "hand", when(c => c.playedCount >= 2 && c.discardCount === 0, { xmult: 2 })],
-    ["Dusk Undertaker", "merlin", "x2.2 Mult on the next hand after you discard five cards.", {
-      discard(c, memory) { memory.ready ||= size(c) === 5; },
-      hand(c, memory) { const xmult = memory.ready ? 2.2 : 1; memory.ready = false; return { xmult }; },
-      blindStart(c, memory) { memory.ready = false; }
+    ["Porcelain Wyrm", "dragon", "Your first scoring card retriggers once. Move your best card to the front.", "scoredCard",
+      when(c => !c.retrigger && c.cardIndex === 0, { retriggers: 1 })],
+    ["Wisp Weaver", "moth", "Every third scoring card retriggers twice. The count carries between hands and skips retriggers.", {
+      scoredCard(c, memory) {
+        if (c.retrigger) return;
+        memory.thread = ((memory.thread || 0) + 1) % 3;
+        if (!memory.thread) return { retriggers: 2 };
+      }
     }],
-    ["Gilded Harrier", "owl", "x2 Mult when playing exactly three cards with $12–$24 in your wallet.", "hand", when(c => c.money >= 12 && c.money <= 24 && size(c) === 3, { xmult: 2 })],
-    ["Leviathan Husk", "dragon", "x2 Mult when your deck holds 60 cards or more.", "hand", when(c => c.deckSize >= 60, { xmult: 2 })],
-    ["Monastic Eel", "potion", "x2.25 Mult while equipped with only two or three familiars.", "hand", when(c => [2, 3].includes(c.ownedCount), { xmult: 2.25 })],
-    ["Golden Mycelium", "grimoire", "Earn $5 when you win on your last hand of a blind.", "roundEnd", when(c => c.succeeded !== false && c.handsLeft === 0, { money: 5 })],
-    ["Bounty Sparrow", "owl", "Earn $4 when you clear a Boss Blind without using a discard.", "roundEnd", when(c => c.succeeded !== false && c.blind === 2 && c.discardCount === 0, { money: 4 })],
-    ["Specter Crown", "orb", "Create a Spectral card when you clear a Boss Blind, if there is room.", "roundEnd", when(c => c.succeeded !== false && c.blind === 2, { generate: "spectral" })],
-    ["Brass Lantern", "orb", "Earn $3 and create a Spell after every second distinct shop entered, if there is room.", "shop", (c, memory) => {
-      memory.shops = (memory.shops || 0) + 1;
-      return every(2, memory.shops) ? { money: 3, generate: "spell" } : {};
+    ["Night Scintilla", "orb", "Your leftmost held card gives +4 Mult and retriggers once, repeating its held effects.", "heldCard",
+      c => c.cardIndex === 0 ? { mult: 4, retriggers: c.retrigger ? 0 : 1 } : {}],
+    ["Iridescent Loom", "grimoire", "Each scoring card gives +3 Mult. A change of suit from the previous scoring card also triggers that card again.", "scoredCard",
+      c => ({ mult: 3, retriggers: Number(!c.retrigger && c.cardIndex > 0 && c.card.suit != null && c.scoring[c.cardIndex - 1].suit != null && c.card.suit !== c.scoring[c.cardIndex - 1].suit) })],
+    ["Marble Wasp", "moth", "On the opening hand of every blind, all scoring cards retrigger once.", "scoredCard",
+      when(c => !c.retrigger && c.playedCount === 1, { retriggers: 1 })],
+    ["Mirror Grebe", "owl", "Copy the familiar on your right whenever a card scores or triggers in hand.", {
+      scoredCard: () => ({ copy: "next" }),
+      heldCard: () => ({ copy: "next" })
     }],
-    ["Vault Maggot", "moth", "Start at x1.1 Mult. Each paid or free reroll adds x0.15 Mult, up to x2.6.", growth("reroll", () => true, 0.15, 1.5, "xmult", 1.1)],
-    ["Oracle in Amber", "merlin", "Start at x1.2 Mult. Clearing a boss with a spare hand adds x0.25 Mult, up to x3.2.", growth("roundEnd", c => c.succeeded !== false && c.blind === 2 && c.handsLeft > 0, 0.25, 2, "xmult", 1.2)],
-    ["Gull in Chains", "owl", "+45 Chips. Every shop purchase adds +6 Chips, up to +90 more.", growth("buy", () => true, 6, 90, "chips", 45)],
-    ["Frost Warden", "merlin", "Start at x1.15 Mult. Discarding three different suits adds x0.1 Mult, up to x2.65.", growth("discard", c => new Set((c.cards || []).map(card => card.suit)).size >= 3, 0.1, 1.5, "xmult", 1.15)]
+    ["Second Shadow", "moth", "Every hand, copy the end-of-hand scoring ability of the familiar on your left.", "hand", () => ({ copy: "previous" })],
+    ["Thimble Griffin", "dragon", "Each play slot you leave empty gives x1.3 Mult. A one-card play earns all four bonuses.", "hand",
+      c => ({ xmult: 1.3 ** Math.max(0, 5 - size(c)) })],
+    ["Amber Magpie", "owl", "Your last scoring card gives +20 Chips and earns $1 each time it scores.", "scoredCard",
+      when(c => c.cardIndex === scored(c) - 1, { chips: 20, money: 1 })],
+    ["Riddle Fox", "owl", "Start each blind at x1 Mult. Each different hand type played adds x0.5, including this hand.", "hand",
+      c => ({ xmult: 1 + 0.5 * Object.keys(c.handCounts).length })],
+    ["Flint Lich", "merlin", "Your first scoring card gives +7 Mult. Every scoring-card retrigger gives another +7 Mult.", "scoredCard",
+      c => ({ mult: 7 * (Number(c.cardIndex === 0) + Number(c.retrigger)) })],
+    ["Comet Imp", "moth", "Each scoring card gives +2 Mult. Enhanced scoring cards also give x1.3 Mult.", "scoredCard",
+      c => ({ mult: 2, xmult: c.card.enhancement ? 1.3 : 1 })],
+    ["Rook of Glass", "orb", "Gain +8 Mult. Multiply by 1.4 for each kind of upgrade in your held cards: enhancement, seal, edition.", "hand",
+      c => ({ mult: 8, xmult: 1.4 ** count(["enhancement", "seal", "edition"], key => includes(c.held, card => card[key])) })],
+    ["Quicksilver Lynx", "potion", "Each scoring card gives +4 Mult. If its rank already scored this hand, give x1.4 Mult instead.", "scoredCard",
+      c => c.card.rank && (c.retrigger || c.scoring.slice(0, c.cardIndex).some(card => card.rank === c.card.rank)) ? { xmult: 1.4 } : { mult: 4 }],
+    ["Umbral Tutor", "merlin", "Gain +5 Mult per level of the hand you play. Each boss you beat conjures a Constellation if there is room.", {
+      hand: c => ({ mult: 5 * c.level }),
+      roundEnd: when(c => c.blind === 2, { generate: "star" })
+    }],
+    ["Ebon Sundial", "orb", "Alternate each blind: the first hand gets +90 Chips, the next gets x2.2 Mult, then repeat.", "hand",
+      c => c.playedCount % 2 ? { chips: 90 } : { xmult: 2.2 }],
+    ["Sugar Locust", "moth", "Gain +4 Mult for each discard still available. Winning a blind pays $1 per unused discard.", {
+      hand: c => ({ mult: 4 * c.discardsLeft }),
+      roundEnd: c => ({ money: c.discardsLeft })
+    }],
+    ["Dusk Undertaker", "merlin", "Each card you discard adds x0.15 Mult to your next hand, up to x2.5. Resets after the hand or blind.", {
+      trackedStat: "xmult",
+      discard(c, memory) { memory.buried = Math.min(10, (memory.buried || 0) + size(c)); },
+      hand(c, memory) {
+        const xmult = 1 + 0.15 * (memory.buried || 0);
+        memory.buried = 0;
+        return { xmult };
+      },
+      blindStart(c, memory) { memory.buried = 0; }
+    }],
+    ["Gilded Harrier", "owl", "x1.25 Mult, plus x0.05 for every dollar in your purse, up to x2.5 total.", {
+      trackedStat: "xmult",
+      hand: c => ({ xmult: 1.25 + 0.05 * Math.min(25, c.money) })
+    }],
+    ["Leviathan Husk", "dragon", "Your first scoring card adds +1 Chip for every card in your full deck, each time it scores.", "scoredCard",
+      c => c.cardIndex === 0 ? { chips: c.deckSize } : {}],
+    ["Monastic Eel", "potion", "x3 Mult alone. Each other familiar lowers it by x0.35, down to x1.25.", {
+      trackedStat: "xmult",
+      hand: c => ({ xmult: Math.max(1.25, 3 - 0.35 * Math.max(0, c.ownedCount - 1)) })
+    }],
+    ["Golden Mycelium", "grimoire", "When you win a blind, earn $2 for each different hand type you played during it.", "roundEnd",
+      c => ({ money: 2 * Object.keys(c.handCounts).length })],
+    ["Bounty Sparrow", "owl", "Win a blind to earn $2. Bosses pay $6 instead.", "roundEnd", c => ({ money: c.blind === 2 ? 6 : 2 })],
+    ["Specter Crown", "orb", "Every second blind you win conjures a Spectral card if there is room. Using any consumable earns $2.", {
+      cast: () => ({ money: 2 }),
+      roundEnd(c, memory) {
+        memory.victories = (memory.victories || 0) + 1;
+        if (every(2, memory.victories)) return { generate: "spectral" };
+      }
+    }],
+    ["Brass Lantern", "orb", "Enter a shop to earn $2 and conjure a Spell if there is room.", "shop", () => ({ money: 2, generate: "spell" })],
+    ["Vault Maggot", "moth", "Start at x1.3 Mult. Each shop reroll permanently adds x0.15, up to x2.8.", growth("reroll", () => true, 0.15, 1.5, "xmult", 1.3)],
+    ["Oracle in Amber", "merlin", "Start at x1.2 Mult. Every blind you win permanently adds x0.1, up to x3.2.", growth("roundEnd", () => true, 0.1, 2, "xmult", 1.2)],
+    ["Gull in Chains", "owl", "Start with +50 Chips. Every shop purchase permanently adds +10 Chips, up to +200 total.", growth("buy", () => true, 10, 150, "chips", 50)],
+    ["Frost Warden", "merlin", "Start at x1.2 Mult. Your first discard each blind permanently adds x0.1, up to x2.8.", growth("discard", c => c.discardCount === 1, 0.1, 1.6, "xmult", 1.2)]
   ]);
 
   register("Legendary", [
-    ["Aurelia of the Eclipse", "merlin", "During Boss Blinds, the first and last cards that score each retrigger.", "scoredCard", onCard("retriggers", 1, (_, c) => c.blind === 2 && (c.cardIndex === 0 || c.cardIndex === scored(c) - 1))],
-    ["The Orchard Below", "grimoire", "Each red card held gives x1.18 Mult while a black card scores. Each black card held does the same while a red card scores.", "heldCard", onCard("xmult", 1.18, (card, c) => (red(card) && includes(c.scoring, black)) || (black(card) && includes(c.scoring, red)))],
-    ["Saffron, Keeper of Doors", "key", "Starts at x1.4 Mult. Gain x0.25 Mult each time you start a Boss Blind, up to x3.9.", growth("blindStart", c => c.blind === 2, 0.25, 2.5, "xmult", 1.4)],
-    ["Ravel the Weaver", "moth", "Copies the hand-scoring effect of its left neighbor on odd hands and its right neighbor on even hands.", "hand", c => ({ copy: c.playedCount % 2 ? "previous" : "next" })],
-    ["Nacre, Sea of Stars", "dragon", "Every scoring card on a hand of level 4 or more adds x1.18 Mult. Create a Constellation whenever you clear a blind, if there is room.", {
-      scoredCard: onCard("xmult", 1.18, (_, c) => c.level >= 4),
-      roundEnd: when(c => c.succeeded !== false, { generate: "star" })
+    ["Aurelia of the Eclipse", "merlin", "The first and last scoring cards each retrigger once. On Boss Blinds, every scoring card retriggers once.", "scoredCard",
+      when(c => !c.retrigger && (c.blind === 2 || c.cardIndex === 0 || c.cardIndex === scored(c) - 1), { retriggers: 1 })],
+    ["The Orchard Below", "grimoire", "Every held card gives x1.2 Mult. Each time a held card retriggers, also earn $1.", "heldCard",
+      c => ({ xmult: 1.2, money: Number(c.retrigger) })],
+    ["Saffron, Keeper of Doors", "key", "Start at x1.5 Mult. Each consumable used adds x0.2, up to x4.5. Start a blind to conjure a Spell if there is room.", {
+      ...growth("cast", () => true, 0.2, 3, "xmult", 1.5),
+      blindStart: () => ({ generate: "spell" })
+    }],
+    ["Ravel the Weaver", "moth", "Copy your left neighbor's scoring and held-card abilities, then your right neighbor's end-of-hand scoring ability.", {
+      scoredCard: () => ({ copy: "previous" }),
+      heldCard: () => ({ copy: "previous" }),
+      hand: () => ({ copy: "next" })
+    }],
+    ["Nacre, Sea of Stars", "dragon", "Each scoring card adds its hand level to Mult, then gives x1.15 Mult. Win a blind to conjure a Constellation if there is room.", {
+      scoredCard: c => ({ mult: c.level, xmult: 1.15 }),
+      roundEnd: () => ({ generate: "star" })
     }]
   ]);
 

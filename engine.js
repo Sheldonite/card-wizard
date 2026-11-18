@@ -352,31 +352,38 @@
     return context;
   }
   const bossSilences = (s,index) => index < bossValue(s,"noJokers");
-  function familiarEffect(s,index,event,ctx,memory,resolveCopy = true) {
+  function familiarEffect(s,index,event,ctx,memory,resolved) {
     const id = s.familiars[index];
     if (!id || bossSilences(s,index) || s.rules.noFamiliarEffects) return {};
     const {id:key,sticker} = market.splitVariant(id);
     const data = memory[key] ??= {};
     if (sticker === "perishable" && (data.age || 0) >= 5) return {};
     const effect = content.trigger(key,event,ctx,data);
-    if (resolveCopy && effect.copy) {
+    if (resolved) resolved[index] = effect;
+    if (effect.copy) {
       const offset = effect.copy === "previous" ? -1 : 1;
-      return familiarEffect(s,index + offset,event,ctx,JSON.parse(JSON.stringify(memory)),false);
+      const neighbor = index + offset;
+      if (!resolved || !s.familiars[neighbor]) return {};
+      // A left neighbor may already have spent its charge on this pass.
+      if (resolved[neighbor]) return resolved[neighbor].copy ? {} : resolved[neighbor];
+      const target = baseId(s.familiars[neighbor]);
+      return familiarEffect(s,neighbor,event,ctx,{[target]:{...memory[target]}});
     }
     return effect;
   }
   function applyReward(s,effect) {
     if (effect.money) earn(s,effect.money);
-    if (effect.generate) generate(s,effect.generate);
+    const created = effect.generate && generate(s,effect.generate);
+    return Boolean(effect.money || created);
   }
   function dispatch(s,event,extra) {
     const ctx = makeContext(s,extra);
     for (let i=0;i<s.familiars.length;i++) {
       const id = s.familiars[i];
       const effect = familiarEffect(s,i,event,ctx,s.familiarMemory);
-      if (effect.money || effect.generate) countUse(s,id);
-      applyReward(s,effect);
+      if (applyReward(s,effect)) countUse(s,id);
       ctx.money = s.money;
+      ctx.consumableCount = s.consumables.length;
     }
   }
   function preview(s,ids) {
@@ -420,9 +427,10 @@
         steps.push({label,text:labels.join(" · "),...source,chips,mult});
       }
     }
-    function familiarAt(i,event,extra) {
+    function familiarAt(i,event,extra,resolved) {
       const id = s.familiars[i];
-      const effect = familiarEffect(s,i,event,{...ctx,...extra},memory);
+      const raw = familiarEffect(s,i,event,{...ctx,...extra},memory,resolved);
+      const effect = extra.retrigger && raw.retriggers ? {...raw,retriggers:0} : raw;
       apply(effect,content.familiars[baseId(id)].name,{familiarId:id,...(extra.card && {cardId:extra.card.id})});
       return effect.retriggers || 0;
     }
@@ -449,16 +457,18 @@
           const edition = market.editions[card.edition];
           if (edition) apply(edition,edition.name,{cardId:card.id});
         }
+        const resolved = [];
         for (let i=0;i<s.familiars.length;i++) {
           const effective = contextCard(card);
           const more = familiarAt(i,event,{card:effective.enhancement === enhancement ? effective : {...effective,enhancement},
-            cardIndex,retrigger:pass > 0});
+            cardIndex,retrigger:pass > 0},resolved);
           if (!pass) repeats = Math.min(8,repeats + more);
         }
       }
     }
     active.forEach((card,i)=>scoreCard(card,i,false));
     held.forEach((card,i)=>scoreCard(card,i,true));
+    const resolvedHand = [];
     for (let i=0;i<s.familiars.length;i++) {
       const id = s.familiars[i];
       const {edition,sticker} = market.splitVariant(id);
@@ -466,7 +476,7 @@
       const live = !bossSilences(s,i) && !s.rules.noFamiliarEffects &&
         (sticker !== "perishable" || (memory[baseId(id)]?.age || 0) < 5);
       if (live && editionDef && edition !== "polychrome") apply(editionDef,editionDef.name,{familiarId:id});
-      familiarAt(i,"hand",{});
+      familiarAt(i,"hand",{},resolvedHand);
       if (live && editionDef && edition === "polychrome") apply(editionDef,editionDef.name,{familiarId:id});
     }
     if (s.rules.chipToMult) {
@@ -587,9 +597,8 @@
   }
   // These bonuses scale with the run or charge up for the next hand.
   const runScalingStats = {
-    dust_scribe:"chips", vault_watcher:"chips", folio:"chips", jasper_clock:"chips",
-    kiln_crawler:"chips", tower_oracle:"mult", good_omen:"mult", silt_phoenix:"mult",
-    coven:"xmult", dusk_undertaker:"xmult"
+    dust_scribe:"chips", vault_watcher:"chips", folio:"chips",
+    tower_oracle:"mult", coven:"xmult"
   };
   function ownedItem(s,category,index) {
     let def = item(s[category]?.[index]);
@@ -599,10 +608,13 @@
       if (stat) {
         // Next-hand effects may consume charges. Inspect a copy of the saved counters.
         const memory = {...s.familiarMemory?.[id]};
-        const value = content.trigger(id,"hand",makeContext(s),memory)[stat];
-        const amount = (stat === "xmult" ? "×" : "+") + Number(value.toFixed(2));
-        const label = amount + (stat === "chips" ? " Chips" : " Mult");
-        def = {...def,stackAmount:amount,stackStat:stat,description:"Currently " + label + ". " + def.description};
+        const roll = {rng:s.rng};
+        const value = content.trigger(id,"hand",makeContext(s,{random:()=>random(roll)}),memory)[stat];
+        if (Number.isFinite(value)) {
+          const amount = (stat === "xmult" ? "×" : "+") + Number(value.toFixed(2));
+          const label = amount + (stat === "chips" ? " Chips" : " Mult");
+          def = {...def,stackAmount:amount,stackStat:stat,description:"Currently " + label + ". " + def.description};
+        }
       }
       if (s.phase === "play" && bossSilences(s,index)) {
         def = {...def,bossMuted:true,description:"Silenced by " + boss(s).name + ". " + def.description};
@@ -925,6 +937,7 @@
           }
         }
     }
+    dispatch(s,"cast",{item:def});
   }
   const useHand = s => s.pack?.hand || (s.phase === "play" ? s.hand : []);
   function canUse(s,index,ids) {

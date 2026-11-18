@@ -807,40 +807,45 @@ body.still .familiar-finish {animation:none}
 body.still .familiar-burst {display:none}
 @media(prefers-reduced-motion:reduce){.familiar-finish {animation:none}.familiar-burst {display:none}}
 
-/* Charged counters keep their blue and red cores inside the gold corona. */
-.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp) {
-  position:relative;isolation:isolate;
-  text-shadow:0 2px 2px #201322,0 0 8px #ffd574;
+/* Each score keeps its own vial. Only the blind-clearing hand brings it to a boil. */
+.score-potion {
+  --elixir:#177fce; --elixir-light:#88efff;
+  width:1.05em; height:1.2em; display:inline-block; flex:none;
+  overflow:visible; vertical-align:middle; pointer-events:none;
 }
-.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::before,
-.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::after {
-  content:"";position:absolute;pointer-events:none;
+.cw-fx-equation:has(> .potion-value) {
+  font-size:min(clamp(22px,2.9vw,45px),calc(145cqi / (var(--fx-digits,8) + 3)));
 }
-.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::before {
-  z-index:-1;inset:-32% -10% -8%;
-  background:linear-gradient(0deg,#ff820050,#ffd750aa 40%,#fff6af 88%);
-  clip-path:polygon(0 83%,8% 42%,15% 66%,22% 12%,31% 54%,43% 0,50% 47%,62% 18%,68% 57%,81% 4%,85% 59%,96% 33%,100% 83%,82% 100%,19% 100%);
-  transform-origin:center bottom;animation:score-corona 560ms ease-in-out infinite alternate;
+.potion-mult {--elixir:#c23a57; --elixir-light:#ffadbd}
+.score-components :is(.stat-chips,.stat-mult) .score-potion {
+  width:1.6em; height:1.65em; margin:-.35em .25em -.15em 0;
 }
-.blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::after {
-  inset:-22% -15%;color:#fffbd4;
-  background:
-    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 10% 65%/10% 60%,
-    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 6% 64%/22% 14%,
-    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 91% 28%/11% 50%,
-    radial-gradient(ellipse at center,currentColor 0 15%,transparent 66%) 96% 33%/22% 14%;
-  background-repeat:no-repeat;filter:drop-shadow(0 0 3px #ffb83e);
-  animation:score-sparks 760ms ease-out infinite;
+.cw-fx-equation > .potion-value {display:inline-flex; align-items:center; gap:.06em; min-width:0}
+.potion-value .score-potion {width:.67em; height:.76em}
+.potion-liquid,.potion-rising {fill:var(--elixir)}
+.potion-rising,.potion-spill {opacity:0}
+.potion-stream {
+  fill:none; stroke:var(--elixir-light); stroke-width:2.2; stroke-linecap:round;
 }
-.blind-overdrive :is(.cw-fx-mult,.mult-comp)::after {animation-delay:-330ms}
-@keyframes score-corona {from{transform:scale(.96,.78);opacity:.52}to{transform:scale(1.06,1.1);opacity:.9}}
-@keyframes score-sparks {0%{transform:translateY(10%) scale(.7);opacity:.15}40%{opacity:1}100%{transform:translateY(-20%) scale(1.12);opacity:0}}
-body.still .blind-overdrive ::before,body.still .blind-overdrive ::after {animation:none}
-@media(prefers-reduced-motion:reduce){.blind-overdrive ::before,.blind-overdrive ::after{animation:none}}
-
-.victory-fireworks {position:fixed;inset:0;width:100%;height:100%;z-index:140;pointer-events:none;}
-body:not(.still) .blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::before {opacity:.24;animation:none}
-@media(prefers-reduced-motion:reduce){.victory-fireworks{display:none}}
+.potion-foam,.potion-bubble,.potion-drip {fill:var(--elixir-light)}
+.blind-overdrive .potion-rising,.blind-overdrive .potion-spill {opacity:1}
+.blind-overdrive .potion-rising {
+  animation:potion-fill calc(var(--brew-cycle)*.35) ease-out both;
+}
+.blind-overdrive .potion-stream {
+  stroke-dasharray:1; animation:potion-pour var(--brew-cycle) ease-out infinite;
+}
+.blind-overdrive .potion-bubble {
+  --drift:-3px; animation:potion-bubble var(--brew-cycle) ease-out infinite;
+}
+.blind-overdrive .potion-bubble.second {--drift:3px; animation-delay:calc(var(--brew-cycle)*-.43)}
+.blind-overdrive .potion-drip {animation:potion-drip var(--brew-cycle) ease-in infinite}
+@keyframes potion-fill {from{clip-path:inset(70% 0 0)}to{clip-path:inset(0)}}
+@keyframes potion-pour {0%{stroke-dashoffset:1}52%,100%{stroke-dashoffset:0}}
+@keyframes potion-bubble {0%{opacity:0}20%{opacity:1}100%{opacity:0;transform:translate(var(--drift),-6px)}}
+@keyframes potion-drip {0%,50%{opacity:0}58%{opacity:1}100%{opacity:0;transform:translate(-1px,7px)}}
+body.still .score-potion * {animation:none}
+@media(prefers-reduced-motion:reduce){.score-potion * {animation:none!important}}
 
 </style>
   <style>
@@ -1260,7 +1265,7 @@ body:has(.cw-backdrop:not([hidden]) [data-page=select]) {overflow:hidden}
   transform: translate(-50%, -50%);
   isolation: isolate;
   filter: drop-shadow(0 12px 12px #100a20aa);
-  animation: victory-dial-arrives 1.2s ease-out both;
+  animation: victory-dial-arrives .7s ease-out both;
 }
 .victory-sky .astrolabe::before, .victory-sky .astrolabe::after {
   content: "";
@@ -1364,8 +1369,8 @@ body:has(.cw-backdrop:not([hidden]) [data-page=select]) {overflow:hidden}
     conic-gradient(#fff8d8 0 45deg, #dda96d 45deg 90deg, #fff1b6 90deg 135deg, #a67751 135deg 180deg, #ffe6a6 180deg 225deg, #b48a61 225deg 270deg, #fff5c8 270deg 315deg, #d1a46b 315deg);
 }
 @keyframes victory-dial-arrives {
-  from { opacity: .08; transform: translate(-50%,-49%) scale(.94); }
-  to { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  from { opacity: .42; }
+  to { opacity: 1; }
 }
 @keyframes victory-orbit { to { transform: rotate(360deg); } }
 @keyframes victory-star-glow {
@@ -1379,27 +1384,13 @@ body:has(.cw-backdrop:not([hidden]) [data-page=select]) {overflow:hidden}
   .victory-sky .astrolabe, .victory-sky .astrolabe > i { animation: none; }
 }
 .still .victory-sky .astrolabe, .still .victory-sky .astrolabe > i { animation: none; }
-/* The score opens a brass-rimmed aperture that closes on the rewards dial. */
-.victory-portal {
-  position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:100000;
-}
-.portal-disc {
-  position:absolute; top:0; left:0; width:156vmax; aspect-ratio:1; border-radius:50%;
-  background:radial-gradient(circle,#f8d596 0 .45%,#98668c 1%,#593c68 7%,#2a1d40 27%,#191325 59%,#442746 65%,#bd8856 69%,#ffe6aa 70%,#805137 71%);
-  box-shadow:0 0 1vmax #f3c18399; will-change:transform,opacity;
-}
-.portal-orbit {
-  position:absolute; inset:2%; border-radius:50%;
-  background:repeating-conic-gradient(from 4deg,#ffe7ab 0 1deg,transparent 1deg 9deg);
-  mask-image:radial-gradient(circle closest-side,transparent 92%,black 92.3% 96%,transparent 96.3%);
-}
-.portal-disc::before,.portal-disc::after {
-  content:""; position:absolute; inset:8%; border-radius:50%; border:.26vmax double #dab485;
-}
-.portal-disc::after {inset:19%; border:.11vmax dashed #ae8d9c; opacity:.68}
-.portal-star {
-  position:absolute; inset:31%; background:linear-gradient(115deg,#fff5bc,#bc8752 44%,#fff2be 50%,#dba8a5);
-  clip-path:polygon(50% 0,55% 38%,76% 24%,62% 45%,100% 50%,62% 55%,76% 76%,55% 62%,50% 100%,45% 62%,24% 76%,38% 55%,0 50%,38% 45%,24% 24%,45% 38%);
+/* Match the rewards sky so the last score dissolves into the ledger. */
+.rewards-dissolve {
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  pointer-events:none;
+  background:linear-gradient(130deg,#1c152a,#241c31 56%,#171120);
 }
 
 </style>
@@ -1668,10 +1659,8 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   const black = card => suited("S")(card) || suited("C")(card);
   const numbered = card => card.rank <= 10;
   const low = card => card.rank <= 5;
-  const odd = card => numbered(card) && card.rank % 2 === 1;
   const even = card => numbered(card) && card.rank % 2 === 0;
   const onCard = (key, value, test) => when(c => c.card && test(c.card, c), add(key, value));
-  const handIs = name => c => c.name === name;
   const size = c => c.cards?.length || 0;
   const held = c => c.held?.length || 0;
   const scored = c => c.scoring?.length || 0;
@@ -1681,165 +1670,300 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     [event](c, memory) {
       if (test(c)) memory.bonus = Math.min(limit, (memory.bonus || 0) + step);
     },
-    hand: (c, memory) => add(key, baseline + (memory.bonus || 0))
+    hand: (c, memory) => add(key, baseline + Math.min(limit, memory.bonus || 0))
   });
 
   register("Common", [
-    ["Candle Wisp", "moth", "+22 Chips when your first card scores.", "scoredCard", onCard("chips", 22, (_, c) => c.cardIndex === 0)],
-    ["Cricket Courier", "moth", "+17 Chips for each scoring card ranked 2–5.", "scoredCard", onCard("chips", 17, low)],
-    ["Ivory Mite", "moth", "+2 Mult for each scoring even-numbered card.", "scoredCard", onCard("mult", 2, even)],
-    ["Copper Plover", "owl", "+18 Chips for each scoring odd-numbered card.", "scoredCard", onCard("chips", 18, odd)],
-    ["Umbra Kit", "owl", "+2 Mult for every black card held in hand.", "heldCard", onCard("mult", 2, black)],
-    ["Daybreak Minnow", "orb", "+5 Chips for every red card held in hand.", "heldCard", onCard("chips", 5, red)],
-    ["Window Basilisk", "dragon", "+3 Mult for each scoring 5 or 10.", "scoredCard", onCard("mult", 3, card => [5, 10].includes(card.rank))],
-    ["Bramble Newt", "potion", "+12 Chips for each scoring Diamond.", "scoredCard", onCard("chips", 12, suited("D"))],
-    ["Sorrel Finch", "owl", "+16 Chips for each scoring Club.", "scoredCard", onCard("chips", 16, suited("C"))],
-    ["Ruby Jay", "owl", "+13 Chips for each scoring Heart.", "scoredCard", onCard("chips", 13, suited("H"))],
-    ["Plume Ferret", "owl", "+3 Mult for each scoring Spade ranked 9 or lower.", "scoredCard", onCard("mult", 3, card => suited("S")(card) && card.rank <= 9)],
-    ["Twilit Vole", "owl", "+5 Mult when red and black cards both score.", "hand", when(c => opposite(c.scoring), { mult: 5 })],
-    ["Mantle Rabbit", "owl", "+38 Chips when exactly four cards are played.", "hand", when(c => size(c) === 4, { chips: 38 })],
-    ["Tin Echo", "grimoire", "+34 Chips when exactly two cards score.", "hand", when(c => scored(c) === 2, { chips: 34 })],
-    ["Mist Hare", "moth", "+6 Mult when exactly five cards are played.", "hand", when(c => size(c) === 5, { mult: 6 })],
-    ["Dustfin", "moth", "+12 Chips per nonscoring card played.", "hand", c => ({ chips: 12 * (size(c) - scored(c)) })],
-    ["Lattice Toad", "potion", "+5 Mult when you hold at least four cards after playing.", "hand", when(c => held(c) >= 4, { mult: 5 })],
-    ["Marrow Lark", "owl", "+3 Mult for every pair of cards left in hand.", "hand", c => ({ mult: 3 * Math.floor(held(c) / 2) })],
-    ["Crooked Tern", "owl", "+25 Chips on the first hand of a blind.", "hand", when(c => c.playedCount === 1, { chips: 25 })],
-    ["Wicker Lamp", "orb", "+8 Mult on the second hand of a blind.", "hand", when(c => c.playedCount === 2, { mult: 8 })],
-    ["Ripple Snail", "potion", "+40 Chips when you have no hands left.", "hand", when(c => c.handsLeft === 0, { chips: 40 })],
-    ["Briar Lamprey", "dragon", "+7 Mult when you have exactly one discard left.", "hand", when(c => c.discardsLeft === 1, { mult: 7 })],
-    ["Parchment Bee", "grimoire", "+9 Chips for every discard still available.", "hand", c => ({ chips: 9 * (c.discardsLeft || 0) })],
-    ["Briar Piper", "merlin", "+5 Mult if you’ve discarded at least once this blind.", "hand", when(c => c.discardCount > 0, { mult: 5 })],
-    ["Moss Badger", "owl", "+32 Chips on a Pair.", "hand", when(handIs("Pair"), { chips: 32 })],
-    ["Juniper Kite", "owl", "+7 Mult on Two Pair.", "hand", when(handIs("Two Pair"), { mult: 7 })],
-    ["Basalt Sprite", "orb", "+35 Chips on a Straight.", "hand", when(handIs("Straight"), { chips: 35 })],
-    ["Willow Cricket", "moth", "+9 Mult on a Full House.", "hand", when(handIs("Full House"), { mult: 9 })],
-    ["Alabaster Finch", "owl", "+24 Chips on High Card if your scoring card is a face card.", "hand", when(c => c.name === "High Card" && includes(c.scoring, face), { chips: 24 })],
-    ["Fox in Ink", "grimoire", "+8 Mult on Three of a Kind.", "hand", when(handIs("Three of a Kind"), { mult: 8 })],
-    ["Swamp Lantern", "orb", "+40 Chips on any hand ranked above Full House.", "hand", when(c => ["Four of a Kind", "Straight Flush", "Five of a Kind", "Flush House", "Flush Five"].includes(c.name), { chips: 40 })],
-    ["Ochre Scribe", "merlin", "+18 Chips per enhanced scoring card.", "scoredCard", onCard("chips", 18, card => Boolean(card.enhancement))],
-    ["Milkglass Fawn", "owl", "+3 Mult per unenhanced face card that scores.", "scoredCard", onCard("mult", 3, card => !card.enhancement && face(card))],
-    ["Veil Firefly", "moth", "+7 Chips for each held 6, 7, or 8.", "heldCard", onCard("chips", 7, card => [6, 7, 8].includes(card.rank))],
-    ["Rookery Gecko", "dragon", "+4 Mult when you hold both a Jack and a King.", "hand", when(c => includes(c.held, card => card.rank === 11) && includes(c.held, card => card.rank === 13), { mult: 4 })],
-    ["Coin Cicada", "key", "Earn $1 when your first discard contains exactly one card.", "discard", when(c => c.discardCount === 1 && size(c) === 1, { money: 1 })],
-    ["Linen Sprite", "grimoire", "Earn $1 when you discard a four-card set of different ranks.", "discard", when(c => size(c) === 4 && new Set(c.cards.map(card => card.rank)).size === 4, { money: 1 })],
-    ["Nimble Wren", "owl", "Earn $1 when you win a blind with no discards left.", "roundEnd", when(c => c.succeeded !== false && c.discardsLeft === 0, { money: 1 })],
-    ["Satchel Mouse", "key", "Earn $1 when you enter a shop with $6 or less.", "shop", when(c => c.money <= 6, { money: 1 })],
-    ["Lacquer Eel", "potion", "+6 Mult when you have even cash.", "hand", when(c => c.money % 2 === 0, { mult: 6 })],
-    ["Ribbon Crow", "owl", "+33 Chips when you have an odd number of familiars.", "hand", when(c => c.ownedCount % 2 === 1, { chips: 33 })],
-    ["Soot Aphid", "moth", "+31 Chips on odd-numbered antes.", "hand", when(c => c.ante % 2 === 1, { chips: 31 })]
+    ["Candle Wisp", "moth", "Your first scoring card lights up for +25 Chips and +2 Mult.", "scoredCard", when(c => c.cardIndex === 0, { chips: 25, mult: 2 })],
+    ["Cricket Courier", "moth", "Number cards score +12 Chips. Ranks 2-5 score +30 instead.", "scoredCard", c => ({ chips: !numbered(c.card) ? 0 : low(c.card) ? 30 : 12 })],
+    ["Ivory Mite", "moth", "Each scoring card gives +1 Mult, or +3 Mult if its rank is even (2-10).", "scoredCard", c => ({ mult: even(c.card) ? 3 : 1 })],
+    ["Copper Plover", "owl", "Your last scoring card gives +30 Chips. Every time it retriggers, earn $1.", "scoredCard", c => c.cardIndex === scored(c) - 1 ? { chips: 30, money: c.retrigger ? 1 : 0 } : {}],
+    ["Umbra Kit", "owl", "Each held card gives +1 Mult. Black cards give +2 instead.", "heldCard", c => ({ mult: black(c.card) ? 2 : 1 })],
+    ["Daybreak Minnow", "orb", "Each held card gives +7 Chips. Red cards give +14 instead.", "heldCard", c => ({ chips: red(c.card) ? 14 : 7 })],
+    ["Window Basilisk", "dragon", "Your last scoring card gives +4 Mult, doubled if it has an enhancement, seal, or edition.", "scoredCard", c => c.cardIndex === scored(c) - 1 ? { mult: c.card.enhancement || c.card.seal || c.card.edition ? 8 : 4 } : {}],
+    ["Bramble Newt", "potion", "Scoring red cards give +15 Chips. Diamonds also give +2 Mult.", "scoredCard", c => ({ chips: red(c.card) ? 15 : 0, mult: suited("D")(c.card) ? 2 : 0 })],
+    ["Sorrel Finch", "owl", "Scoring black cards give +20 Chips. Clubs give +35 instead.", "scoredCard", c => ({ chips: suited("C")(c.card) ? 35 : black(c.card) ? 20 : 0 })],
+    ["Ruby Jay", "owl", "Your first scoring red card each hand earns $1. Every scoring Heart gives +2 Mult.", {
+      scoredCard(c, memory) {
+        const first = red(c.card) && memory.paidHand !== c.totalHands;
+        if (first) memory.paidHand = c.totalHands;
+        return { money: first ? 1 : 0, mult: suited("H")(c.card) ? 2 : 0 };
+      }
+    }],
+    ["Plume Ferret", "owl", "Each scoring black card gives +2 Mult. Spades also give +12 Chips.", "scoredCard", c => ({ mult: black(c.card) ? 2 : 0, chips: suited("S")(c.card) ? 12 : 0 })],
+    ["Twilit Vole", "owl", "+3 Mult for each color that scores. Score both colors for +25 Chips too.", "hand", c => ({ mult: 3 * (Number(includes(c.scoring, red)) + Number(includes(c.scoring, black))), chips: opposite(c.scoring) ? 25 : 0 })],
+    ["Mantle Rabbit", "owl", "+12 Chips per card played, including cards outside the scoring hand.", "hand", c => ({ chips: 12 * size(c) })],
+    ["Tin Echo", "grimoire", "Retrigger the last scoring card of every hand.", "scoredCard", when(c => c.cardIndex === scored(c) - 1, { retriggers: 1 })],
+    ["Mist Hare", "moth", "+2 Mult per card played. Fill all five spots for +20 Chips too.", "hand", c => ({ mult: 2 * size(c), chips: size(c) === 5 ? 20 : 0 })],
+    ["Dustfin", "moth", "+15 Chips. Each extra card played outside the scoring hand adds +15 more.", "hand", c => ({ chips: 15 * (1 + size(c) - scored(c)) })],
+    ["Lattice Toad", "potion", "+3 Mult for each different rank you keep in hand, up to +12.", "hand", c => ({ mult: 3 * Math.min(4, new Set(c.held.map(card => card.rank).filter(Number.isInteger)).size) })],
+    ["Marrow Lark", "owl", "Your first held card gives +4 Mult. Each other held card gives +1.", "heldCard", c => ({ mult: c.cardIndex === 0 ? 4 : 1 })],
+    ["Crooked Tern", "owl", "Start each blind at +70 Chips. Lose 15 Chips with each hand played, down to +10.", "hand", c => ({ chips: Math.max(10, 70 - 15 * (c.playedCount - 1)) })],
+    ["Wicker Lamp", "orb", "Start each blind at +3 Mult. Each hand played adds +3 more for the next hand.", "hand", c => ({ mult: 3 * c.playedCount })],
+    ["Ripple Snail", "potion", "+25 Chips every hand. Double that with one hand left after playing, or quadruple it on your last hand.", "hand", c => ({ chips: c.handsLeft === 0 ? 100 : c.handsLeft === 1 ? 50 : 25 })],
+    ["Briar Lamprey", "dragon", "+3 Mult. Each discard used this blind adds +3 more.", "hand", c => ({ mult: 3 + 3 * c.discardCount })],
+    ["Parchment Bee", "grimoire", "+15 Chips for each discard left. Win with any discards left to earn $1.", {
+      hand: c => ({ chips: 15 * c.discardsLeft }),
+      roundEnd: when(c => c.succeeded !== false && c.discardsLeft > 0, { money: 1 })
+    }],
+    ["Briar Piper", "merlin", "Each discarded card banks +2 Mult for your next hand, up to +14.", {
+      trackedStat: "mult",
+      discard(c, memory) { memory.charge = Math.min(14, (memory.charge || 0) + 2 * size(c)); },
+      hand(c, memory) { const mult = memory.charge || 0; memory.charge = 0; return { mult }; },
+      blindStart(c, memory) { memory.charge = 0; }
+    }],
+    ["Moss Badger", "owl", "+25 Chips per scoring card that shares its rank with another scoring card.", "scoredCard", onCard("chips", 25, (card, c) => card.rank && count(c.scoring, other => other.rank === card.rank) >= 2)],
+    ["Juniper Kite", "owl", "+2 Mult for each different rank you play. Extra cards count too.", "hand", c => ({ mult: 2 * new Set(c.cards.map(card => card.rank).filter(Number.isInteger)).size })],
+    ["Basalt Sprite", "orb", "+20 Chips for each different rank that scores.", "hand", c => ({ chips: 20 * new Set(c.scoring.map(card => card.rank).filter(Number.isInteger)).size })],
+    ["Willow Cricket", "moth", "After your first scoring card, every scoring card adds +3 Mult.", "scoredCard", when(c => c.cardIndex > 0, { mult: 3 })],
+    ["Alabaster Finch", "owl", "Your first scoring card gives +30 Chips. If it's your only scoring card, gain +4 Mult too.", "scoredCard", c => c.cardIndex === 0 ? { chips: 30, mult: scored(c) === 1 ? 4 : 0 } : {}],
+    ["Fox in Ink", "grimoire", "+4 Mult. Each consumable you cast adds +1 Mult for the run, up to +12 more.", growth("cast", () => true, 1, 12, "mult", 4)],
+    ["Swamp Lantern", "orb", "+15 Chips for each different hand type you've played this blind, including this one.", "hand", c => ({ chips: 15 * Object.keys(c.handCounts).filter(name => c.handCounts[name] > 0).length })],
+    ["Ochre Scribe", "merlin", "Each scoring card gives +8 Chips, plus +15 per enhancement, seal, or edition on it.", "scoredCard", c => ({ chips: 8 + 15 * [c.card.enhancement, c.card.seal, c.card.edition].filter(Boolean).length })],
+    ["Milkglass Fawn", "owl", "Each scoring card without an enhancement gives +2 Mult. Unenhanced faces give +5 instead.", "scoredCard", c => ({ mult: c.card.enhancement ? 0 : face(c.card) ? 5 : 2 })],
+    ["Veil Firefly", "moth", "+20 Chips. Each different suit you hold adds +10 more. Wild cards count as every suit.", "hand", c => ({ chips: 20 + 10 * ["S", "H", "C", "D"].filter(suit => includes(c.held, suited(suit))).length })],
+    ["Rookery Gecko", "dragon", "Held face cards give +3 Mult each. If any face card scores, gain +25 Chips too.", {
+      heldCard: onCard("mult", 3, face),
+      hand: when(c => includes(c.scoring, face), { chips: 25 })
+    }],
+    ["Coin Cicada", "key", "Your first discard each blind earns $2, whatever you throw away.", "discard", when(c => c.discardCount === 1, { money: 2 })],
+    ["Linen Sprite", "grimoire", "Your first discard each blind creates a Spell if you have room.", "discard", when(c => c.discardCount === 1, { generate: "spell" })],
+    ["Nimble Wren", "owl", "Win a blind to earn $1, plus $1 for each unspent hand (up to $4 total).", "roundEnd", c => ({ money: c.succeeded === false ? 0 : Math.min(4, 1 + c.handsLeft) })],
+    ["Satchel Mouse", "key", "Find $2 on entering a shop, or $4 if you arrive with $8 or less.", "shop", c => ({ money: c.money <= 8 ? 4 : 2 })],
+    ["Lacquer Eel", "potion", "+3 Mult, plus +1 per $3 you hold, up to +12 Mult total.", "hand", c => ({ mult: Math.min(12, 3 + Math.floor(c.money / 3)) })],
+    ["Ribbon Crow", "owl", "+12 Chips per equipped familiar, including itself. Each carried consumable adds +10 more.", "hand", c => ({ chips: 12 * c.ownedCount + 10 * c.consumableCount })],
+    ["Soot Aphid", "moth", "+15 Chips. Each blind you win with Soot Aphid adds +5 Chips for the run, up to +75 more.", growth("roundEnd", c => c.succeeded !== false, 5, 75, "chips", 15)]
   ]);
 
   register("Uncommon", [
-    ["Mantled Viper", "dragon", "x1.45 Mult when exactly three cards score.", "hand", when(c => scored(c) === 3, { xmult: 1.45 })],
-    ["Glimmer Orca", "potion", "x1.65 Mult when you play five cards and only two score.", "hand", when(c => size(c) === 5 && scored(c) === 2, { xmult: 1.65 })],
-    ["Cinder Coil", "dragon", "x1.5 Mult when no face card is played.", "hand", when(c => !includes(c.cards, face), { xmult: 1.5 })],
-    ["Pale Axolotl", "potion", "x1.5 Mult when an enhanced card is held and a plain card scores.", "hand", when(c => includes(c.held, card => card.enhancement) && includes(c.scoring, card => !card.enhancement), { xmult: 1.5 })],
-    ["Clover Adder", "dragon", "x1.6 Mult when three or more Clubs score.", "hand", when(c => count(c.scoring, suited("C")) >= 3, { xmult: 1.6 })],
-    ["Carmine Crab", "potion", "+4 Mult for each pair of Hearts in hand.", "hand", c => ({ mult: 4 * Math.floor(count(c.held, suited("H")) / 2) })],
-    ["Slate Salamander", "dragon", "x1.55 Mult when every scoring card is red and at least two score.", "hand", when(c => scored(c) >= 2 && c.scoring.every(red), { xmult: 1.55 })],
-    ["Coalwing Roc", "owl", "x1.55 Mult when every scoring card is black and at least two score.", "hand", when(c => scored(c) >= 2 && c.scoring.every(black), { xmult: 1.55 })],
-    ["Kettle Hag", "merlin", "+10 Chips per played rank that also appears in your held cards.", "hand", c => ({ chips: 10 * new Set((c.cards || []).filter(card => card.rank && includes(c.held, other => other.rank === card.rank)).map(card => card.rank)).size })],
-    ["Furnace Mink", "potion", "+10 Mult when you play two or more cards of the same rank as a held card.", "hand", when(c => includes(c.held, card => card.rank && count(c.cards, other => other.rank === card.rank) >= 2), { mult: 10 })],
-    ["Vesper's Twin", "moth", "x1.55 Mult if you have exactly one hand left after this play.", "hand", when(c => c.handsLeft === 1, { xmult: 1.55 })],
-    ["Kiln Crawler", "dragon", "+13 Chips per card discarded this action the next time you play.", {
-      discard(c, memory) { memory.fuel = size(c); },
-      hand(c, memory) { const chips = 13 * (memory.fuel || 0); memory.fuel = 0; return { chips }; },
+    ["Mantled Viper", "dragon", "Gain x1.2 Mult for each card that scores, up to five cards.", "hand",
+      c => ({ xmult: 1.2 ** Math.min(5, scored(c)) })],
+    ["Glimmer Orca", "potion", "+4 Mult. Each played card that doesn't score adds another +4 Mult.", "hand",
+      c => ({ mult: 4 + 4 * (size(c) - scored(c)) })],
+    ["Cinder Coil", "dragon", "The first scoring card gives +6 Mult each time it triggers.", "scoredCard",
+      onCard("mult", 6, (_, c) => c.cardIndex === 0)],
+    ["Pale Axolotl", "potion", "x1.25 Mult. Raise it to x1.75 if an enhanced card scores or stays in hand.", "hand",
+      c => ({ xmult: [...c.scoring, ...c.held].some(card => card.enhancement) ? 1.75 : 1.25 })],
+    ["Clover Adder", "dragon", "Earn $1 per scoring Club, up to $3 per hand. Wild cards count.", "hand",
+      c => ({ money: Math.min(3, count(c.scoring, suited("C"))) })],
+    ["Carmine Crab", "potion", "Each red card held gives +3 Mult. Wild cards count.", "heldCard", onCard("mult", 3, red)],
+    ["Slate Salamander", "dragon", "Each red card that scores gives +12 Chips and +2 Mult.", "scoredCard",
+      when(c => red(c.card), { chips: 12, mult: 2 })],
+    ["Coalwing Roc", "owl", "Scoring a black card gives x1.5 Mult for the hand. Two or more give x1.8.", "hand",
+      c => ({ xmult: [1, 1.5, 1.8][Math.min(2, count(c.scoring, black))] })],
+    ["Kettle Hag", "merlin", "After a discard, the last scoring card of your next hand this blind retriggers once.", {
+      discard(c, memory) { memory.brewed = true; },
+      scoredCard(c, memory) {
+        if (memory.brewed && !c.retrigger && c.cardIndex === scored(c) - 1) return { retriggers: 1 };
+      },
+      hand(c, memory) { memory.brewed = false; },
+      blindStart(c, memory) { memory.brewed = false; }
+    }],
+    ["Furnace Mink", "potion", "Play a pair anywhere in your hand for +8 Mult. Three matching ranks give +16 instead.", "hand",
+      c => {
+        const ranks = c.cards.map(card => card.rank).filter(Number.isInteger);
+        const copies = Math.max(0, ...ranks.map(rank => ranks.filter(other => other === rank).length));
+        return { mult: copies >= 3 ? 16 : copies === 2 ? 8 : 0 };
+      }],
+    ["Vesper's Twin", "moth", "x1.3 Mult on your opening hand. All later hands this blind get x1.7.", "hand",
+      c => ({ xmult: c.playedCount <= 1 ? 1.3 : 1.7 })],
+    ["Kiln Crawler", "dragon", "+20 Chips. Each discarded card adds +10 Chips to your next hand this blind.", {
+      trackedStat: "chips",
+      discard(c, memory) { memory.fuel = (memory.fuel || 0) + size(c); },
+      hand(c, memory) { const chips = 20 + 10 * (memory.fuel || 0); memory.fuel = 0; return { chips }; },
       blindStart(c, memory) { memory.fuel = 0; }
     }],
-    ["Memorist Owlet", "owl", "+15 Mult every third hand you play in this run.", "hand", when(c => every(3, c.totalHands), { mult: 15 })],
-    ["Orbit Scribe", "merlin", "+11 Mult every second hand of the blind.", "hand", when(c => every(2, c.playedCount), { mult: 11 })],
-    ["Cloud Quill", "grimoire", "x1.6 Mult when you repeat a hand type within this blind.", "hand", when(c => (c.handCounts?.[c.name] || 0) >= 2, { xmult: 1.6 })],
-    ["Ivory Chamberlain", "merlin", "+24 Chips and +2 Mult for each held King.", "heldCard", when(c => c.card?.rank === 13, { chips: 24, mult: 2 })],
-    ["Cradle Mantis", "moth", "+20 Chips and +1 Mult for each scoring 4, 6, or 8.", "scoredCard", when(c => [4, 6, 8].includes(c.card?.rank), { chips: 20, mult: 1 })],
-    ["Needle Crow", "owl", "x1.18 Mult for every scoring 9.", "scoredCard", onCard("xmult", 1.18, card => card.rank === 9)],
-    ["Beacon Urchin", "orb", "x1.2 Mult if a Heart scores last.", "scoredCard", onCard("xmult", 1.2, (card, c) => suited("H")(card) && c.cardIndex === scored(c) - 1)],
-    ["Quarry Gull", "owl", "+70 Chips if at least one Glass card scores.", "hand", when(c => includes(c.scoring, card => card.enhancement === "glass"), { chips: 70 })],
-    ["Iron Dormouse", "owl", "+4 Mult for each held Steel card.", "heldCard", onCard("mult", 4, card => card.enhancement === "steel")],
-    ["Velvet Scarab", "moth", "x1.12 Mult for each held card with an edition.", "heldCard", onCard("xmult", 1.12, card => Boolean(card.edition))],
-    ["Chalk Beetle", "moth", "+2 Mult per unenhanced scoring card without a seal or edition.", "scoredCard", onCard("mult", 2, card => !card.enhancement && !card.edition && !card.seal)],
-    ["Citrine Spider", "potion", "+27 Chips for every sealed card that scores.", "scoredCard", onCard("chips", 27, card => Boolean(card.seal))],
-    ["Mercury Skink", "dragon", "+8 Mult when you play a hand at level 3 or higher.", "hand", when(c => c.level >= 3, { mult: 8 })],
-    ["Dust Telescope", "orb", "+12 Chips per hand level, up to 120 Chips.", "hand", c => ({ chips: Math.min(120, 12 * (c.level || 0)) })],
-    ["Good Omen", "grimoire", "+3 Mult per familiar equipped, capped at +15 Mult.", "hand", c => ({ mult: Math.min(15, 3 * (c.ownedCount || 0)) })],
-    ["Silt Phoenix", "dragon", "+3 Mult for each dollar below $12.", "hand", c => ({ mult: 3 * Math.max(0, 12 - (c.money || 0)) })],
-    ["Marmalade Bat", "moth", "Earn $2 when you discard three even-numbered cards in one draw.", "discard", when(c => count(c.cards, even) >= 3, { money: 2 })],
-    ["Pearl Pigeon", "owl", "Earn $2 when you clear with two or more hands remaining.", "roundEnd", when(c => c.succeeded !== false && c.handsLeft >= 2, { money: 2 })],
-    ["Shopbell Sprite", "orb", "Earn $2 the first time you reroll stock in a shop.", {
-      shop(c, memory) { memory.paid = false; },
+    ["Memorist Owlet", "owl", "Each different hand type played this blind gives +5 Mult, including this hand.", "hand",
+      c => ({ mult: 5 * Object.values(c.handCounts).filter(Boolean).length })],
+    ["Orbit Scribe", "merlin", "Alternates each blind: odd hands give +8 Mult, even hands give x1.7 Mult.", "hand",
+      c => c.playedCount % 2 ? { mult: 8 } : { xmult: 1.7 }],
+    ["Cloud Quill", "grimoire", "+6 Mult the first time you play a hand type each blind. Repeats give x1.75 Mult instead.", "hand",
+      c => c.handCounts[c.name] > 1 ? { xmult: 1.75 } : { mult: 6 }],
+    ["Ivory Chamberlain", "merlin", "Each face card held gives +20 Chips and +2 Mult.", "heldCard",
+      when(c => face(c.card), { chips: 20, mult: 2 })],
+    ["Cradle Mantis", "moth", "Each scoring card ranked 2 through 10 gives +12 Chips and +2 Mult.", "scoredCard",
+      when(c => c.card.rank >= 2 && c.card.rank <= 10, { chips: 12, mult: 2 })],
+    ["Needle Crow", "owl", "Every time a scoring card retriggers, it adds +8 Mult.", "scoredCard",
+      when(c => c.retrigger, { mult: 8 })],
+    ["Beacon Urchin", "orb", "Your last scoring card gets +20 Chips and x1.35 Mult each time it triggers.", "scoredCard",
+      when(c => c.cardIndex === scored(c) - 1, { chips: 20, xmult: 1.35 })],
+    ["Quarry Gull", "owl", "+30 Chips. Each enhanced card that scores adds +30 more.", "hand",
+      c => ({ chips: 30 + 30 * count(c.scoring, card => card.enhancement) })],
+    ["Iron Dormouse", "owl", "Each held card gives +6 Chips. Held enhanced cards give +18 instead.", "heldCard",
+      c => ({ chips: c.card.enhancement ? 18 : 6 })],
+    ["Velvet Scarab", "moth", "x1.25 Mult. Each scoring or held card with an edition adds x0.25, up to x2.5.", "hand",
+      c => ({ xmult: 1.25 + 0.25 * Math.min(5, count([...c.scoring, ...c.held], card => card.edition)) })],
+    ["Chalk Beetle", "moth", "Each scoring card gives +1 Mult, or +3 Mult if it has no enhancement.", "scoredCard",
+      c => ({ mult: c.card.enhancement ? 1 : 3 })],
+    ["Citrine Spider", "potion", "Each scoring card gives +10 Chips. Sealed cards also earn $1 each time they score.", "scoredCard",
+      c => ({ chips: 10, money: c.card.seal ? 1 : 0 })],
+    ["Mercury Skink", "dragon", "+4 Mult per level of the hand you play, up to +24 Mult.", "hand",
+      c => ({ mult: Math.min(24, 4 * c.level) })],
+    ["Dust Telescope", "orb", "+30 Chips. Casting a consumable permanently adds +8 Chips, up to +110 total.",
+      growth("cast", () => true, 8, 80, "chips", 30)],
+    ["Good Omen", "grimoire", "Each equipped familiar gives +3 Mult. Each carried consumable gives +2 more.", {
+      trackedStat: "mult", hand: c => ({ mult: 3 * c.ownedCount + 2 * c.consumableCount })
+    }],
+    ["Silt Phoenix", "dragon", "+6 Mult. Each dollar below $10 adds +2 more.", {
+      trackedStat: "mult", hand: c => ({ mult: 6 + 2 * Math.max(0, 10 - c.money) })
+    }],
+    ["Marmalade Bat", "moth", "Earn $2 for the first discard of each blind and $1 for each later discard.", "discard",
+      c => ({ money: c.discardCount === 1 ? 2 : 1 })],
+    ["Pearl Pigeon", "owl", "Win a blind to earn $2, plus $1 per consumable you carry.", "roundEnd",
+      c => ({ money: 2 + c.consumableCount })],
+    ["Shopbell Sprite", "orb", "Entering a shop pays $1. Your first reroll there pays another $2.", {
+      shop(c, memory) { memory.paid = false; return { money: 1 }; },
       reroll(c, memory) { if (!memory.paid) { memory.paid = true; return { money: 2 }; } }
     }],
-    ["Silken Broker", "key", "Refund $2 for the first booster you open each shop.", {
-      shop(c, memory) { memory.paid = false; },
-      packOpen(c, memory) { if (!memory.paid) { memory.paid = true; return { money: 2 }; } }
+    ["Silken Broker", "key", "Opening any booster earns $2. Casting any consumable earns $1.", {
+      packOpen: () => ({ money: 2 }),
+      cast: () => ({ money: 1 })
     }],
-    ["Garden Almanac", "grimoire", "Create a Spell after your third discard of a blind, if there is room.", "discard", when(c => c.discardCount === 3, { generate: "spell" })],
-    ["Clockwork Mage", "merlin", "Create a Constellation after every third won blind, if there is room.", {
-      roundEnd(c, memory) {
-        if (c.succeeded === false) return;
-        memory.wins = (memory.wins || 0) + 1;
-        if (every(3, memory.wins)) return { generate: "star" };
+    ["Garden Almanac", "grimoire", "Every second consumable you cast grows a Constellation if you have room.", {
+      cast(c, memory) {
+        memory.casts = (memory.casts || 0) + 1;
+        if (every(2, memory.casts)) return { generate: "star" };
       }
     }],
-    ["Tallow Idol", "orb", "+4 Mult. Gain +1 Mult when you discard exactly three cards, up to +15 more.", growth("discard", c => size(c) === 3, 1, 15, "mult", 4)],
-    ["Mire Printer", "grimoire", "+22 Chips. Gain +8 Chips each time you sell something, up to +72 more.", growth("sell", () => true, 8, 72, "chips", 22)],
-    ["Granite Tinker", "merlin", "+25 Chips. Gain +5 Chips for every booster opened, up to +65 more.", growth("packOpen", () => true, 5, 65, "chips", 25)],
-    ["Ash Ledger", "grimoire", "+6 Mult. Gain +1 Mult every time you start a Boss Blind, up to +10 more.", growth("blindStart", c => c.blind === 2, 1, 10, "mult", 6)],
-    ["Root Harp", "grimoire", "Gain +9 Chips for each blind won with a discard remaining, up to +108.", growth("roundEnd", c => c.succeeded !== false && c.discardsLeft > 0, 9, 108, "chips")],
-    ["Ivy Telescope", "orb", "+17 Chips per held Ace.", "heldCard", onCard("chips", 17, card => card.rank === 14)],
-    ["Hush Raven", "owl", "+40 Chips if a Queen scores and another Queen stays in your hand.", "hand", when(c => includes(c.scoring, card => card.rank === 12) && includes(c.held, card => card.rank === 12), { chips: 40 })],
-    ["Glass Kestrel", "owl", "x1.45 Mult with exactly three different suits among played cards.", "hand", when(c => new Set((c.cards || []).map(card => card.suit)).size === 3, { xmult: 1.45 })],
-    ["Porcelain Octopus", "potion", "+9 Mult when at least five cards remain held in hand.", "hand", when(c => held(c) >= 5, { mult: 9 })],
-    ["Jasper Clock", "orb", "+12 Chips for each 5 cards missing from a 52-card deck.", "hand", c => ({ chips: 12 * Math.floor(Math.max(0, 52 - (c.deckSize || 52)) / 5) })],
-    ["Quilted Elk", "owl", "+10 Mult when both played and held cards contain red and black suits.", "hand", when(c => opposite(c.cards) && opposite(c.held), { mult: 10 })]
+    ["Clockwork Mage", "merlin", "Wins alternate between $2 and a Constellation. Leave a slot for the card.", {
+      roundEnd(c, memory) {
+        memory.wins = (memory.wins || 0) + 1;
+        return memory.wins % 2 ? { money: 2 } : { generate: "star" };
+      }
+    }],
+    ["Tallow Idol", "orb", "+4 Mult. Every discard adds +1 Mult permanently, up to +18 total.",
+      growth("discard", () => true, 1, 14, "mult", 4)],
+    ["Mire Printer", "grimoire", "+28 Chips. Selling an item adds +15 Chips permanently, up to +118 total.",
+      growth("sell", () => true, 15, 90, "chips", 28)],
+    ["Granite Tinker", "merlin", "+35 Chips. Opening a booster adds +12 Chips permanently, up to +131 total.",
+      growth("packOpen", () => true, 12, 96, "chips", 35)],
+    ["Ash Ledger", "grimoire", "+5 Mult. Entering a shop adds +1 Mult permanently, up to +20 total.",
+      growth("shop", () => true, 1, 15, "mult", 5)],
+    ["Root Harp", "grimoire", "+18 Chips. Each blind won adds +9 Chips permanently, up to +126 total.",
+      growth("roundEnd", () => true, 9, 108, "chips", 18)],
+    ["Ivy Telescope", "orb", "Your highest held rank gives five times its rank in Chips. Aces count as 14.", "hand",
+      c => ({ chips: 5 * Math.max(0, ...c.held.map(card => card.rank || 0)) })],
+    ["Hush Raven", "owl", "The first face card you score each hand retriggers.", "scoredCard",
+      when(c => face(c.card) && c.cardIndex === c.scoring.findIndex(face), { retriggers: 1 })],
+    ["Glass Kestrel", "owl", "The first time each suit scores in a blind, earn $1 and add +6 Mult. A Wild claims one new suit.", {
+      blindStart(c, memory) { memory.suits = ""; },
+      scoredCard(c, memory) {
+        const seen = memory.suits || "";
+        const suit = c.card.enhancement === "wild"
+          ? ["H", "D", "C", "S"].find(s => !seen.includes(s)) : c.card.suit;
+        if (!suit || seen.includes(suit) || c.retrigger) return;
+        memory.suits = seen + suit;
+        return { money: 1, mult: 6 };
+      }
+    }],
+    ["Porcelain Octopus", "potion", "+2 Mult for each card left in hand, up to +16 Mult.", "hand",
+      c => ({ mult: Math.min(16, 2 * held(c)) })],
+    ["Jasper Clock", "orb", "+35 Chips. Each card below a 52-card deck adds +8 more, up to +155 total.", {
+      trackedStat: "chips", hand: c => ({ chips: 35 + 8 * Math.min(15, Math.max(0, 52 - c.deckSize)) })
+    }],
+    ["Quilted Elk", "owl", "Each color that scores gives +5 Mult. Wild cards count as both colors.", "hand",
+      c => ({ mult: 5 * (Number(includes(c.scoring, red)) + Number(includes(c.scoring, black))) })]
   ]);
 
   register("Rare", [
-    ["Porcelain Wyrm", "dragon", "Retrigger the first scoring numbered card each hand if it has an enhancement.", "scoredCard", onCard("retriggers", 1, (card, c) => c.cardIndex === 0 && numbered(card) && card.enhancement)],
-    ["Wisp Weaver", "moth", "Retrigger your last scoring card when exactly three cards score.", "scoredCard", onCard("retriggers", 1, (_, c) => scored(c) === 3 && c.cardIndex === 2)],
-    ["Night Scintilla", "orb", "Retrigger each held 5 with a seal.", "heldCard", onCard("retriggers", 1, card => card.rank === 5 && Boolean(card.seal))],
-    ["Iridescent Loom", "grimoire", "Retrigger unenhanced scoring Aces when you have no discards left.", "scoredCard", onCard("retriggers", 1, (card, c) => card.rank === 14 && !card.enhancement && c.discardsLeft === 0)],
-    ["Marble Wasp", "moth", "Retrigger the last scoring face card if it finishes your first hand.", "scoredCard", onCard("retriggers", 1, (card, c) => c.playedCount === 1 && c.cardIndex === scored(c) - 1 && face(card))],
-    ["Mirror Grebe", "owl", "Copy the hand-scoring effect of the next familiar to the right on your first hand of each blind.", "hand", when(c => c.playedCount === 1, { copy: "next" })],
-    ["Second Shadow", "moth", "Copy the hand-scoring effect of the familiar immediately to the left on the last hand of a blind.", "hand", when(c => c.handsLeft === 0, { copy: "previous" })],
-    ["Thimble Griffin", "dragon", "x2 Mult if all scored cards are 6 or lower and at least two cards score.", "hand", when(c => scored(c) >= 2 && c.scoring.every(card => card.rank <= 6), { xmult: 2 })],
-    ["Amber Magpie", "owl", "x2.25 Mult when Two Pair leaves two or more face cards in hand.", "hand", when(c => c.name === "Two Pair" && count(c.held, face) >= 2, { xmult: 2.25 })],
-    ["Riddle Fox", "owl", "x2 Mult if your Straight includes both red and black scoring cards.", "hand", when(c => c.name === "Straight" && opposite(c.scoring), { xmult: 2 })],
-    ["Flint Lich", "merlin", "x2 Mult when a played hand has three or more unenhanced face cards.", "hand", when(c => count(c.cards, card => face(card) && !card.enhancement) >= 3, { xmult: 2 })],
-    ["Comet Imp", "moth", "x1.3 Mult for every enhanced card that scores.", "scoredCard", onCard("xmult", 1.3, card => Boolean(card.enhancement))],
-    ["Rook of Glass", "orb", "x1.75 Mult when you hold two or more sealed cards.", "hand", when(c => count(c.held, card => card.seal) >= 2, { xmult: 1.75 })],
-    ["Quicksilver Lynx", "potion", "x2 Mult if a card with both a seal and an edition scores.", "hand", when(c => includes(c.scoring, card => card.seal && card.edition), { xmult: 2 })],
-    ["Umbral Tutor", "merlin", "x2 Mult on hand levels ending in 3, 6, or 9, or a positive multiple of 10.", "hand", when(c => c.level >= 3 && [0, 3, 6, 9].includes(c.level % 10), { xmult: 2 })],
-    ["Ebon Sundial", "orb", "x2.25 Mult when the number of hands and discards left are equal.", "hand", when(c => c.handsLeft === c.discardsLeft, { xmult: 2.25 })],
-    ["Sugar Locust", "moth", "x2 Mult from the second hand onward while you’ve used no discards this blind.", "hand", when(c => c.playedCount >= 2 && c.discardCount === 0, { xmult: 2 })],
-    ["Dusk Undertaker", "merlin", "x2.2 Mult on the next hand after you discard five cards.", {
-      discard(c, memory) { memory.ready ||= size(c) === 5; },
-      hand(c, memory) { const xmult = memory.ready ? 2.2 : 1; memory.ready = false; return { xmult }; },
-      blindStart(c, memory) { memory.ready = false; }
+    ["Porcelain Wyrm", "dragon", "Your first scoring card retriggers once. Move your best card to the front.", "scoredCard",
+      when(c => !c.retrigger && c.cardIndex === 0, { retriggers: 1 })],
+    ["Wisp Weaver", "moth", "Every third scoring card retriggers twice. The count carries between hands and skips retriggers.", {
+      scoredCard(c, memory) {
+        if (c.retrigger) return;
+        memory.thread = ((memory.thread || 0) + 1) % 3;
+        if (!memory.thread) return { retriggers: 2 };
+      }
     }],
-    ["Gilded Harrier", "owl", "x2 Mult when playing exactly three cards with $12–$24 in your wallet.", "hand", when(c => c.money >= 12 && c.money <= 24 && size(c) === 3, { xmult: 2 })],
-    ["Leviathan Husk", "dragon", "x2 Mult when your deck holds 60 cards or more.", "hand", when(c => c.deckSize >= 60, { xmult: 2 })],
-    ["Monastic Eel", "potion", "x2.25 Mult while equipped with only two or three familiars.", "hand", when(c => [2, 3].includes(c.ownedCount), { xmult: 2.25 })],
-    ["Golden Mycelium", "grimoire", "Earn $5 when you win on your last hand of a blind.", "roundEnd", when(c => c.succeeded !== false && c.handsLeft === 0, { money: 5 })],
-    ["Bounty Sparrow", "owl", "Earn $4 when you clear a Boss Blind without using a discard.", "roundEnd", when(c => c.succeeded !== false && c.blind === 2 && c.discardCount === 0, { money: 4 })],
-    ["Specter Crown", "orb", "Create a Spectral card when you clear a Boss Blind, if there is room.", "roundEnd", when(c => c.succeeded !== false && c.blind === 2, { generate: "spectral" })],
-    ["Brass Lantern", "orb", "Earn $3 and create a Spell after every second distinct shop entered, if there is room.", "shop", (c, memory) => {
-      memory.shops = (memory.shops || 0) + 1;
-      return every(2, memory.shops) ? { money: 3, generate: "spell" } : {};
+    ["Night Scintilla", "orb", "Your leftmost held card gives +4 Mult and retriggers once, repeating its held effects.", "heldCard",
+      c => c.cardIndex === 0 ? { mult: 4, retriggers: c.retrigger ? 0 : 1 } : {}],
+    ["Iridescent Loom", "grimoire", "Each scoring card gives +3 Mult. A change of suit from the previous scoring card also triggers that card again.", "scoredCard",
+      c => ({ mult: 3, retriggers: Number(!c.retrigger && c.cardIndex > 0 && c.card.suit != null && c.scoring[c.cardIndex - 1].suit != null && c.card.suit !== c.scoring[c.cardIndex - 1].suit) })],
+    ["Marble Wasp", "moth", "On the opening hand of every blind, all scoring cards retrigger once.", "scoredCard",
+      when(c => !c.retrigger && c.playedCount === 1, { retriggers: 1 })],
+    ["Mirror Grebe", "owl", "Copy the familiar on your right whenever a card scores or triggers in hand.", {
+      scoredCard: () => ({ copy: "next" }),
+      heldCard: () => ({ copy: "next" })
     }],
-    ["Vault Maggot", "moth", "Start at x1.1 Mult. Each paid or free reroll adds x0.15 Mult, up to x2.6.", growth("reroll", () => true, 0.15, 1.5, "xmult", 1.1)],
-    ["Oracle in Amber", "merlin", "Start at x1.2 Mult. Clearing a boss with a spare hand adds x0.25 Mult, up to x3.2.", growth("roundEnd", c => c.succeeded !== false && c.blind === 2 && c.handsLeft > 0, 0.25, 2, "xmult", 1.2)],
-    ["Gull in Chains", "owl", "+45 Chips. Every shop purchase adds +6 Chips, up to +90 more.", growth("buy", () => true, 6, 90, "chips", 45)],
-    ["Frost Warden", "merlin", "Start at x1.15 Mult. Discarding three different suits adds x0.1 Mult, up to x2.65.", growth("discard", c => new Set((c.cards || []).map(card => card.suit)).size >= 3, 0.1, 1.5, "xmult", 1.15)]
+    ["Second Shadow", "moth", "Every hand, copy the end-of-hand scoring ability of the familiar on your left.", "hand", () => ({ copy: "previous" })],
+    ["Thimble Griffin", "dragon", "Each play slot you leave empty gives x1.3 Mult. A one-card play earns all four bonuses.", "hand",
+      c => ({ xmult: 1.3 ** Math.max(0, 5 - size(c)) })],
+    ["Amber Magpie", "owl", "Your last scoring card gives +20 Chips and earns $1 each time it scores.", "scoredCard",
+      when(c => c.cardIndex === scored(c) - 1, { chips: 20, money: 1 })],
+    ["Riddle Fox", "owl", "Start each blind at x1 Mult. Each different hand type played adds x0.5, including this hand.", "hand",
+      c => ({ xmult: 1 + 0.5 * Object.keys(c.handCounts).length })],
+    ["Flint Lich", "merlin", "Your first scoring card gives +7 Mult. Every scoring-card retrigger gives another +7 Mult.", "scoredCard",
+      c => ({ mult: 7 * (Number(c.cardIndex === 0) + Number(c.retrigger)) })],
+    ["Comet Imp", "moth", "Each scoring card gives +2 Mult. Enhanced scoring cards also give x1.3 Mult.", "scoredCard",
+      c => ({ mult: 2, xmult: c.card.enhancement ? 1.3 : 1 })],
+    ["Rook of Glass", "orb", "Gain +8 Mult. Multiply by 1.4 for each kind of upgrade in your held cards: enhancement, seal, edition.", "hand",
+      c => ({ mult: 8, xmult: 1.4 ** count(["enhancement", "seal", "edition"], key => includes(c.held, card => card[key])) })],
+    ["Quicksilver Lynx", "potion", "Each scoring card gives +4 Mult. If its rank already scored this hand, give x1.4 Mult instead.", "scoredCard",
+      c => c.card.rank && (c.retrigger || c.scoring.slice(0, c.cardIndex).some(card => card.rank === c.card.rank)) ? { xmult: 1.4 } : { mult: 4 }],
+    ["Umbral Tutor", "merlin", "Gain +5 Mult per level of the hand you play. Each boss you beat conjures a Constellation if there is room.", {
+      hand: c => ({ mult: 5 * c.level }),
+      roundEnd: when(c => c.blind === 2, { generate: "star" })
+    }],
+    ["Ebon Sundial", "orb", "Alternate each blind: the first hand gets +90 Chips, the next gets x2.2 Mult, then repeat.", "hand",
+      c => c.playedCount % 2 ? { chips: 90 } : { xmult: 2.2 }],
+    ["Sugar Locust", "moth", "Gain +4 Mult for each discard still available. Winning a blind pays $1 per unused discard.", {
+      hand: c => ({ mult: 4 * c.discardsLeft }),
+      roundEnd: c => ({ money: c.discardsLeft })
+    }],
+    ["Dusk Undertaker", "merlin", "Each card you discard adds x0.15 Mult to your next hand, up to x2.5. Resets after the hand or blind.", {
+      trackedStat: "xmult",
+      discard(c, memory) { memory.buried = Math.min(10, (memory.buried || 0) + size(c)); },
+      hand(c, memory) {
+        const xmult = 1 + 0.15 * (memory.buried || 0);
+        memory.buried = 0;
+        return { xmult };
+      },
+      blindStart(c, memory) { memory.buried = 0; }
+    }],
+    ["Gilded Harrier", "owl", "x1.25 Mult, plus x0.05 for every dollar in your purse, up to x2.5 total.", {
+      trackedStat: "xmult",
+      hand: c => ({ xmult: 1.25 + 0.05 * Math.min(25, c.money) })
+    }],
+    ["Leviathan Husk", "dragon", "Your first scoring card adds +1 Chip for every card in your full deck, each time it scores.", "scoredCard",
+      c => c.cardIndex === 0 ? { chips: c.deckSize } : {}],
+    ["Monastic Eel", "potion", "x3 Mult alone. Each other familiar lowers it by x0.35, down to x1.25.", {
+      trackedStat: "xmult",
+      hand: c => ({ xmult: Math.max(1.25, 3 - 0.35 * Math.max(0, c.ownedCount - 1)) })
+    }],
+    ["Golden Mycelium", "grimoire", "When you win a blind, earn $2 for each different hand type you played during it.", "roundEnd",
+      c => ({ money: 2 * Object.keys(c.handCounts).length })],
+    ["Bounty Sparrow", "owl", "Win a blind to earn $2. Bosses pay $6 instead.", "roundEnd", c => ({ money: c.blind === 2 ? 6 : 2 })],
+    ["Specter Crown", "orb", "Every second blind you win conjures a Spectral card if there is room. Using any consumable earns $2.", {
+      cast: () => ({ money: 2 }),
+      roundEnd(c, memory) {
+        memory.victories = (memory.victories || 0) + 1;
+        if (every(2, memory.victories)) return { generate: "spectral" };
+      }
+    }],
+    ["Brass Lantern", "orb", "Enter a shop to earn $2 and conjure a Spell if there is room.", "shop", () => ({ money: 2, generate: "spell" })],
+    ["Vault Maggot", "moth", "Start at x1.3 Mult. Each shop reroll permanently adds x0.15, up to x2.8.", growth("reroll", () => true, 0.15, 1.5, "xmult", 1.3)],
+    ["Oracle in Amber", "merlin", "Start at x1.2 Mult. Every blind you win permanently adds x0.1, up to x3.2.", growth("roundEnd", () => true, 0.1, 2, "xmult", 1.2)],
+    ["Gull in Chains", "owl", "Start with +50 Chips. Every shop purchase permanently adds +10 Chips, up to +200 total.", growth("buy", () => true, 10, 150, "chips", 50)],
+    ["Frost Warden", "merlin", "Start at x1.2 Mult. Your first discard each blind permanently adds x0.1, up to x2.8.", growth("discard", c => c.discardCount === 1, 0.1, 1.6, "xmult", 1.2)]
   ]);
 
   register("Legendary", [
-    ["Aurelia of the Eclipse", "merlin", "During Boss Blinds, the first and last cards that score each retrigger.", "scoredCard", onCard("retriggers", 1, (_, c) => c.blind === 2 && (c.cardIndex === 0 || c.cardIndex === scored(c) - 1))],
-    ["The Orchard Below", "grimoire", "Each red card held gives x1.18 Mult while a black card scores. Each black card held does the same while a red card scores.", "heldCard", onCard("xmult", 1.18, (card, c) => (red(card) && includes(c.scoring, black)) || (black(card) && includes(c.scoring, red)))],
-    ["Saffron, Keeper of Doors", "key", "Starts at x1.4 Mult. Gain x0.25 Mult each time you start a Boss Blind, up to x3.9.", growth("blindStart", c => c.blind === 2, 0.25, 2.5, "xmult", 1.4)],
-    ["Ravel the Weaver", "moth", "Copies the hand-scoring effect of its left neighbor on odd hands and its right neighbor on even hands.", "hand", c => ({ copy: c.playedCount % 2 ? "previous" : "next" })],
-    ["Nacre, Sea of Stars", "dragon", "Every scoring card on a hand of level 4 or more adds x1.18 Mult. Create a Constellation whenever you clear a blind, if there is room.", {
-      scoredCard: onCard("xmult", 1.18, (_, c) => c.level >= 4),
-      roundEnd: when(c => c.succeeded !== false, { generate: "star" })
+    ["Aurelia of the Eclipse", "merlin", "The first and last scoring cards each retrigger once. On Boss Blinds, every scoring card retriggers once.", "scoredCard",
+      when(c => !c.retrigger && (c.blind === 2 || c.cardIndex === 0 || c.cardIndex === scored(c) - 1), { retriggers: 1 })],
+    ["The Orchard Below", "grimoire", "Every held card gives x1.2 Mult. Each time a held card retriggers, also earn $1.", "heldCard",
+      c => ({ xmult: 1.2, money: Number(c.retrigger) })],
+    ["Saffron, Keeper of Doors", "key", "Start at x1.5 Mult. Each consumable used adds x0.2, up to x4.5. Start a blind to conjure a Spell if there is room.", {
+      ...growth("cast", () => true, 0.2, 3, "xmult", 1.5),
+      blindStart: () => ({ generate: "spell" })
+    }],
+    ["Ravel the Weaver", "moth", "Copy your left neighbor's scoring and held-card abilities, then your right neighbor's end-of-hand scoring ability.", {
+      scoredCard: () => ({ copy: "previous" }),
+      heldCard: () => ({ copy: "previous" }),
+      hand: () => ({ copy: "next" })
+    }],
+    ["Nacre, Sea of Stars", "dragon", "Each scoring card adds its hand level to Mult, then gives x1.15 Mult. Win a blind to conjure a Constellation if there is room.", {
+      scoredCard: c => ({ mult: c.level, xmult: 1.15 }),
+      roundEnd: () => ({ generate: "star" })
     }]
   ]);
 
@@ -2442,91 +2566,128 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
 
   function familiar(id, name, art, cost, rarity, description, effect) {
     definition(familiars, "familiar", id, name, art, cost, rarity, description);
-    effects[id] = effect;
+    effects[id] = typeof effect === "function" ? { hand: effect } : effect;
   }
 
-  const count = (cards, test) => cards.reduce((n, card) => n + Number(test(card)), 0);
-  const suitCount = (cards, suit) => count(cards, card => card.suit === suit || card.enhancement === "wild");
+  const count = (cards, test) => cards.filter(test).length;
+  const wild = card => card.enhancement === "wild";
+  const red = card => wild(card) || card.suit === "D" || card.suit === "H";
+  const black = card => wild(card) || card.suit === "C" || card.suit === "S";
   const isFace = card => card.rank >= 11 && card.rank <= 13;
+  const ranksOf = cards => cards.map(card => card.rank).filter(Number.isInteger);
   const suitKinds = cards => {
-    const suits = new Set(cards.filter(card=>card.suit && card.enhancement !== "wild").map(card=>card.suit));
-    return Math.min(4,suits.size + count(cards,card=>card.enhancement === "wild"));
+    const suits = new Set(cards.filter(card => card.suit && !wild(card)).map(card => card.suit));
+    return Math.min(4, suits.size + count(cards, wild));
   };
-  const flushes = ["Flush", "Straight Flush", "Flush House", "Flush Five"];
-  const straights = ["Straight", "Straight Flush"];
-  const groups = ["Three of a Kind", "Full House", "Four of a Kind", "Five of a Kind", "Flush House", "Flush Five"];
+  function largestSuit(cards) {
+    return Math.max(...["H", "D", "C", "S"].map(suit => count(cards, card => card.suit === suit || wild(card))));
+  }
+  function longestRun(cards) {
+    const ranks = new Set(ranksOf(cards));
+    if (ranks.has(14)) ranks.add(1);
+    let longest = 0, streak = 0;
+    for (let rank = 1; rank <= 14; rank++) {
+      streak = ranks.has(rank) ? streak + 1 : 0;
+      longest = Math.max(longest, streak);
+    }
+    return longest;
+  }
 
   familiar("merlin", "Merlin", "merlin", 4, "Common",
-    "+4 Mult on every hand.", () => ({ mult: 4 }));
+    "+4 Mult, plus +3 Mult per consumable you carry.", c => ({ mult: 4 + 3 * c.consumableCount }));
   familiar("ember_moth", "Ember Moth", "moth", 5, "Common",
-    "+4 Mult for each scoring Heart.", c => ({ mult: 4 * suitCount(c.scoring, "H") }));
+    "Each scoring card gives +2 Mult. Lead with a red scoring card to double the bonus.", {
+      scoredCard: c => ({ mult: red(c.scoring[0]) ? 4 : 2 })
+    });
   familiar("thornwing", "Thornwing", "moth", 5, "Common",
-    "+4 Mult for each scoring Club.", c => ({ mult: 4 * suitCount(c.scoring, "C") }));
+    "Each scoring card gives +12 Chips. Black cards also give +2 Mult.", {
+      scoredCard: c => ({ chips: 12, mult: black(c.card) ? 2 : 0 })
+    });
   familiar("night_owl", "Night Owl", "owl", 5, "Common",
-    "+30 Chips for each scoring Spade.", c => ({ chips: 30 * suitCount(c.scoring, "S") }));
+    "+20 Chips per black card you play, including kickers.", c => ({ chips: 20 * count(c.cards, black) }));
   familiar("gilded_eye", "Gilded Eye", "orb", 6, "Uncommon",
-    "Earn $1 for each scoring Diamond.", c => ({ money: suitCount(c.scoring, "D") }));
+    "Earn $1 per suit among scoring cards, up to $3 per hand.", c => ({ money: Math.min(3, suitKinds(c.scoring)) }));
   familiar("twin_lights", "Twin Lights", "orb", 4, "Common",
-    "+9 Mult when your played cards include a pair.",
+    "+3 Mult. Each extra copy of a rank you play adds +5 more.",
     c => {
-      const ranks = c.cards.map(card=>card.rank).filter(Number.isInteger);
-      return {mult:new Set(ranks).size < ranks.length ? 9 : 0};
+      const ranks = ranksOf(c.cards);
+      return { mult: 3 + 5 * (ranks.length - new Set(ranks).size) };
     });
   familiar("pocket_grimoire", "Pocket Grimoire", "grimoire", 5, "Common",
-    "+60 Chips when you play three or fewer cards.", c => ({ chips: c.cards.length <= 3 ? 60 : 0 }));
+    "+75 Chips for playing one card. Each extra played card reduces this bonus by 12.",
+    c => ({ chips: 75 - 12 * (c.cards.length - 1) }));
   familiar("royal_reader", "Royal Reader", "merlin", 5, "Common",
-    "+25 Chips and +3 Mult per scoring face card.",
-    c => { const faces = count(c.scoring, isFace); return { chips: 25 * faces, mult: 3 * faces }; });
+    "Scoring cards give +8 Chips. Face cards give +25 Chips and +3 Mult instead.", {
+      scoredCard: c => isFace(c.card) ? { chips: 25, mult: 3 } : { chips: 8 }
+    });
   familiar("opal_owl", "Opal Owl", "owl", 5, "Common",
-    "+25 Chips per distinct suit among scoring cards.", c => ({ chips: 25 * suitKinds(c.scoring) }));
+    "+20 Chips per suit you play. Kickers count and Wild cards fill missing suits.",
+    c => ({ chips: 20 * suitKinds(c.cards) }));
   familiar("mooncalf", "Mooncalf", "owl", 5, "Common",
-    "+8 Mult for each scoring 2, 3 or 4.", c => ({ mult: 8 * count(c.scoring, card => card.rank <= 4) }));
+    "Each scoring card ranked 2 through 7 gives +6 Mult. All other scoring cards give +1 Mult.", {
+      scoredCard: c => ({ mult: c.card.rank <= 7 ? 6 : 1 })
+    });
   familiar("cold_reader", "Cold Reader", "merlin", 5, "Common",
-    "+4 Mult for each hand you have left after playing.", c => ({ mult: 4 * c.handsLeft }));
+    "+3 Mult per hand left after playing. On your last hand, earn $3 instead.",
+    c => c.handsLeft === 0 ? { money: 3 } : { mult: 3 * c.handsLeft });
   familiar("tidal_lens", "Tidal Lens", "orb", 6, "Uncommon",
-    "×2 Mult when the hand is a Flush or a stronger flush hand.",
-    c => ({ xmult: flushes.includes(c.name) ? 2 : 1 }));
+    "Start at x1 Mult. Gain x0.25 per card in your largest played suit.",
+    c => ({ xmult: 1 + 0.25 * largestSuit(c.cards) }));
   familiar("wayfinder", "Wayfinder", "owl", 6, "Uncommon",
-    "×2.5 Mult on a Straight or Straight Flush.", c => ({ xmult: straights.includes(c.name) ? 2.5 : 1 }));
+    "Start at x1 Mult. Gain x0.3 per rank in your longest played sequence. Aces count high or low.",
+    c => ({ xmult: 1 + 0.3 * longestRun(c.cards) }));
   familiar("many_minds", "Many Minds", "dragon", 7, "Uncommon",
-    "×2 Mult when the hand contains three or more cards of one rank.",
-    c => ({ xmult: groups.includes(c.name) ? 2 : 1 }));
+    "Each scoring card gives +2 Mult. Then gain x1.5 Mult if two scoring ranks match.",
+    c => {
+      const ranks = ranksOf(c.scoring);
+      return { mult: 2 * c.scoring.length, xmult: ranks.length > new Set(ranks).size ? 1.5 : 1 };
+    });
   familiar("echo_book", "Book of Echoes", "grimoire", 5, "Uncommon",
-    "+8 Mult for each earlier play of this hand type in the current blind.",
-    c => ({ mult: 8 * Math.max(0, (c.handCounts[c.name] || 0) - 1) }));
+    "+4 Mult. Each earlier play of this hand type in the blind adds +8 more.",
+    c => ({ mult: 4 + 8 * Math.max(0, (c.handCounts[c.name] || 0) - 1) }));
   familiar("empty_inkwell", "Empty Inkwell", "potion", 6, "Uncommon",
-    "×2 Mult while you have no discards left.", c => ({ xmult: c.discardsLeft === 0 ? 2 : 1 }));
+    "Start each blind at x1.25 Mult. Each discard adds x0.4, up to x2.85.",
+    c => ({ xmult: 1.25 + 0.4 * Math.min(4, c.discardCount) }));
   familiar("vesper", "Vesper", "moth", 6, "Uncommon",
-    "×2.5 Mult on your last hand of the blind.", c => ({ xmult: c.handsLeft === 0 ? 2.5 : 1 }));
+    "x1.25 Mult on your opening hand. Each later play this blind raises it by x0.45, up to x3.05.",
+    c => ({ xmult: 1.25 + 0.45 * Math.min(4, Math.max(0, c.playedCount - 1)) }));
   familiar("vault_watcher", "Vault Watcher", "owl", 6, "Uncommon",
-    "+2 Chips per dollar you have, up to +150 Chips.", c => ({ chips: Math.min(150, 2 * c.money) }));
+    "+20 Chips plus +2 per dollar you hold, up to +170 Chips total.", c => ({ chips: 20 + Math.min(150, 2 * c.money) }));
   familiar("dust_scribe", "Dust Scribe", "merlin", 6, "Uncommon",
-    "+3 Chips for every discard action taken this run.", c => ({ chips: 3 * c.totalDiscards }));
-  familiar("tower_oracle", "Tower Oracle", "orb", 7, "Uncommon",
-    "+3 Mult per Ante.", c => ({ mult: 3 * c.ante }));
+    "+20 Chips plus +4 for every discard action taken this run.", c => ({ chips: 20 + 4 * c.totalDiscards }));
+  familiar("tower_oracle", "Tower Oracle", "merlin", 7, "Uncommon",
+    "+3 Mult per Ante. During Boss Blinds, gain +3 more per Ante.", c => ({ mult: c.ante * (c.blind === 2 ? 6 : 3) }));
   familiar("last_leaf", "Last Leaf", "moth", 6, "Uncommon",
-    "Earn $3 on the first hand of each blind.", c => ({ money: c.playedCount === 1 ? 3 : 0 }));
+    "Earn $3 on the first hand of each blind. Every later hand earns $1.", c => ({ money: c.playedCount === 1 ? 3 : 1 }));
   familiar("folio", "Endless Folio", "grimoire", 7, "Uncommon",
-    "+10 Chips for each card above 48 in your full deck.",
-    c => ({ chips: 10 * Math.max(0, c.deckSize - 48) }));
+    "+1 Chip per card in your deck. Each card above 52 gives another +8 Chips.",
+    c => ({ chips: c.deckSize + 8 * Math.max(0, c.deckSize - 52) }));
   familiar("crown_glass", "Crown Glass", "orb", 8, "Rare",
-    "×1.6 Mult for each scoring King.", c => ({ xmult: Math.pow(1.6, count(c.scoring, card => card.rank === 13)) }));
+    "Retrigger your first scoring face card each hand. If no face scores, retrigger the first scoring card.", {
+      scoredCard: c => {
+        const firstFace = c.scoring.findIndex(isFace);
+        return c.cardIndex === Math.max(0, firstFace) ? { retriggers: 1 } : {};
+      }
+    });
   familiar("prism_wing", "Prism Wing", "moth", 8, "Rare",
-    "×3 Mult if all four suits appear among the cards you play.", c => ({ xmult: suitKinds(c.cards) === 4 ? 3 : 1 }));
+    "Each suit you play adds x0.5 Mult to x1. Wild cards fill missing suits.",
+    c => ({ xmult: 1 + 0.5 * suitKinds(c.cards) }));
   familiar("star_eater", "Star Eater", "dragon", 9, "Rare",
-    "×1 Mult, plus ×0.4 per level of the played hand above level 1.",
-    c => ({ xmult: 1 + 0.4 * Math.max(0, c.level - 1) }));
+    "x1.4 Mult at hand level 1. Each extra level adds x0.4 Mult.",
+    c => ({ xmult: 1 + 0.4 * c.level }));
   familiar("quiet_court", "Quiet Court", "merlin", 8, "Rare",
-    "Each Queen held in your hand grants ×1.4 Mult.",
-    c => ({ xmult: Math.pow(1.4, count(c.held, card => card.rank === 12 && !card.debuffed)) }));
+    "Each held face card or Ace gives x1.25 Mult.", {
+      heldCard: c => isFace(c.card) || c.card.rank === 14 ? { xmult: 1.25 } : {}
+    });
   familiar("coven", "The Coven", "grimoire", 9, "Rare",
-    "×0.5 Mult per equipped familiar, including itself, with a minimum of ×1.",
-    c => ({ xmult: Math.max(1, c.ownedCount * 0.5) }));
+    "Each equipped familiar, including this one, adds x0.35 Mult to x1.",
+    c => ({ xmult: 1 + 0.35 * c.ownedCount }));
   familiar("paper_king", "Paper King", "merlin", 8, "Rare",
-    "×3 Mult when your full deck has 48 cards or fewer.", c => ({ xmult: c.deckSize <= 48 ? 3 : 1 }));
+    "x1.5 Mult. Each card below a 52-card deck adds x0.2 Mult, up to x3.5.",
+    c => ({ xmult: 1.5 + 0.2 * Math.min(10, Math.max(0, 52 - c.deckSize)) }));
   familiar("horizon_owl", "Horizon Owl", "owl", 8, "Rare",
-    "×2 Mult if an Ace scores. Adds +60 Chips if two or more Aces score.",
-    c => { const aces = count(c.scoring, card => card.rank === 14); return { chips: aces >= 2 ? 60 : 0, xmult: aces ? 2 : 1 }; });
+    "Your highest scoring rank sets your Mult bonus, from x1.2 on a 2 to x2.4 on an Ace.",
+    c => ({ xmult: 1 + Math.max(0, ...ranksOf(c.scoring)) / 10 }));
 
   function spell(id, name, art, cost, description, effect, value, minTargets = 0, maxTargets = 0) {
     definition(spells, "spell", id, name, art, cost, effect === "level" ? "Constellation" : "Spell", description,
@@ -2590,12 +2751,12 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
 
   function score(id, context) {
     const effect = effects[typeof id === "string" ? id : id.id];
-    const result = effect ? effect(context) : {};
+    const result = effect?.hand?.(context) || {};
     return { chips: 0, mult: 0, xmult: 1, money: 0, ...result };
   }
 
   function trigger(id, event, context, memory) {
-    if (effects[id]) return event === "hand" ? score(id, context) : {};
+    if (effects[id]) return event === "hand" ? score(id, context) : effects[id][event]?.(context, memory) || {};
     return expansion.trigger(id, event, context, memory) || {};
   }
 
@@ -3011,31 +3172,38 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     return context;
   }
   const bossSilences = (s,index) => index < bossValue(s,"noJokers");
-  function familiarEffect(s,index,event,ctx,memory,resolveCopy = true) {
+  function familiarEffect(s,index,event,ctx,memory,resolved) {
     const id = s.familiars[index];
     if (!id || bossSilences(s,index) || s.rules.noFamiliarEffects) return {};
     const {id:key,sticker} = market.splitVariant(id);
     const data = memory[key] ??= {};
     if (sticker === "perishable" && (data.age || 0) >= 5) return {};
     const effect = content.trigger(key,event,ctx,data);
-    if (resolveCopy && effect.copy) {
+    if (resolved) resolved[index] = effect;
+    if (effect.copy) {
       const offset = effect.copy === "previous" ? -1 : 1;
-      return familiarEffect(s,index + offset,event,ctx,JSON.parse(JSON.stringify(memory)),false);
+      const neighbor = index + offset;
+      if (!resolved || !s.familiars[neighbor]) return {};
+      // A left neighbor may already have spent its charge on this pass.
+      if (resolved[neighbor]) return resolved[neighbor].copy ? {} : resolved[neighbor];
+      const target = baseId(s.familiars[neighbor]);
+      return familiarEffect(s,neighbor,event,ctx,{[target]:{...memory[target]}});
     }
     return effect;
   }
   function applyReward(s,effect) {
     if (effect.money) earn(s,effect.money);
-    if (effect.generate) generate(s,effect.generate);
+    const created = effect.generate && generate(s,effect.generate);
+    return Boolean(effect.money || created);
   }
   function dispatch(s,event,extra) {
     const ctx = makeContext(s,extra);
     for (let i=0;i<s.familiars.length;i++) {
       const id = s.familiars[i];
       const effect = familiarEffect(s,i,event,ctx,s.familiarMemory);
-      if (effect.money || effect.generate) countUse(s,id);
-      applyReward(s,effect);
+      if (applyReward(s,effect)) countUse(s,id);
       ctx.money = s.money;
+      ctx.consumableCount = s.consumables.length;
     }
   }
   function preview(s,ids) {
@@ -3079,9 +3247,10 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         steps.push({label,text:labels.join(" · "),...source,chips,mult});
       }
     }
-    function familiarAt(i,event,extra) {
+    function familiarAt(i,event,extra,resolved) {
       const id = s.familiars[i];
-      const effect = familiarEffect(s,i,event,{...ctx,...extra},memory);
+      const raw = familiarEffect(s,i,event,{...ctx,...extra},memory,resolved);
+      const effect = extra.retrigger && raw.retriggers ? {...raw,retriggers:0} : raw;
       apply(effect,content.familiars[baseId(id)].name,{familiarId:id,...(extra.card && {cardId:extra.card.id})});
       return effect.retriggers || 0;
     }
@@ -3108,16 +3277,18 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
           const edition = market.editions[card.edition];
           if (edition) apply(edition,edition.name,{cardId:card.id});
         }
+        const resolved = [];
         for (let i=0;i<s.familiars.length;i++) {
           const effective = contextCard(card);
           const more = familiarAt(i,event,{card:effective.enhancement === enhancement ? effective : {...effective,enhancement},
-            cardIndex,retrigger:pass > 0});
+            cardIndex,retrigger:pass > 0},resolved);
           if (!pass) repeats = Math.min(8,repeats + more);
         }
       }
     }
     active.forEach((card,i)=>scoreCard(card,i,false));
     held.forEach((card,i)=>scoreCard(card,i,true));
+    const resolvedHand = [];
     for (let i=0;i<s.familiars.length;i++) {
       const id = s.familiars[i];
       const {edition,sticker} = market.splitVariant(id);
@@ -3125,7 +3296,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       const live = !bossSilences(s,i) && !s.rules.noFamiliarEffects &&
         (sticker !== "perishable" || (memory[baseId(id)]?.age || 0) < 5);
       if (live && editionDef && edition !== "polychrome") apply(editionDef,editionDef.name,{familiarId:id});
-      familiarAt(i,"hand",{});
+      familiarAt(i,"hand",{},resolvedHand);
       if (live && editionDef && edition === "polychrome") apply(editionDef,editionDef.name,{familiarId:id});
     }
     if (s.rules.chipToMult) {
@@ -3246,9 +3417,8 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   }
   // These bonuses scale with the run or charge up for the next hand.
   const runScalingStats = {
-    dust_scribe:"chips", vault_watcher:"chips", folio:"chips", jasper_clock:"chips",
-    kiln_crawler:"chips", tower_oracle:"mult", good_omen:"mult", silt_phoenix:"mult",
-    coven:"xmult", dusk_undertaker:"xmult"
+    dust_scribe:"chips", vault_watcher:"chips", folio:"chips",
+    tower_oracle:"mult", coven:"xmult"
   };
   function ownedItem(s,category,index) {
     let def = item(s[category]?.[index]);
@@ -3258,10 +3428,13 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       if (stat) {
         // Next-hand effects may consume charges. Inspect a copy of the saved counters.
         const memory = {...s.familiarMemory?.[id]};
-        const value = content.trigger(id,"hand",makeContext(s),memory)[stat];
-        const amount = (stat === "xmult" ? "×" : "+") + Number(value.toFixed(2));
-        const label = amount + (stat === "chips" ? " Chips" : " Mult");
-        def = {...def,stackAmount:amount,stackStat:stat,description:"Currently " + label + ". " + def.description};
+        const roll = {rng:s.rng};
+        const value = content.trigger(id,"hand",makeContext(s,{random:()=>random(roll)}),memory)[stat];
+        if (Number.isFinite(value)) {
+          const amount = (stat === "xmult" ? "×" : "+") + Number(value.toFixed(2));
+          const label = amount + (stat === "chips" ? " Chips" : " Mult");
+          def = {...def,stackAmount:amount,stackStat:stat,description:"Currently " + label + ". " + def.description};
+        }
       }
       if (s.phase === "play" && bossSilences(s,index)) {
         def = {...def,bossMuted:true,description:"Silenced by " + boss(s).name + ". " + def.description};
@@ -3584,6 +3757,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
           }
         }
     }
+    dispatch(s,"cast",{item:def});
   }
   const useHand = s => s.pack?.hand || (s.phase === "play" ? s.hand : []);
   function canUse(s,index,ids) {
@@ -5446,6 +5620,22 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     diamond:'<path d="m10 2 6 8-6 8-6-8z"/><path d="m10 6 3 4-3 4-3-4z"/>',check:'<path d="m3 10 4 4L17 4"/>'
   };
   function icon(key) {return '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[key] || paths.spark)+'</svg>';}
+  function scorePotion(stat){
+    return '<svg class="score-potion potion-'+stat+'" viewBox="0 0 34 38" aria-hidden="true" focusable="false">'+
+      '<path d="M13 7h8v8c0 3 8 7 8 13 0 6-5 8-12 8S5 34 5 28c0-6 8-10 8-13z" fill="#243040" stroke="#dceaea" stroke-width="1.6"/>'+
+      '<path class="potion-liquid" d="M7 25q4-3 10 0t10-1q4 10-10 10T7 25Z"/>'+
+      '<path class="potion-rising" d="M14 8h6v8c0 3 8 7 8 12q0 7-11 7T6 28c0-5 8-9 8-12Z"/>'+
+      '<path d="M13 19q-5 4-5 8m1 3 1 1" fill="none" stroke="#f2ffff" opacity=".85" stroke-linecap="round" stroke-width="1.7"/>'+
+      '<path d="M22 29q-1 2-4 2" stroke="var(--elixir-light)" fill="none" stroke-linecap="round" stroke-width="1.5"/>'+
+      '<rect x="11.5" y="5.5" width="11" height="4" rx="1.5" fill="#ca9d66" stroke="#543d3c"/>'+
+      '<path d="M13 6.6h8" stroke="#ffe5ae" stroke-linecap="round"/>'+
+      '<g class="potion-spill"><path class="potion-stream" pathLength="1" d="M16 5q-5-2-5 3t.2 6q.4 3-2.4 5" />'+
+      '<path class="potion-foam" d="M11 6q-1-3 2-3 2-4 5-1 5-2 5 3 2 3 0 5-2 1-2-2 0-2-3-1-3 1-5-1Z"/>'+
+      '<circle class="potion-bubble" cx="14" cy="4" r="1.65"/><circle class="potion-bubble second" cx="20" cy="4" r="1.25"/>'+
+      '<circle class="potion-drip" cx="9" cy="18" r="1.5"/></g></svg>';
+  }
+  document.querySelector('.chip-comp .stat-chips').insertAdjacentHTML('afterbegin',scorePotion('chips'));
+  document.querySelector('.mult-comp .stat-mult').insertAdjacentHTML('afterbegin',scorePotion('mult'));
   document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});
   const suits = {
     S:{name:'Spades',color:'#363346',path:'M10 1C7.9 4.4 1.7 7.9 1.7 12.1c0 4.2 4.8 5.4 7.6 2.1-.4 2.3-1.2 3.7-3.1 5h7.6c-1.9-1.3-2.7-2.7-3.1-5 2.8 3.3 7.6 2.1 7.6-2.1C18.3 7.9 12.1 4.4 10 1Z'},
@@ -5744,136 +5934,17 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function dismissGhosts(ghosts){
     for(const {ghost,animation} of ghosts){animation?.cancel();ghost.remove();}
   }
-  function victoryFireworks(chips,mult,total){
-    const canvas=document.createElement('canvas');
-    canvas.className='victory-fireworks';
-    canvas.setAttribute('aria-hidden','true');
-    const ctx=canvas.getContext('2d');
-    if(!ctx)return;
-    document.body.append(canvas);
-    const start=performance.now(), speed=Number(prefs.speed)||1;
-    const clock=()=>((performance.now()-start)*speed)/1000;
-    const palettes=[['#3763ff','#00d9ff','#c6ffff'],['#fb284d','#ff8737','#fff5a5'],['#ff9800','#ffcf46','#fff8d0']];
-    const shells=[];
-    const tau=Math.PI*2;
-    let frame,width,height;
-    function launch(node,side,color,delay,large=false){
-      const box=node.getBoundingClientRect();
-      const x=box.left+box.width/2,y=box.top;
-      const radius=Math.min(innerWidth*.18,innerHeight*.19,145)*(large?1:.76);
-      const endX=Math.max(radius*.65,Math.min(innerWidth-radius*.65,x+side*radius*1.25));
-      const endY=Math.max(radius*.65,y-radius*(large?1.35:1));
-      shells.push({x,y,endX,endY,radius,color,side,at:clock()+delay,large});
-    }
-    function star(x,y,size){
-      ctx.beginPath();
-      for(let i=0;i<8;i++){
-        const angle=i*Math.PI/4, r=i%2?size*.24:size;
-        const px=x+Math.cos(angle)*r,py=y+Math.sin(angle)*r;
-        if(i)ctx.lineTo(px,py);else ctx.moveTo(px,py);
-      }
-      ctx.closePath();ctx.fill();
-    }
-    function flames(node,index,t){
-      const box=node.getBoundingClientRect(), palette=palettes[index];
-      const w=Math.max(24,box.width),base=box.top+box.height*.25;
-      for(let j=0;j<9;j++){
-        const phase=t*7+j*2.3;
-        const x=box.left+w*(j+.5)/9;
-        const h=Math.min(74,box.height*1.6)*(1-.45*Math.abs(j-4)/4)*(.76+.24*Math.sin(phase));
-        const lean=Math.cos(phase*.7)*h*.28;
-        for(let k=0;k<3;k++){
-          const r=(.19-k*.05)*w,tip=h*(1-k*.27);
-          ctx.fillStyle=palette[k];ctx.globalAlpha=k===0?.48:.85;
-          ctx.beginPath();ctx.moveTo(x-r,base);
-          ctx.bezierCurveTo(x-r,base-tip*.55,x+lean+r*.6,base-tip*.62,x+lean,base-tip);
-          ctx.bezierCurveTo(x+lean+r,base-tip*.78,x+r,base-tip*.29,x+r,base);
-          ctx.quadraticCurveTo(x,base+4,x-r,base);ctx.fill();
-        }
-        const rise=(t*1.25+j*.31)%1;
-        ctx.globalAlpha=1-rise;ctx.fillStyle=palette[2];
-        star(x+lean*rise,base-h-rise*22,2.8*(1-rise));
-      }
-    }
-    function drawShell(shell,t){
-      const {x,y,endX,endY,radius,color,side,large}=shell;
-      const age=t-shell.at,flight=.36;
-      if(age<0 || age>flight+1.1)return;
-      const palette=palettes[color];
-      if(age<flight){
-        const pos=u=>[x+(endX-x)*u+Math.sin(Math.PI*u)*side*16,y+(endY-y)*Math.sin(u*Math.PI/2)];
-        for(let j=6;j>=0;j--){
-          const u=Math.max(0,(age-j*.014)/flight),[px,py]=pos(u);
-          ctx.globalAlpha=1-j/8;ctx.fillStyle=palette[j%3];star(px,py,7-j*.7);
-        }
-        return;
-      }
-      const u=(age-flight)/1.1,spread=1-Math.pow(1-u,3),n=large?52:34;
-      ctx.lineCap='round';
-      for(let j=0;j<n;j++){
-        const angle=tau*j/n+side*.27;
-        const length=radius*(j%2===0?1:.58)*(1+.09*Math.sin(5*angle));
-        const point=(v,d)=>[endX+Math.cos(angle+d*.12*side)*length*v,
-          endY+Math.sin(angle+d*.12*side)*length*v+radius*.42*d*d];
-        const [px,py]=point(spread,u);
-        const tail=Math.max(0,u-.085);
-        const [tx,ty]=point(1-Math.pow(1-tail,3),tail);
-        ctx.globalAlpha=(1-u*u)*(.83+.17*Math.sin(j+t*16));
-        ctx.strokeStyle=palette[j%3];ctx.lineWidth=large?2.5:1.8;
-        ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(px,py);ctx.stroke();
-        ctx.fillStyle=palette[2];star(px,py,(j%5===0?5:2.3)*(1-u*.7));
-      }
-    }
-    function draw(){
-      if(width!==innerWidth || height!==innerHeight){
-        width=innerWidth;height=innerHeight;
-        const ratio=Math.min(devicePixelRatio||1,1.5);
-        canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);
-        ctx.setTransform(ratio,0,0,ratio,0,0);
-      }
-      const t=clock();
-      ctx.clearRect(0,0,width,height);ctx.globalCompositeOperation='lighter';
-      flames($('chips'),0,t);flames($('mult'),1,t);
-      if(chips.isConnected){flames(chips,0,t);flames(mult,1,t);}
-      for(const shell of shells)drawShell(shell,t);
-      ctx.globalAlpha=1;
-      frame=requestAnimationFrame(draw);
-    }
-    launch(chips,-1,0,0);launch(mult,1,1,.09);
-    frame=requestAnimationFrame(draw);
-    return {
-      finale(){launch(total,-1,0,0,true);launch(total,1,1,.06,true);launch(total,0,2,.18,true);},
-      stop(){cancelAnimationFrame(frame);canvas.remove();}
-    };
-  }
-  function openVictoryPortal(source){
-    const box=source.getBoundingClientRect();
-    const veil=document.createElement('div');
-    veil.className='victory-portal';
-    veil.setAttribute('aria-hidden','true');
-    veil.innerHTML='<div class="portal-disc"><i class="portal-orbit"></i><i class="portal-star"></i></div>';
-    document.body.append(veil);
-    const disc=veil.firstElementChild;
-    const pose=(x,y,scale,angle)=>'translate('+x+'px,'+y+'px) translate(-50%,-50%) rotate('+angle+'deg) scale('+scale+')';
-    const x=box.left+box.width/2, y=box.top+box.height/2;
-    const center=pose(innerWidth/2,innerHeight/2,1,32);
-    const cover=disc.animate([
-      {transform:pose(x,y,.012,-22),opacity:0},
-      {transform:pose(x,y,.065,0),opacity:1,offset:.36},
-      {transform:center,opacity:1}
-    ],{duration:fxTime(540),easing:'cubic-bezier(.42,0,.68,1)',fill:'forwards'});
-    return {
-      covered:cover.finished.catch(()=>{}),
-      reveal(){
-        const star=document.querySelector('.victory-sky .victory-star')?.getBoundingClientRect();
-        const endX=star?star.left+star.width/2:x, endY=star?star.top+star.height/2:y;
-        const arrival=disc.animate([
-          {transform:center,opacity:1},
-          {transform:pose(endX,endY,.09,64),opacity:.9,offset:.65},
-          {transform:pose(endX,endY,.008,78),opacity:0}
-        ],{duration:fxTime(450),easing:'ease-out',fill:'forwards'});
-        arrival.finished.then(()=>veil.remove(),()=>veil.remove());
-      }
+  async function dimTableForRewards(){
+    const dusk=document.createElement('div');
+    dusk.className='rewards-dissolve';
+    dusk.setAttribute('aria-hidden','true');
+    document.body.append(dusk);
+    const timing={duration:fxTime(210),easing:'ease-in-out',fill:'both'};
+    const fade=dusk.animate([{opacity:0},{opacity:1}],timing);
+    await fade.finished.catch(()=>{});
+    return ()=>{
+      const reveal=dusk.animate([{opacity:1},{opacity:0}],{...timing,duration:fxTime(340)});
+      reveal.finished.then(()=>dusk.remove(),()=>dusk.remove());
     };
   }
   async function commit(discarding=false){
@@ -5889,7 +5960,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     };
     const pointsNeeded=run.target-run.score;
     const counters=$('chips').closest('.score-components');
-    let fireworks, portal;
+    let revealRewards;
     let ghosts=[];
     busy=true;
     try{
@@ -5908,7 +5979,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         return;
       }
       area.classList.add('scoring','cw-fx-cast');
-      area.innerHTML='<div class="cw-fx-lane" aria-hidden="true"></div><div class="cw-fx-receipt" aria-hidden="true"><div class="cw-fx-name"></div><div class="cw-fx-equation"><b class="cw-fx-chips"></b><span>×</span><b class="cw-fx-mult"></b></div><div class="cw-fx-call"></div></div>';
+      area.innerHTML='<div class="cw-fx-lane" aria-hidden="true"></div><div class="cw-fx-receipt" aria-hidden="true"><div class="cw-fx-name"></div><div class="cw-fx-equation"><div class="potion-value">'+scorePotion('chips')+'<b class="cw-fx-chips"></b></div><span>×</span><div class="potion-value">'+scorePotion('mult')+'<b class="cw-fx-mult"></b></div></div><div class="cw-fx-call"></div></div>';
       const receipt=area.querySelector('.cw-fx-receipt');
       const title=area.querySelector('.cw-fx-name');
       const equation=area.querySelector('.cw-fx-equation');
@@ -5936,7 +6007,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         if(cleared && Math.floor(chips*mult)>=pointsNeeded && !equation.classList.contains('blind-overdrive')){
           equation.classList.add('blind-overdrive');
           counters.classList.add('blind-overdrive');
-          if(moving)fireworks=victoryFireworks(chipText,multText,equation);
+          for(const group of [equation,counters]) group.style.setProperty('--brew-cycle',fxTime(880)+'ms');
           pulse(equation,[{scale:'.94'},{scale:'1.12',offset:.38},{scale:'1'}],285);
         }
         chipText.textContent=$('chips').textContent=compact(chips);
@@ -6001,26 +6072,21 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       if(moving){
         $('round-score').classList.add('score-pop');
         pulse(equation,[{scale:'.9'},{scale:'1.09',offset:.4},{scale:'1'}],260);
-        fireworks?.finale();
       }
       $('announce').textContent=result.name+', '+num(result.total)+' chips. Round score '+num(run.score)+'.'+(cleared?' Blind cleared.':'');
       if(cleared)audio.event('win');
       if(run.phase==='lost')audio.event('lose');
       const toRewards=moving && run.phase==='payout';
       await wait(cleared?(moving?(toRewards?1100:1640):460):(moving?380:160));
-      if(toRewards){
-        portal=openVictoryPortal(equation);
-        await portal.covered;
-      }
+      if(toRewards)revealRewards=await dimTableForRewards();
     }finally{
-      fireworks?.stop();
       counters.classList.remove('blind-overdrive');
       dismissGhosts(ghosts);
       area.classList.remove('cw-fx-cast','scoring');
       $('round-score').classList.remove('score-pop');
       busy=false;
       render(false);
-      portal?.reveal();
+      revealRewards?.();
       if(run.phase==='play'){
         audio.event('deal');
         if(discarding && moving){
