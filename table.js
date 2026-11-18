@@ -68,6 +68,7 @@
   let run=loadRun();
   let hasRun=Boolean(run);
   let showLobby=true;
+  let suspendedRun=null;
   if(!run) run=CW.newRun(undefined,'arcane');
   const prefs={
     muted:false,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -78,8 +79,30 @@
   const selected=new Set();
   let busy=false, currentHand=[], toastTimer, lastViewKey='';
   let orderCardId=null;
+  let unlockTimer;
+  const unlockQueue=[];
+  function showFamiliarUnlock(){
+    if(unlockTimer || !unlockQueue.length)return;
+    const familiar=CW.item(unlockQueue.shift()), notice=$('familiar-unlock');
+    notice.innerHTML='<img alt="" src="'+esc(CWContent.portrait(familiar.art))+'"><div><small>Familiar unlocked</small><b>'+esc(familiar.name)+'</b><span>'+esc(familiar.unlock)+'</span></div>';
+    notice.hidden=false;
+    unlockTimer=setTimeout(()=>{
+      notice.hidden=true;
+      unlockTimer=null;
+      showFamiliarUnlock();
+    },4000);
+  }
+  function announceFamiliarUnlocks(){
+    unlockQueue.push(...profileStore.takeFamiliarUnlocks());
+    showFamiliarUnlock();
+  }
   function save(){
+    if(run.playtest){
+      $('save-note').textContent='Practice session';
+      return;
+    }
     const saved=hasRun && profileStore.saveRun(run);
+    announceFamiliarUnlocks();
     $('save-note').innerHTML='<i data-icon="check">'+icon('check')+'</i>'+
       (saved?'Run saved':hasRun?'Playing this session':'Choose a run');
   }
@@ -187,6 +210,9 @@
     }).join('');
   }
   function selectedInPlayOrder(){return currentHand.filter(c=>selected.has(c.id)).map(c=>c.id);}
+  function handTitleMarkup(hand){
+    return esc(hand.name)+' <span class="cast-hand-level">· Level '+esc(hand.level)+'</span>';
+  }
   function renderSelection(){
     const view=selected.size?CW.preview(run,selectedInPlayOrder()):null;
     $('chips').textContent=$('mult').textContent='\u2014';
@@ -194,9 +220,15 @@
     $('selected-count').innerHTML=Array.from({length:5},(_,i)=>'<i class="pick-slot'+(i<selected.size?' filled':'')+'" aria-hidden="true"></i>').join('')+'<span class="visually-hidden">'+selected.size+' of 5 selected</span>';
     const area=$('cast-prompt');
     area.classList.remove('scoring');
-    area.innerHTML=view
-      ? '<h3>'+esc(view.name)+'</h3>'
-      : '<div class="cast-ornament">'+icon('cards')+'</div><h3>Pick up to 5</h3>';
+    let prompt=view ? '<h3>'+handTitleMarkup(view)+'</h3>' : '';
+    if(run.playtest){
+      const deal=CWPlaytest.deals[run.playtest];
+      const used=run.stats.itemUses?.[run.playtest];
+      const hint=used ? deal.done : deal.hint;
+      if(!view) prompt='<h3>'+esc(CW.item(run.playtest).name)+'</h3>';
+      prompt+='<p class="practice-hint">'+esc(hint)+'</p>';
+    }
+    area.innerHTML=prompt || '<div class="cast-ornament">'+icon('cards')+'</div><h3>Pick up to 5</h3>';
     for(const card of $('hand').children){
       const id=card.dataset.card;
       card.classList.toggle('will-score',!!view?.scoring?.includes(id));
@@ -235,6 +267,8 @@
     const info=CW.blindInfo(run), capacity=CW.capacity(run);
     selected.forEach(id=>{if(!run.hand.some(c=>c.id===id))selected.delete(id);});
     $('blind-name').textContent=info.name;$('blind-type').textContent=['Opening blind','Second blind','Boss blind'][run.blind];$('blind-token').className=['','big','boss'][run.blind];
+    $('practice-tools').hidden=!run.playtest;
+    if(run.playtest) $('blind-type').textContent='Practice deal';
     $('target').textContent=compact(run.target);$('reward').textContent='$'+info.reward;
     $('boss-rule').hidden=run.blind!==2;$('boss-rule').textContent=run.blind===2?info.description:'';
     if(run.blind===2) window.CWContent.colorStats($('boss-rule'));
@@ -246,7 +280,7 @@
     const stake=CW.STAKES?.[run.stakeId]?.name;
     const deck=CW.DECKS?.[run.deckId]?.name || 'Arcane Deck';
     $('deck-name').textContent=[deck,stake].filter(Boolean).join(' · ');
-    $('run-status').textContent=showLobby?'Main menu':['lost','won'].includes(run.phase)?'Run complete':run.phase==='shop'?'At market':'Run active';
+    $('run-status').textContent=showLobby?'Main menu':run.playtest?'Familiar playtest':['lost','won'].includes(run.phase)?'Run complete':run.phase==='shop'?'At market':'Run active';
     trackFamiliarUpgrades();
     $('familiars').innerHTML=itemSlots('familiars',capacity.familiars);$('spells').innerHTML=itemSlots('consumables',capacity.consumables);
     $('familiar-count').textContent=run.familiars.length+' / '+capacity.familiars;$('spell-count').textContent=run.consumables.length+' / '+capacity.consumables;describeFamiliar(run.familiars[0]);
@@ -325,8 +359,8 @@
         frame.setAttribute('data-proc-active','');
         frame.setAttribute('data-proc-event',fact.event);
         if(id==='alabaster_finch' && fact.mult)frame.setAttribute('data-proc-solo','');
-        if(id==='lattice_toad')frame.setAttribute('data-proc-ranks',fact.contributors.map((_,i)=>i+1).join(' '));
-        if(id==='veil_firefly')frame.setAttribute('data-proc-suits',fact.contributors.map(entry=>entry.suit).join(' '));
+        if(id==='lattice_toad' && fact.contributors)frame.setAttribute('data-proc-ranks',fact.contributors.map((_,i)=>i+1).join(' '));
+        if(id==='veil_firefly' && fact.contributors)frame.setAttribute('data-proc-suits',fact.contributors.map(entry=>entry.suit).join(' '));
         frameTimers.set(frame,setTimeout(()=>{
           for(const attr of ['data-proc-active','data-proc-event','data-proc-solo','data-proc-ranks','data-proc-suits'])frame.removeAttribute(attr);
         },480/speed));
@@ -399,9 +433,9 @@
     }
     for(const fact of events){
       const id=CWMarket.splitVariant(fact.familiarId).id;
-      const foxCast=id==='fox_in_ink' && fact.event==='cast' && fact.growth;
+
       const market=marketProcEvents[id]?.includes(fact.event);
-      if(!market && !foxCast && !(fact.event==='discard' && discardCards.length))continue;
+      if(!market && !(fact.event==='discard' && discardCards.length))continue;
       let source=familiarSlot(fact.familiarId,panel);
       const spell=fact.created?.find(entry=>entry.category==='consumables');
       let consumable=spell && (panel ? panel.querySelector('[data-owned-category="consumables"][data-slot="'+spell.index+'"]') : $('spells').children[spell.index]);
@@ -583,7 +617,7 @@
       const chipText=area.querySelector('.cw-fx-chips');
       const multText=area.querySelector('.cw-fx-mult');
       const call=area.querySelector('.cw-fx-call');
-      title.textContent=result.name;
+      title.innerHTML=handTitleMarkup(result);
       ghosts=animateCards(ids,false);
       const scoring=new Set(result.scoring);
       const cardNodes=new Map([...$('hand').children].map(node=>[node.dataset.card,node]));
@@ -630,9 +664,10 @@
         const card=cardNodes.get(fact.cardId);
         const cards=fact.contributors?.map(entry=>cardNodes.get(entry.cardId));
         const face=fact.retriggers && currentHand.find(c=>c.id===fact.cardId);
+        const handSlot=fact.returnCard && $('hand').querySelector('[data-card="'+fact.returnCard+'"]');
         let holdMs=260;
         const triggered=familiarCue(fact,{
-          source:familiarSlot(fact.familiarId), card,cards,newGroup,
+          source:familiarSlot(fact.familiarId), card,cards,newGroup,handSlot,
           // Let the last scoop or wave reach the counter before showing its new total.
           onTiming:duration=>{
             if((cards && !fact.copiedFrom) || id==='alabaster_finch')holdMs=Math.max(260,Math.min(750,duration-120));
@@ -642,6 +677,13 @@
           chips:chipText,mult:multText,money:$('table-purse')
         },prefs.speed*(first?1:2),still);
         if(triggered){
+          if(handSlot && card && !still){
+            const from=card.getBoundingClientRect(), to=handSlot.getBoundingClientRect();
+            card.classList.remove('cw-fx-quiet');
+            card.animate([{transform:'none'},{transform:'translate('+(to.left-from.left)+'px,'+(to.top-from.top)+'px)'}],
+              {duration:fxTime(360),fill:'forwards',easing:'ease-in-out'});
+            holdMs=390;
+          }
           featured.add(fact.familiarId);
           if(newGroup)bridgedRanks.add(groupKey);
           if(cards && !fact.copiedFrom){
@@ -651,7 +693,7 @@
             for(const node of credited){
               if(!node)continue;
               clearTimeout(creditTimers.get(node));
-              node.setAttribute('data-proc-credit',fact.mult?'mult':'chips');
+              node.setAttribute('data-proc-credit',fact.mult?'mult':fact.retriggers || fact.skippedRank?'rule':'chips');
               const hold=first?Math.max(520,holdMs):300;
               creditTimers.set(node,setTimeout(()=>node.removeAttribute('data-proc-credit'),fxTime(hold)));
             }
@@ -672,7 +714,7 @@
           }
           count(step.chips??0,step.mult??0);
           if(step.fact?.money){wallet+=step.fact.money;$('money').textContent='$'+num(wallet);}
-          call.textContent=signature || step.fact?.event==='tally' ? step.label+' · '+step.text : step.text;
+          call.textContent=step.fact?.familiarId || step.fact?.event==='tally' ? step.label+' · '+step.text : step.text;
           window.CWContent.colorStats(call);
           call.classList.toggle('cw-fx-peak',strongest);
           let source=ghosts.find(c=>c.id===step.cardId)?.ghost;
@@ -770,7 +812,21 @@
       }
     }
   }
+  function startPractice(id){
+    if(busy)return;
+    const practice=CWPlaytest.start(id);
+    if(!practice)return;
+    if(!suspendedRun)suspendedRun={run,selected:[...selected],orderCardId,note:$('save-note').innerHTML};
+    run=practice;
+    selected.clear();
+    orderCardId=null;
+    showLobby=false;
+    audio.event('deal');
+    render();
+    $('hand').querySelector('button')?.focus({preventScroll:true});
+  }
   function restart(deckId,seed,stakeId,challengeId){
+    suspendedRun=null;
     selected.clear();
     orderCardId=null;
     run=CW.newRun(seed,deckId || 'arcane',{stakeId,challengeId,unlocked:profileStore.getProgress().unlocked});
@@ -782,18 +838,34 @@
   }
   function showMenu(){
     if(busy)return false;
+    if(suspendedRun){
+      run=suspendedRun.run;
+      selected.clear();
+      suspendedRun.selected.forEach(id=>selected.add(id));
+      orderCardId=suspendedRun.orderCardId;
+      $('save-note').innerHTML=suspendedRun.note;
+      suspendedRun=null;
+    }
     showLobby=true;
     render(false);
     return true;
   }
   function continueRun(){
     if(!hasRun)return false;
+    if(showLobby){
+      profileStore.resumeRun(run);
+      announceFamiliarUnlocks();
+    }
     showLobby=false;
     render(false);
     return true;
   }
   function changeProfile(result){
     if(!result)return null;
+    clearTimeout(unlockTimer);
+    unlockTimer=null;
+    unlockQueue.length=0;
+    $('familiar-unlock').hidden=true;
     selected.clear();
     orderCardId=null;
     run=loadRun();
@@ -894,6 +966,7 @@
     if(button.dataset.item && !busy)return CWP.toggleSell(button,Number(button.dataset.slot),button.closest('#spells')?'consumables':'familiars');
     const a=button.dataset.action;
     if(a==='mute')setSetting('muted',!prefs.muted);
+    else if(a==='retry-practice' && run.playtest)startPractice(run.playtest);
     else if(a==='menu')showMenu();
     else if(a==='play' || a==='discard')void commit(a==='discard');
     else if(a)openPanel(a);
@@ -983,7 +1056,7 @@
   CWP.configure({
     cardPreview:(c,packTarget)=>cardMarkup(c,0,1,true,packTarget),
     getState:()=>run,
-    getSelection:()=>selectedInPlayOrder(),
+    getSelection:spell=>spell?.effect==='rankCopy' ? [...selected] : selectedInPlayOrder(),
     getSettings:()=>({...prefs}),
     getProgress:()=>profileStore.getProgress(),
     setDeckDifficulty:(deckId,stakeId)=>profileStore.setDeckDifficulty(deckId,stakeId),
@@ -993,7 +1066,7 @@
     wantsLobby:()=>showLobby,
     hasSavedRun:()=>hasRun,
     hasRun:()=>hasRun,
-    showMenu,continueRun,setSetting,restart,
+    showMenu,continueRun,setSetting,restart,startPractice,
     upgradeAge,onChange:()=>render(),playFamiliarEvents,
     playSound:(name,step)=>audio.event(name,step)
   });

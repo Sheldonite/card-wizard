@@ -43,21 +43,11 @@
   }
 
   function dustfin(fx, facts) {
-    if (facts.event !== "hand" || !Number.isFinite(facts.chips) || facts.chips <= 0) return;
-    if (fx.still) return stillTally(fx,scoop,"+"+facts.chips+" Chips");
-    const chips = fx.chips || fx.source;
-    fx.sprite(shellDust,"dustfin-base",fx.source,chips,{size:18,arc:24,duration:340});
-    let previous = fx.source;
-    for (const [i,card] of (fx.cards || []).entries()) {
-      if (!card) continue;
-      const delay = 70+i*112;
-      const lip = fx.point(card,-3,Math.min(15,(card.h || 40)/4));
-      fx.sprite(scoop,"dustfin-shell-scoop",previous,lip,{size:30,arc:-9,rotation:-16,delay,duration:158});
-      fx.trail(lip,chips,{color:"#88c7d6",width:2,arc:20,delay:delay+119,duration:245});
-      fx.sprite(shellDust,"dustfin-card-measure",lip,chips,{size:21,arc:20,rotation:27,delay:delay+119,duration:245});
-      previous = lip;
-    }
-    if (!fx.cards?.length) fx.sprite(scoop,"dustfin-level-measure",fx.source,fx.point(fx.source,-4,4),{size:29,rotation:12,duration:180});
+    if (!facts.returnCard || !fx.card) return;
+    const slot = fx.handSlot || fx.card;
+    fx.sprite(scoop,"dustfin-shell-scoop",fx.card,slot,{size:33,arc:14,duration:370});
+    fx.trail(fx.card,slot,{color:"#8fd6d8",arc:14,duration:370});
+    fx.sprite(shellDust,"dustfin-return",slot,slot,{size:24,delay:280,duration:220});
   }
 
   function glimmerOrca(fx, facts) {

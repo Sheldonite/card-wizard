@@ -49,7 +49,7 @@
   const decks = {
     gossip: {
       name: "Court Gossip",
-      description: "Only 9s and up, with doubled Jacks through Aces. Start with Royal Reader and hold 7 cards.",
+      description: "Only 9s and up, with doubled Jacks through Aces. Hold 7 cards. Royal Reader replaces Merlin once unlocked.",
       ...form(7, 4, 3, 5, ["royal_reader"], { composition: courts }),
       unlock: { bestAnte: 2 }, unlockText: "Reach Ante 2."
     },
@@ -115,7 +115,7 @@
     },
     prism: {
       name: "Prism Archive",
-      description: "Gain +1 Mult per 30 Chips, up to +8. Each suit favors a different rank range. Begin with Opal Owl and 3 hands.",
+      description: "Gain +1 Mult per 30 Chips, up to +8. Each suit favors a different rank range. Play with 3 hands. Opal Owl replaces Merlin once unlocked.",
       ...form(8, 3, 3, 4, ["opal_owl"], { composition: prism, chipToMult: 30, targetScale: 1.08 }),
       unlock: { wins: 3 }, unlockText: "Win 3 runs."
     }

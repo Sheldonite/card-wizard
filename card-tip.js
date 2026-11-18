@@ -6,8 +6,11 @@
     const playing = Boolean(card.suit && card.rank);
     const name = playing ? (card.enhancement === 'stone' ? 'Stone Card' : (ranks[card.rank] || card.rank)+' of '+suits[card.suit]) : card.name;
     const lines = [name];
-    if (playing && card.tallyChips) lines.push('Witch’s Tally · +'+card.tallyChips+' Chips banked on this card.');
+    if (playing && card.tallyChips) lines.push("Permanent bonus: +"+card.tallyChips+" Chips.");
     if (!descriptionVisible && !playing && card.description) lines.push(card.description);
+    const example = card.kind === 'familiar' && root.CWPlaytest?.deals[card.baseId || card.id]?.example;
+    if (example) lines.push(example);
+    if (card.joker) lines.push('Joker equivalent · '+card.joker);
     for (const [field, catalog] of [['enhancement','enhancements'],['edition','editions'],['seal','seals'],['sticker','stickers']]) {
       const effect = root.CWMarket[catalog][card[field]];
       if (effect) {

@@ -52,6 +52,7 @@
   }
   function readPhase(s) {
     if (options.wantsLobby?.()) return 'lobby';
+    if (s?.playtest && s.phase !== 'play') return 'playtest-end';
     return s?.pack ? 'pack' : s && mandatory.has(s.phase) ? s.phase : '';
   }
   function button(action, label, variant = '', value = '', disabled = false) {
@@ -108,7 +109,10 @@
     const canSell=api().canSell(s,category,index);
     addAction(canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
       canSell,sourceRect=>perform(sourceRect,category==='familiars'?'sell':'sellConsumable',index));
-    if (category==='consumables') addAction('Use',api().canUse(s,index),()=>act('use-item',String(index),card));
+    if (category==='consumables') {
+      const ids=page==='pack' && entry.maxTargets ? targets : undefined;
+      addAction('Use',api().canUse(s,index,ids),()=>act('use-item',String(index),card));
+    }
     card.after(sellTab);
     global.CWContent.colorStats(sellTab);
     sellTab.showPopover?.();
@@ -287,7 +291,7 @@
     const s = state();
     const names = {codex:'guide',info:'run',options:'settings'};
     next = names[next] || next;
-    if (!['menu','guide','deck','run','settings','restart','spell','shop-spell','leave-rewards','lobby','career','collection','profiles'].includes(next)) return;
+    if (!['menu','guide','deck','run','settings','restart','spell','shop-spell','leave-rewards','lobby','career','collection','profiles','playtest'].includes(next)) return;
     if (!s && !['menu','lobby','settings','restart','career','collection','profiles'].includes(next)) return;
     if (page === next && value === detail) return;
     if (page !== next && page) backStack.push([page,detail]);
@@ -297,8 +301,7 @@
     }
     if (next === 'spell') {
       const d = ownedItem(s,'consumables',Number(value));
-      const selected = (options.getSelection?.() || []).filter(id=>usableCards(s).some(c=>c.id===id && api().canTarget(d,c)));
-      targets = selected.length <= d.maxTargets ? selected : [];
+      targets = (options.getSelection?.(d) || []).filter(id=>usableCards(s).some(c=>c.id===id));
     }
     if (next === 'shop-spell') targets = [];
     if (next === 'shop-spell' || next === 'spell') castSourceRect = sourceRect;
@@ -333,11 +336,15 @@
     const s = state() || {};
     const body = layer.querySelector('.cw-body');
     const priorScroll = reset ? 0 : body.scrollTop;
+    const spreadScroll = !reset && body.querySelector('.pack-spread')?.scrollLeft;
+    const handScroll = !reset && body.querySelector('.spell-hand-scroll')?.scrollLeft;
     const focused = !reset && layer.contains(document.activeElement) && document.activeElement.dataset.cw ? {action:document.activeElement.dataset.cw,value:document.activeElement.dataset.value} : null;
     const focusedId = !reset && layer.contains(document.activeElement) && document.activeElement.id;
-    const openSections = !reset && page === 'restart' ? [...body.querySelectorAll('details[open]')].map(section=>section.id) : [];
+    const openSections = !reset && (page === 'restart' || page === 'career') ? [...body.querySelectorAll('details[open]')].map(section=>section.id) : [];
     const selection = !reset && document.activeElement?.tagName === 'INPUT' ? [document.activeElement.selectionStart,document.activeElement.selectionEnd] : null;
     const views = {menu:menuView,guide:guideView,deck:deckView,run:runView,settings:settingsView,restart:restartView,spell:spellView,'shop-spell':spellView,'leave-rewards':leaveRewardsView,shop:shopView,pack:packView,payout:payoutView,select:selectView,won:endView,lost:endView,lobby:lobbyView,career:careerView,collection:collectionView,profiles:profilesView};
+    views.playtest = playtestView;
+    views['playtest-end'] = playtestEndView;
     const view = views[page]?.(s);
     if (!view) return;
     dialog().dataset.page = page;
@@ -366,6 +373,9 @@
     layer.querySelector('.cw-footer').innerHTML = view.footer;
     global.CWContent.colorStats(layer.querySelector('.cw-footer'));
     global.CWContent.colorStats(layer.querySelector('.cw-message'));
+    if (body.querySelector('.pack-playing-cards')) refreshSpellHand(s);
+    if (spreadScroll) body.querySelector('.pack-spread')?.scrollTo(spreadScroll,0);
+    if (handScroll) body.querySelector('.spell-hand-scroll')?.scrollTo(handScroll,0);
     body.scrollTop = priorScroll;
     if (focusedId) {
       const field = document.getElementById(focusedId);
@@ -566,7 +576,7 @@
   function startForm(s, choices) {
     const {decks, deckId, profile, challenges, challengeId, challenge} = choices;
     const deck = decks[deckId];
-    const starters = challenge?.rules?.starter ?? deck.starter ?? ['merlin'];
+    const starters = api().startingFamiliars(deck,profile.unlocked.familiars,challenge);
     const companions = starters.map(id => {
       const d = item(id);
       return '<span><img alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
@@ -626,8 +636,26 @@
     const resumeDetail=live?'<p class="resume-detail">In progress &middot; '+esc(choices.decks[s.deckId].name)+
       ' &middot; '+esc(choices.stakes[s.stakeId].name)+'</p>':'';
     const title='<div class="parlor-hero"><h1 class="parlor-logo"><em>Card</em> <strong>Wizard</strong></h1>'+
-      deckCarousel(choices)+'<div class="parlor-actions">'+main+secondary+'</div>'+resumeDetail+links+'</div>';
+      deckCarousel(choices)+'<div class="parlor-actions">'+main+secondary+button('open','Playtest','parlor-secondary','playtest')+'</div>'+resumeDetail+links+'</div>';
     return result('','Card Wizard',title+parlorScene());
+  }
+  function playtestView() {
+    const cards = Object.keys(global.CWPlaytest.deals).map(id => {
+      const familiar = item(id);
+      return '<button type="button" class="practice-choice" data-cw="start-practice" data-value="'+id+'">'+
+        '<img alt="" src="'+esc(global.CWContent.portrait(familiar.art))+'"><span><strong>'+esc(familiar.name)+'</strong>'+
+        '<small>'+esc(familiar.description)+'</small></span></button>';
+    }).join('');
+    return result('Practice table','Familiar playtest','<p class="practice-note">Choose a familiar for a preset deal. Your run stays saved.</p>'+
+      '<div class="practice-choices">'+cards+'</div>');
+  }
+  function playtestEndView(s) {
+    const used = s.stats.itemUses?.[s.playtest];
+    const summary = used ? global.CWPlaytest.deals[s.playtest].done : 'Retry the deal to try '+item(s.playtest).name+'\'s suggested play.';
+    const score = s.lastScore ? stat(s.lastScore.name,num(s.lastScore.total)+' chips') : '';
+    return result('Familiar playtest',s.phase === 'payout' ? 'Blind cleared' : 'Deal complete',
+      score+'<p class="practice-note">'+esc(summary)+'</p>',
+      button('start-practice','Retry deal','cw-primary',s.playtest)+button('open','Switch familiar','','playtest')+button('show-menu','Exit playtest'));
   }
   function menuView() {
     const entries=[['collection','Collection','orb'],['career','Career','blind'],['settings','Settings','key'],['profiles','Profile','owl']];
@@ -650,6 +678,10 @@
       const wins=typeof value==='object'?Object.values(value).reduce((total,count)=>total+(Number(count)||0),0):Number(value)||0;
       return '<div class="cw-profile-row"><b>'+esc(definitions?.[id]?.name || id)+'</b><span>'+num(wins)+' wins</span></div>';
     }).join('');
+    const rewards=data.familiarAchievements || [];
+    const earnedRewards=rewards.filter(a=>a.earned).length;
+    const familiarRows=rewards.map(a=>'<div class="cw-achievement'+(a.earned?' unlocked':'')+'"><span aria-hidden="true">'+(a.earned?'&#10003;':'&#9671;')+'</span><div><b>'+esc(a.earned?a.name:'Locked Familiar')+'</b><small>'+esc(a.description)+(!a.earned && a.target?' &middot; '+num(a.current)+' / '+num(a.target):'')+'</small></div></div>').join('');
+    const familiarSection='<details id="career-familiars" class="career-familiars"><summary>Familiar unlocks &middot; '+earnedRewards+' / '+rewards.length+'</summary><div class="cw-achievements">'+familiarRows+'</div></details>';
     const milestones=(data.achievements || []).map(a=>'<div class="cw-achievement'+(a.earned?' unlocked':'')+'"><span aria-label="'+(a.earned?'Earned':'Locked')+'">'+(a.earned?'✦':'◇')+'</span><div><b>'+esc(a.name)+'</b><small>'+esc(a.description)+'</small></div></div>').join('');
     const decks=Object.entries(api().DECKS).filter(([id])=>st.deckWins?.[id]>0).map(([id,deck])=>{
       const cleared=Object.entries(api().STAKES).filter(([stake])=>st.deckStakeWins?.[id]?.[stake]>0);
@@ -662,7 +694,7 @@
     const usage=Object.entries(st.itemUses || {}).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([id,count])=>'<div class="cw-profile-row"><b>'+esc(item(id).name)+'</b><span>'+num(count)+'</span></div>').join('');
     return result(data.profile?.name || '','Career',grid+counts+heading('Deck wins')+(decks || '<p class="cw-explain">Beat the Ante 8 boss in an unseeded standard run to earn your first deck win.</p>')+
       (stakes?heading('Difficulty wins')+stakes:'')+
-      (challenges?heading('Challenge wins')+challenges:'')+(usage?heading('Most used items')+usage:'')+(milestones?heading('Achievements')+'<div class="cw-achievements">'+milestones+'</div>':''),button('close','Back')+button('open','Collection','','collection'));
+      (challenges?heading('Challenge wins')+challenges:'')+(usage?heading('Most used items')+usage:'')+familiarSection+(milestones?heading('Achievements')+'<div class="cw-achievements">'+milestones+'</div>':''),button('close','Back')+button('open','Collection','','collection'));
   }
   function collectionView() {
     const data=progress();
@@ -670,26 +702,40 @@
     const active=groups.find(group=>group.key===collectionTab) || groups[0];
     const tabs='<div class="cw-tabs">'+groups.map(g=>tab('collection-tab',g.key,g.name,active?.key)).join('')+'</div>';
     const entries=active?.entries || [];
-    const visible=entries.filter(e=>collectionFilter==='all' || (collectionFilter==='known'?e.discovered:!e.discovered));
+    const familiarTab=active?.key==='familiars';
+    const visible=entries.filter(e=>{
+      if (collectionFilter==='locked') return e.locked;
+      if (collectionFilter==='known') return e.discovered;
+      if (collectionFilter==='unknown') return !e.discovered && (!familiarTab || !e.locked);
+      return true;
+    });
     if (active?.key==='decks') visible.sort((a,b)=>Number(a.locked)-Number(b.locked));
-    const summary='<div class="cw-collection-summary"><strong>'+entries.filter(e=>e.discovered).length+' / '+entries.length+' discovered</strong><div class="cw-tabs">'+tab('collection-filter','all','All',collectionFilter)+tab('collection-filter','known','Discovered',collectionFilter)+tab('collection-filter','unknown','Unknown',collectionFilter)+'</div></div>';
+    const available=active?.key==='familiars' ? entries.filter(e=>!e.locked).length+' / '+entries.length+' unlocked &middot; ' : '';
+    const summary='<div class="cw-collection-summary"><strong>'+available+entries.filter(e=>e.discovered).length+' / '+entries.length+' discovered</strong><div class="cw-tabs">'+tab('collection-filter','all','All',collectionFilter)+tab('collection-filter','known','Discovered',collectionFilter)+tab('collection-filter','unknown',familiarTab?'Undiscovered':'Unknown',collectionFilter)+(familiarTab?tab('collection-filter','locked','Locked',collectionFilter):'')+'</div></div>';
     const list=visible.map(entry=>{
       const deckId=active.key==='decks' && entry.id.replace(/^deck_/,'');
       if (deckId && !entry.discovered && data.unlocked?.decks?.includes(deckId)) {
         const emblem=({arcane:'grimoire',alchemist:'potion',oracle:'orb'})[deckId] || 'grimoire';
         return '<article class="cw-collection-item available-deck"><img alt="" src="'+global.CWContent.portrait(emblem)+'"><div><b>'+esc(entry.name)+'</b><small>Available to play</small></div></article>';
       }
-      if (!entry.discovered) return '<article class="cw-collection-item unknown"><span class="cw-owned-emblem" aria-hidden="true">'+(entry.locked?'◇':'?')+'</span><div><b>'+esc(entry.locked?'Locked':'Undiscovered')+'</b>'+(entry.unlockHint?'<small>'+esc(entry.unlockHint)+'</small>':'')+'</div></article>';
+      if (!entry.discovered || (active.key==='familiars' && entry.locked)) return '<article class="cw-collection-item unknown"><span class="cw-owned-emblem" aria-hidden="true">'+(entry.locked?'◇':'?')+'</span><div><b>'+esc(entry.locked?'Locked':'Undiscovered')+'</b>'+(entry.unlockHint?'<small>'+esc(entry.unlockHint)+'</small>':'')+'</div></article>';
       return '<article class="cw-collection-item"'+cardTip(entry,true)+'>'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
     }).join('');
     return result(data.profile?.name || '','Collection',tabs+summary+(list?'<div class="cw-collection-items">'+list+'</div>':'<p class="cw-empty">No entries match this view.</p>'),button('close','Back'));
   }
   function targetCards(cards,d,action='target') {
-    return cards.map(c=>{
-      const isSelected = targets.includes(c.id);
-      const disabled = !api().canTarget(d,c) || (!isSelected && targets.length>=d.maxTargets);
-      return options.cardPreview(c,{action,selected:isSelected,disabled});
+    const rankStencil = d?.effect === 'rankCopy';
+    const marker = rankStencil ? '<span class="rank-smoke" aria-hidden="true"><i></i><i></i><i></i></span><span class="rank-source-tab" aria-hidden="true">Source</span>' : '';
+    const faces = cards.map((c,i)=>{
+      const position = cards.length>1 ? 2*i/(cards.length-1)-1 : 0;
+      const tilt = position*Math.min(9,(cards.length-1)*1.35);
+      const pose = '--tilt:'+tilt.toFixed(2)+'deg;--drop:'+(position*tilt).toFixed(2)+'px';
+      return '<div class="spell-hand-slot" style="'+pose+'"><div class="spell-hand-face">'+
+        options.cardPreview(c,{action,selected:targets.includes(c.id)})+marker+'</div></div>';
     }).join('');
+    return '<div class="spell-hand-heading" aria-live="polite" aria-atomic="true"><h3 class="cw-subheading"></h3><span class="spell-hand-count"></span></div>'+
+      '<div class="spell-hand-scroll"><div role="group" aria-label="Playing cards" class="pack-playing-cards'+(rankStencil?' rank-stencil-hand':'')+
+      '" style="--gaps:'+Math.max(0,cards.length-1)+'">'+faces+'</div></div>';
   }
   function targetLabel(d) {
     if (d.effect==='rankCopy' || d.effect==='suitCopy') {
@@ -701,20 +747,45 @@
     const range = d.maxTargets===d.minTargets ? String(d.minTargets) : d.minTargets+'–'+d.maxTargets;
     return 'Choose '+range+' card'+(d.maxTargets===1?'':'s');
   }
-  function targetsReady(d) { return targets.length>=d.minTargets && targets.length<=d.maxTargets; }
   function usableCards(s) { return s.pack?.hand || s.hand || []; }
+  function refreshSpellHand(s) {
+    const hand=layer.querySelector('.pack-playing-cards');
+    const index=Number(detail);
+    const pack=page==='pack', shopping=page==='shop-spell';
+    const d=pack ? (detail==='' ? null : item(s.pack.choices[index])) :
+      shopping ? item(s.offers[index]) : ownedItem(s,'consumables',index);
+    let invalidCard=false;
+    usableCards(s).forEach((card,i)=>{
+      const slot=hand.children[i];
+      const face=slot.querySelector('button');
+      const selected=targets.includes(card.id);
+      const invalid=selected && d && !api().canTarget(d,card);
+      const source=d?.effect==='rankCopy' && card.id===targets[0];
+      face.setAttribute('aria-pressed',String(selected));
+      if (source) face.setAttribute('aria-description','Rank source');
+      else face.removeAttribute('aria-description');
+      slot.classList.toggle('rank-source',source);
+      slot.classList.toggle('invalid-target',Boolean(invalid));
+      if (invalid) invalidCard=true;
+    });
+    layer.querySelector('.spell-hand-count').textContent=targets.length+' selected';
+    layer.querySelector('.spell-hand-heading h3').textContent=invalidCard ? 'Stone cards have no rank or suit' : d ? targetLabel(d) : 'Your hand';
+    const cast=layer.querySelector('[data-cw="pick-cast"],[data-cw="buy-use-cast"],[data-cw="cast"]');
+    if (cast) cast.disabled=!(pack ? api().canPick(s,index,targets) :
+      shopping ? api().canBuyAndUse(s,index,targets) : api().canUse(s,index,targets));
+  }
   function spellView(s) {
     const index=Number(detail);
     const shopping=page==='shop-spell';
     const d=shopping?item(s.offers[index]):ownedItem(s,'consumables',index);
-    const body='<p class="cw-explain">'+itemDescription(d)+'</p>'+(d.maxTargets?heading(targetLabel(d))+'<div class="pack-playing-cards">'+targetCards(usableCards(s),d)+'</div>':'');
+    const body='<p class="cw-explain">'+itemDescription(d)+'</p>'+(d.maxTargets?targetCards(usableCards(s),d):'');
     const label=shopping?'Buy & use '+cash(api().price(s,s.offers[index])):'Cast spell';
     const check=shopping?api().canBuyAndUse?.(s,index,targets):api().canUse?.(s,index,targets);
-    return result('',d.name,body,button('close','Back')+button(shopping?'buy-use-cast':'cast',label,'cw-primary','',!targetsReady(d) || check===false));
+    return result('',d.name,body,button('close','Back')+button(shopping?'buy-use-cast':'cast',label,'cw-primary','',check===false));
   }
   function isSpell(d) { return d.kind==='spell' || d.kind==='spectral'; }
   function mayBuyAndUse(s,index,d) {
-    if (!isSpell(d) || !api().buyAndUse || s.money < api().price(s,s.offers[index]) || usableCards(s).length < (d.minTargets || 0)) return false;
+    if (!isSpell(d) || !api().buyAndUse || !api().affordable(s,api().price(s,s.offers[index])) || usableCards(s).length < (d.minTargets || 0)) return false;
     return api().canBuyAndUse?.(s,index) ?? true;
   }
   function offer(d, control) {
@@ -807,8 +878,7 @@
       const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
       let reason='';
       if (!ok) {
-        if (s.money<price) reason='Need '+cash(price-s.money)+' more';
-        else if (d.kind==='familiar' && s.familiars.some(ref=>global.CWMarket.splitVariant(ref).id===global.CWMarket.splitVariant(id).id)) reason='Already equipped';
+        if (!api().affordable(s,price)) reason='Need '+cash(price-api().funds(s))+' more';
         else if (d.kind==='familiar' && s.familiars.length>=cap.familiars) reason='Roost full';
         else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
         else reason='Unavailable';
@@ -840,7 +910,7 @@
       return '<section class="moon-shelf '+cls+'"><header><h3>'+name+'</h3>'+control+'</header><div class="moon-goods" style="--intervals:'+Math.max(0,available.length-1)+'">'+goods+'</div></section>';
     };
     const reroll=api().rerollPrice(s);
-    const rerollControl=!s.rules?.noReroll?button('reroll','↻  Reroll '+(reroll?cash(reroll):'FREE'),'moon-reroll'+(reroll?'':' moon-free-roll'),'',s.money<reroll):'';
+    const rerollControl=!s.rules?.noReroll?button('reroll','↻  Reroll '+(reroll?cash(reroll):'FREE'),'moon-reroll'+(reroll?'':' moon-free-roll'),'',!api().affordable(s,reroll)):'';
     const stock=shelf('Card counter','moon-stock',Array.from({length:count},(_,i)=>i),rerollControl);
     const packs=shelf('Booster packs','moon-packs',s.offers.slice(count,-1).map((_,i)=>count+i));
     const voucher=shelf('Voucher','moon-vouchers',[s.offers.length-1]);
@@ -868,7 +938,7 @@
   }
   let lastPack, dealStart;
   function packView(s) {
-    if (lastPack !== s.pack) { lastPack=s.pack; dealStart=performance.now(); }
+    if (lastPack !== s.pack) { lastPack=s.pack; dealStart=performance.now(); targets=[]; detail=''; }
     const spread=s.pack.choices.filter(Boolean).length;
     const speed=options.getSettings?.()?.speed || 1;
     const elapsed=performance.now()-dealStart;
@@ -889,15 +959,8 @@
       return '<div class="pack-slot'+(active===i?' chosen':'')+'" style="--tilt:'+offset*2+'deg;--drop:'+Math.abs(offset)*5+'px;--from:'+(-offset*70)+'px;--delay:'+delay+'ms">'+offer(d,button(action,label,active===i?'cw-active':'cw-primary',i,blocked))+'</div>';
     }).join('');
     const d=active>=0?item(s.pack.choices[active]):null;
-    const valid=d && targetsReady(d) && api().canPick?.(s,active,targets)!==false;
-    const handCards=hand.map(card=>{
-      const selected=targets.includes(card.id);
-      const target=d && {selected, disabled:!api().canTarget(d,card) || (!selected && targets.length>=d.maxTargets)};
-      return options.cardPreview(card,target);
-    }).join('');
-    const dealt=hand.length?'<div class="cw-pack-hand">'+heading(d?targetLabel(d):'Pack hand')+
-      '<div class="pack-playing-cards">'+handCards+'</div>'+
-      (d?button('pick-cast','Cast '+d.name,'cw-primary',active,!valid):'')+'</div>':'';
+    const dealt=hand.length?'<section class="cw-pack-hand">'+targetCards(hand,d,'pack-target')+
+      (d?button('pick-cast','Cast '+d.name,'cw-primary',active,true):'')+'</section>':'';
     const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
     const ownedCards=packInventoryFan(s,'familiars',cap.familiars)+packInventoryFan(s,'consumables',cap.consumables);
     const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,ownedCards+button('close-pack','Skip remaining'));
@@ -1050,6 +1113,12 @@
     const s=state() || {};
     const index=Number(value);
     if(name==='close') return close();
+    if(name==='start-practice' && global.CWPlaytest.deals[value]) {
+      backStack.length=0;
+      route('');
+      options.startPractice(value);
+      return;
+    }
     if(name==='step-deck') return stepDeck(index);
     if(name==='pick-stake') {
       const choices=runChoices();
@@ -1116,8 +1185,11 @@
     if(name==='use-item') {
       const d=ownedItem(s,'consumables',index);
       const sourceRect=control?.getBoundingClientRect();
-      if (d.maxTargets>0) return open('spell',String(index),sourceRect);
-      if(resolveCast(s,d,'use',index,[])) changed('select',sourceRect);
+      if (d.maxTargets>0 && page!=='pack') return open('spell',String(index),sourceRect);
+      if(resolveCast(s,d,'use',index,d.maxTargets ? targets : [])) {
+        if (d.maxTargets) targets=[];
+        changed('select',sourceRect);
+      }
       else announce('That spell is unavailable right now.');
       return;
     }
@@ -1135,16 +1207,19 @@
     }
     if(name==='prepare-pack-spell') {
       detail=value;
-      targets=[];
       paint(false);
-      layer.querySelector('.cw-pack-hand button')?.focus();
+      const cast=layer.querySelector('[data-cw="pick-cast"]');
+      (cast && !cast.disabled ? cast : layer.querySelector('.cw-pack-hand .playing-card'))?.focus();
       return;
     }
     if(name==='target' || name==='pack-target') {
       const card=usableCards(s).find(c=>String(c.id)===value);
       if(!card) return;
-      targets=targets.includes(card.id)?targets.filter(id=>id!==card.id):[...targets,card.id];
-      paint(false); return;
+      const removing=targets.includes(card.id);
+      targets=removing?targets.filter(id=>id!==card.id):[...targets,card.id];
+      options.playSound?.(removing?'deselect':'select');
+      refreshSpellHand(s);
+      return;
     }
     if(name==='cast' || name==='buy-use-cast') {
       const i=Number(detail), buying=name==='buy-use-cast';

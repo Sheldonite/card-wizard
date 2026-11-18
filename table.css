@@ -66,3 +66,4 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
   .item-mark{font-size:7px}
 }
 .familiar-stack {position:absolute;right:1px;bottom:1.55em;padding:1px 3px;border-radius:3px;background:#151220f5;font:800 clamp(8px,.8vw,12px)/1.2 var(--mono);font-variant-numeric:tabular-nums}
+.cast-hand-level {color:#ffdfa1;font-size:max(12px,.8em);white-space:nowrap;font-variant-numeric:tabular-nums}

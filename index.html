@@ -19,11 +19,14 @@
   <link rel="stylesheet" href="familiar-frames.css">
   <link rel="stylesheet" href="familiar-score-fx.css">
   <link rel="stylesheet" href="familiar-magic-fx.css">
+  <script defer src="familiar-unlocks.js"></script>
   <script defer src="familiars.js"></script>
   <script defer src="market.js"></script>
   <script defer src="catalog.js"></script>
   <script defer src="content.js"></script>
+  <script defer src="joker-rules.js"></script>
   <script defer src="engine.js"></script>
+  <script defer src="playtest.js"></script>
   <script defer src="progression.js"></script>
   <script defer src="sound.js"></script>
   <script defer src="card-tip.js"></script>
@@ -60,6 +63,11 @@
           <div class="blind-identity"><img id="blind-token" src="art/blind.png" alt=""><div><span class="micro" id="blind-type">Opening blind</span><h2 id="blind-name">Small Blind</h2></div></div>
           <div class="blind-target"><span>Target</span><strong><i data-icon="chip"></i><span id="target">300</span></strong></div>
           <div class="reward-line"><span>Reward</span><span class="reward-money" id="reward">$3</span></div>
+          <div id="practice-tools" hidden>
+            <button type="button" data-action="retry-practice">Retry deal</button>
+            <button type="button" data-action="playtest">Switch familiar</button>
+            <button type="button" data-action="menu">Exit playtest</button>
+          </div>
           <div class="boss-rule" id="boss-rule" hidden></div>
         </section>
         <section class="score-box slab">
@@ -105,5 +113,6 @@
     </main>
     <footer class="foot"><span class="deck-name"><i data-icon="diamond"></i><span id="deck-name">Arcane Deck</span></span><span class="shortcut"><kbd>1–9</kbd> Select cards</span><span class="shortcut"><kbd>Enter</kbd> Play</span><span class="shortcut"><kbd>D</kbd> Discard</span><span class="save-note" id="save-note"><i data-icon="check"></i>Run saved</span></footer>
   </div>
+  <div id="familiar-unlock" role="status" aria-live="polite" aria-atomic="true" hidden></div>
   <div id="toast" role="status"></div><div id="announce" class="visually-hidden" aria-live="polite"></div>
 </body></html>

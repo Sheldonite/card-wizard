@@ -2,6 +2,7 @@
 (function (root) {
   "use strict";
 
+  const familiarRules = root.CWFamiliarUnlocks || (typeof require === "function" && require("./familiar-unlocks.js"));
   const key = "card-wizard.profiles.1";
   const legacyKey = "card-wizard.run.1";
   const counterKeys = ["handsPlayed", "discardsUsed", "roundsWon", "skipped",
@@ -62,8 +63,11 @@
     };
   }
 
+  function newFamiliarCareer() {
+    return {earned:{}, discovered:{}, totals:{hands:0, faces:0, familiarsSold:0, cardsSold:0, losses:0, streak:0}};
+  }
   function newProfile(id, name) {
-    return { id, name, stats: newStats(), discovered: {}, run: null, tracking: null };
+    return { id, name, stats: newStats(), familiarCareer:newFamiliarCareer(), discovered: {}, run: null, tracking: null };
   }
 
   function validRun(run) {
@@ -102,7 +106,7 @@
     };
   }
 
-  function getAvailability(game, stats, achievements) {
+  function getAvailability(game, stats, achievements, career) {
     const earned = new Set(achievements.filter(item => item.earned).map(item => item.id));
     const checks = Object.fromEntries(achievements.map(item => [item.id, item.description]));
     const unlockHints = {};
@@ -134,8 +138,11 @@
         "Win a campaign at " + game.stakes[previous]?.name + " stake.");
     });
     for (const [id, def] of Object.entries(game.challenges)) definitionGate("challenges", id, def);
-    for (const group of ["familiars", "vouchers"]) {
-      for (const [id, def] of Object.entries(game[group])) definitionGate(group, id, def);
+    for (const [id, def] of Object.entries(game.vouchers)) definitionGate("vouchers", id, def);
+    for (const def of Object.values(game.familiars)) {
+      const goal = familiarRules.goals[def.joker];
+      const hint = goal?.metric ? goal.hint + " (" + (career.totals[goal.metric] || 0) + "/" + goal.target + ")" : def.unlock;
+      reveal("familiars", def.id, !def.unlock || career.earned[def.joker], hint);
     }
     return { unlocked, unlockHints };
   }
@@ -173,7 +180,83 @@
       });
   }
 
+  function checkCareerGoals(career, game) {
+    let stars = 0, spells = 0;
+    for (const id of Object.keys(career.discovered)) {
+      const def = game.spells[id];
+      if (!def) continue;
+      if (def.rarity === "Constellation") stars++;
+      if (familiarRules.isCoreSpell(def)) spells++;
+    }
+    Object.assign(career.totals, {stars, spells});
+    for (const [joker, goal] of Object.entries(familiarRules.goals)) {
+      if (goal.metric && career.totals[goal.metric] >= goal.target) career.earned[joker] = true;
+    }
+  }
+
+  function familiarCareer(profile, game) {
+    if (profile.familiarCareer) return profile.familiarCareer;
+    const career = profile.familiarCareer = newFamiliarCareer();
+    const stats = savedStats(profile);
+    if (stats.wins) {
+      career.earned.Blueprint = true;
+      familiarRules.milestones(career.earned, 8, 0);
+    }
+    // Old totals include challenges. Only import shared counters when their origin is unambiguous.
+    const hadChallenge = profile.run?.challengeId || Object.keys(stats.challengeWins).length ||
+      Object.keys(profile.discovered || {}).some(id => id.startsWith("challenge_"));
+    if (!hadChallenge) {
+      career.totals.hands = stats.handsPlayed;
+      career.totals.losses = stats.losses;
+      familiarRules.milestones(career.earned, stats.bestAnte, stats.bestScore);
+      for (const id of Object.keys(profile.discovered || {})) {
+        if (game.spells[id]) career.discovered[id] = true;
+        const f = game.familiars[id];
+        if (f?.rarity === "Legendary") career.earned[f.joker] = true;
+      }
+      if (profile.tracking) profile.tracking.familiarCounters = {
+        hands:profile.tracking.counters?.handsPlayed || 0,
+        losses:Number(profile.tracking.finished && profile.run?.phase === "lost" && !profile.run?.victory)
+      };
+    }
+    checkCareerGoals(career, game);
+    return career;
+  }
+
+  function trackFamiliarCareer(career, tracking, run, game, discoveries) {
+    if (!familiarRules.eligible(run)) return;
+    const p = familiarRules.state(run);
+    familiarRules.inventory(run);
+    familiarRules.deck(run);
+    if (run.phase === "won") familiarRules.won(run);
+    if (run.victory) career.earned.Blueprint = true;
+    Object.assign(career.earned, p.earned);
+    if (run.money >= 400) career.earned.Satellite = true;
+    familiarRules.milestones(career.earned, run.ante, run.stats.bestScore);
+    const prior = tracking.familiarCounters ||= {};
+    const current = {hands:run.stats.handsPlayed, faces:p.faces, familiarsSold:p.familiarsSold,
+      cardsSold:p.cardsSold, losses:Number(run.phase === "lost" && !run.victory)};
+    for (const [key, value] of Object.entries(current)) {
+      const delta = count(value) - count(prior[key]);
+      if (delta > 0) { career.totals[key] += delta; prior[key] = value; }
+    }
+    for (let i = prior.rounds || 0; i < p.rounds.length; i++) {
+      career.totals.streak = p.rounds[i] ? career.totals.streak + 1 : 0;
+      if (career.totals.streak >= familiarRules.goals.Troubadour.target) career.earned.Troubadour = true;
+    }
+    prior.rounds = Math.max(prior.rounds || 0, p.rounds.length);
+    if (run.phase === "lost") career.totals.streak = 0;
+    for (const id of discoveries) if (game.spells[id]) career.discovered[id] = true;
+    checkCareerGoals(career, game);
+  }
+
+  function availableFamiliars(game, career) {
+    return Object.values(game.familiars).filter(f => !f.unlock || career.earned[f.joker]).map(f => f.id);
+  }
+
   function trackRun(profile, run) {
+    const game = dataForGame();
+    const career = familiarCareer(profile, game);
     const stats = profile.stats = savedStats(profile);
     const previous = profile.tracking;
     if (!previous || previous.id !== run.runId) {
@@ -205,8 +288,10 @@
     }
     stats.bestAnte = Math.max(stats.bestAnte, count(run.ante));
 
-    const game = dataForGame();
-    for (const id of discoveryIds(run, game)) {
+    const discoveries = discoveryIds(run, game);
+    trackFamiliarCareer(career, tracking, run, game, discoveries);
+    for (const id of discoveries) {
+      if (run.challengeId && (game.familiars[id] || game.spells[id])) continue;
       if (own(tracking.seen, id)) continue;
       tracking.seen[id] = true;
       add(profile.discovered, id);
@@ -263,7 +348,8 @@
         return {
           id: prefix + id, name, description: definition.description || "", kind: definition.kind || key,
           art: definition.art || (key === "decks" ? "grimoire" : "orb"),
-          rarity: definition.rarity || "", count: discoveries, discovered: discoveries > 0,
+          rarity: definition.rarity || "", count: discoveries,
+          discovered: discoveries > 0 && (key !== "familiars" || unlocked.familiars.includes(id)),
           locked: Boolean(unlocked[key] && !unlocked[key].includes(id)), unlockHint: unlockHints[id]
         };
       })
@@ -286,6 +372,7 @@
       } catch { return false; }
     }
 
+    let notifications = [];
     let data = read(key);
     if (data?.version !== 1 || !Array.isArray(data.profiles) || !data.profiles.length) {
       const profile = newProfile("apprentice", "Apprentice");
@@ -332,6 +419,7 @@
         const profile = data.profiles.find(entry => entry.id === id);
         if (!profile) return null;
         activeId = data.activeId = profile.id;
+        notifications = [];
         persist();
         return summarize(profile);
       },
@@ -341,13 +429,19 @@
         refresh();
         const profile = newProfile(makeId(), label);
         data.profiles.push(profile);
+        notifications = [];
         activeId = data.activeId = profile.id;
         persist();
         return summarize(profile);
       },
       getRun() {
         refresh();
-        return active().run ? copy(active().run) : null;
+        const profile = active();
+        if (!profile.run) return null;
+        const run = copy(profile.run);
+        const game = dataForGame();
+        run.unlocks = {...run.unlocks, familiars:availableFamiliars(game, familiarCareer(profile, game))};
+        return run;
       },
       setDeckDifficulty(deckId, stakeId) {
         const game = dataForGame();
@@ -359,14 +453,34 @@
         return persist();
       },
       saveRun(run) {
-        if (!validRun(run)) return false;
+        if (!validRun(run) || run.playtest) return false;
         refresh();
         const profile = active();
         const snapshot = copy(run);
         snapshot.runId ||= profile.run?.runId || makeId();
+        const game = dataForGame();
+        const career = familiarCareer(profile, game);
+        const previous = {...career.earned};
         trackRun(profile, snapshot);
+        const available = availableFamiliars(game, career);
+        snapshot.unlocks = {...snapshot.unlocks, familiars:available};
+        run.unlocks = {...run.unlocks, familiars:available};
+        run.runId = snapshot.runId;
+        for (const f of Object.values(game.familiars)) {
+          if (career.earned[f.joker] && !previous[f.joker]) notifications.push(f.id);
+        }
         profile.run = snapshot;
         return persist();
+      },
+      takeFamiliarUnlocks() {
+        return notifications.splice(0);
+      },
+      resumeRun(run) {
+        if (!run || !familiarRules.eligible(run) || ["won","lost"].includes(run.phase)) return false;
+        refresh();
+        if (active().run?.runId !== run.runId) return false;
+        familiarRules.award(run, "Throwback");
+        return this.saveRun(run);
       },
       clearRun() {
         refresh();
@@ -385,10 +499,16 @@
         const stats = copy(savedStats(profile));
         const achievements = earnedAchievements(stats, discovered);
         const game = dataForGame();
-        const availability = getAvailability(game, stats, achievements);
+        const career = familiarCareer(profile, game);
+        const availability = getAvailability(game, stats, achievements, career);
+        const familiarAchievements = Object.values(game.familiars).filter(f => familiarRules.goals[f.joker]).map(f => {
+          const goal = familiarRules.goals[f.joker];
+          return {id:f.id, name:f.name, description:goal.hint, earned:!!career.earned[f.joker],
+            current:goal.metric ? Math.min(career.totals[goal.metric] || 0, goal.target) : undefined, target:goal.target};
+        });
         const collection = buildCollection(game, discovered, availability);
         return { profile: summarize(profile), deckDifficulties: { ...profile.deckDifficulties },
-          stats, discovered, ...availability, achievements, collection };
+          stats, discovered, ...availability, achievements, familiarAchievements, collection };
       }
     };
   }

@@ -20,9 +20,9 @@
   }
 
   spell("prism_dye", "Prism Dye", "orb", "Make up to 2 cards Wild. Each can match any suit.", "enhance", "wild", 1, 2);
-  spell("basalt_imprint", "Basalt Imprint", "grimoire", "Make 1 card Stone. It always scores +40 Chips and has no rank or suit.", "enhance", "stone", 1);
-  spell("sunwash", "Sunwash", "potion", "Make 1 card Gold. Earn $2 if it stays in hand when a blind ends.", "enhance", "gold", 1);
-  spell("rabbit_chalk", "Rabbit Chalk", "moth", "Make up to 2 cards Lucky. Each time one scores, roll separately for +12 Mult (20%) and $8 (12%).", "enhance", "lucky", 1, 2);
+  spell("basalt_imprint", "Basalt Imprint", "grimoire", "Make 1 card Stone. It always scores +50 Chips and has no rank or suit.", "enhance", "stone", 1);
+  spell("sunwash", "Sunwash", "potion", "Make 1 card Gold. Earn $3 if it stays in hand when a blind ends.", "enhance", "gold", 1);
+  spell("rabbit_chalk", "Rabbit Chalk", "moth", "Make up to 2 cards Lucky. Each time one scores, roll separately for +20 Mult (1 in 5) and $20 (1 in 15).", "enhance", "lucky", 1, 2);
   spell("market_favor", "Market Favor", "key", "Gain $6.", "cash", 6);
   spell("turnback", "Turnback", "potion", "Choose up to 2 cards. Lower each by one rank. A 2 becomes an Ace.", "rank", -1, 1, 2);
   spell("rank_stencil", "Rank Stencil", "grimoire", "Pick a card to set the rank. Give up to 2 other cards that rank.", "rankCopy", null, 2, 3);
@@ -43,7 +43,7 @@
   spectral("paper_swarm", "Paper Swarm", "moth", "Add 2 copies of a chosen card to your deck.", "copy", 2, 1);
   spectral("mantle_exchange", "Mantle Exchange", "grimoire", "Swap the enhancements, seals, and editions of 2 cards.", "swapModifiers", null, 2);
   spectral("buried_tithe", "Buried Tithe", "key", "Gain $12.", "cash", 12);
-  spectral("cornerstone", "Cornerstone", "potion", "Turn 1 card into Stone with a Red Seal. It scores 40 Chips twice and has no rank or suit.", "modify", {enhancement:"stone", seal:"red"}, 1);
+  spectral("cornerstone", "Cornerstone", "potion", "Turn 1 card into Stone with a Red Seal. It scores 50 Chips twice and has no rank or suit.", "modify", {enhancement:"stone", seal:"red"}, 1);
   spectral("quiet_ash", "Quiet Ash", "potion", "Remove up to 3 cards from your deck.", "remove", null, 1, 3);
   spectral("threefold_moon", "Threefold Moon", "orb", "Raise Pair, Three of a Kind, and Full House by one level each.", "levelMany", {hands:["Pair", "Three of a Kind", "Full House"], amount:1});
   spectral("silence_bell", "Silence Bell", "key", "Silence the current or upcoming boss's special rule.", "bossDisable", 1);
@@ -103,9 +103,9 @@
     glass:{name:"Glass", description:"×2 Mult when scored. Has a 1 in 4 chance to break after scoring."},
     steel:{name:"Steel", description:"×1.5 Mult when held during scoring."},
     wild:{name:"Wild", description:"Can match any suit."},
-    stone:{name:"Stone", description:"Always scores +40 Chips. It has no rank or suit."},
-    gold:{name:"Gold", description:"Earn $2 when held at the end of a winning blind."},
-    lucky:{name:"Lucky", description:"When scored, independently rolls a 20% chance for +12 Mult and a 12% chance for $8."}
+    stone:{name:"Stone", description:"Always scores +50 Chips. It has no rank or suit."},
+    gold:{name:"Gold", description:"Earn $3 when held at the end of a winning blind."},
+    lucky:{name:"Lucky", description:"When scored, independently rolls 1 in 5 for +20 Mult and 1 in 15 for $20."}
   };
 
   const seals = {
@@ -153,7 +153,12 @@
     return values.at(-1)?.[0] || null;
   }
 
-  function variant(s, ref, kind, api) {
+  const stickerExclusions = {
+    eternal:new Set(["Cavendish","Diet Cola","Gros Michel","Ice Cream","Invisible Joker","Luchador","Mr. Bones","Popcorn","Ramen","Seltzer","Turtle Bean"]),
+    perishable:new Set(["Castle","Ceremonial Dagger","Constellation","Flash Card","Glass Joker","Green Joker","Hologram","Lucky Cat",
+      "Madness","Obelisk","Red Card","Ride the Bus","Rocket","Runner","Spare Trousers","Square Joker","Vampire","Wee Joker"])
+  };
+  function variant(s, ref, kind, api, allowStickers = true) {
     if (!ref || (kind !== "familiar" && kind !== "spell")) return ref;
     const data = splitVariant(ref);
     const chance = power(s, "editionChance", api);
@@ -170,9 +175,9 @@
         break;
       }
     }
-    if (kind === "familiar" && !data.sticker) {
+    if (allowStickers && kind === "familiar" && !data.sticker) {
       const rules = s.rules || {};
-      const pool = Object.keys(stickers).filter(name => rules[name]);
+      const pool = Object.keys(stickers).filter(name => rules[name] && !stickerExclusions[name]?.has(api.item(data.id)?.joker));
       if (pool.length) {
         let roll = api.random(s);
         for (const name of pool) {
@@ -217,7 +222,7 @@
     const offers = [];
     for (let i = 0; i < count; i++) {
       const types = weights.filter(row => row[1] > 0);
-      const blocked = offers.filter(Boolean).map(ref => splitVariant(ref).id);
+      const blocked = api.hasJoker?.(s,"Showman") ? [] : offers.filter(Boolean).map(ref => splitVariant(ref).id);
       let ref = null;
       while (types.length && !ref) {
         const pool = weighted(s, types, api.random);
@@ -274,7 +279,18 @@
       }
     } else {
       const options = api.shuffle(s, spellChoices(s, def.pool, api));
-      choices.push(...options.slice(0, count));
+      if (api.hasJoker?.(s,"Showman") && options.length) {
+        for (let i=0;i<count;i++) choices.push(api.choose(s,options));
+      } else choices.push(...options.slice(0, count));
+      if (def.pool === "spell" || def.pool === "spectral") {
+        const showman = api.hasJoker?.(s,"Showman");
+        let canSummon = showman || !(s.consumables || []).some(ref => splitVariant(ref).id === "old_name");
+        for (let i=0; i<choices.length && canSummon; i++) {
+          if (api.random(s) >= 0.003) continue;
+          choices[i] = "old_name";
+          canSummon = showman;
+        }
+      }
     }
     const targeted = def.pool === "spell" || def.pool === "spectral";
     return {id:def.id, name:def.name, pool:def.pool, choices, remaining:Math.min(def.picks, choices.length),

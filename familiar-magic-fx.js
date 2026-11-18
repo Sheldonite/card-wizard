@@ -8,7 +8,6 @@
   const spellWeave = '<path class="linen-spell-edge" d="m6 4 17-2 4 23-17 3ZM4 8l3 22 16-2"/><path class="linen-weft" d="m9 9 10-1m-9 5 12-1m-11 5 12-1m-11 5 9-1"/><path class="linen-warp" d="m12 6 2 17m3-18 2 17"/>';
   const nib = '<path class="fox-nib" d="m4 28 4-15L23 2l6 7-13 15-12 4Z"/><path class="fox-quill-cut" d="m6 26 11-13m-3 0 5-2-2 5"/>';
   const inkPaw = '<path class="fox-ink" d="M7 23c1-3 4-4 5-7 2-4 5-4 8 0 2 3 5 4 5 8-1 5-6 2-10 2-4 1-10 2-8-3Z"/><g class="fox-gold"><ellipse cx="6" cy="15" rx="2.2" ry="3.5" transform="rotate(-28 6 15)"/><ellipse cx="12" cy="9" rx="2.2" ry="3.5" transform="rotate(-12 12 9)"/><ellipse cx="20" cy="8" rx="2.3" ry="3.5" transform="rotate(15 20 8)"/><ellipse cx="26" cy="14" rx="2.1" ry="3.2" transform="rotate(25 26 14)"/></g>';
-  const inkFlourish = '<path class="fox-flourish-dark" d="M2 24C11 27 27 15 30 4c-4 7-14 15-28 20Z"/><path class="fox-flourish-light" d="M4 22c8-1 18-8 22-14"/><circle class="fox-gold" cx="9" cy="28" r="1.5"/>';
   const shadowMark = '<path class="shadow-offset" d="m9 5 16 2-3 20-16-2Z"/><path class="shadow-plate" d="m5 7 15-3 4 20-15 3Z"/><path class="shadow-wing" d="m9 12 5 2 4-5-1 7 4 3-6-1-3 5-1-7Z"/>';
   const shadowEcho = '<path class="shadow-echo-back" d="M4 9c8 2 9 5 11 7 2-4 6-7 13-10-1 8-4 13-10 14l-3 7-2-6C6 20 4 16 4 9Z"/><path class="shadow-echo-front" d="m9 12 6 5 8-7-5 10-3 3-2-4Z"/>';
 
@@ -25,20 +24,30 @@
   }
 
   function foxInInk(fx, facts) {
-    if (!fx.source) return;
-    if (facts.event === "cast" && facts.growth?.after > facts.growth?.before) {
-      if (fx.card) {
-        fx.trail(fx.card, fx.source, {color:"#ba77b7", width:4, arc:20, duration:240});
-        fx.sprite(nib, "fox-ink-nib", fx.card, fx.source, {size:25, arc:20, rotation:24, duration:245});
-      }
-      fx.sprite(inkPaw, "fox-ink-imprint", fx.source, fx.source, {size:37, delay:fx.card ? 130 : 0, duration:315});
-      return;
-    }
-    if (facts.event !== "hand" || !facts.mult || !fx.mult) return;
-    fx.trail(fx.source, fx.mult, {color:"#844d98", width:6, arc:-20, duration:290});
-    fx.trail(fx.point(fx.source, 1, -1), fx.point(fx.mult, 1, -1), {color:"#ffb2a2", width:1.5, arc:-21, delay:18, duration:250});
-    fx.sprite(inkFlourish, "fox-score-brush", fx.source, fx.mult, {size:31, arc:-20, duration:310});
+    if (!facts.keptSpell) return;
+    const slot = fx.consumable || fx.source;
+    fx.sprite(inkPaw,"fox-ink-imprint",slot,slot,{size:38,delay:185,duration:340});
+    fx.trail(fx.source,slot,{color:"#e2a2c7",width:3,arc:24,duration:260});
+    fx.sprite(nib,"fox-ink-nib",fx.source,slot,{size:28,arc:24,duration:260});
   }
+
+  fxRegistry.register("royal_reader",(fx,fact)=>{
+    if (fact.event !== "heldCard" || !fact.mult) return;
+    const queen = fx.card || fx.source, target = fx.mult || fx.source;
+    const crown = '<path d="m3 8 7 6 6-10 6 10 7-6-4 16H7z" fill="#f2bf59" stroke="#654354" stroke-width="2"/><path d="M8 27h16" stroke="#ffe3a0" stroke-width="3"/>';
+    fx.sprite(crown,"royal-command",queen,target,{size:34,arc:38,duration:380});
+    fx.trail(queen,target,{color:"#f2cb85",arc:38,duration:380});
+    fx.burst(target,{color:"#ffe5ab",delay:300,count:5});
+  });
+  fxRegistry.register("wayfinder",(fx,fact)=>{
+    if (!fact.skippedRank) return;
+    const route = (fx.cards || []).filter(Boolean);
+    const star = '<path fill="#ffdb91" stroke="#685166" d="m16 1 4 11 11 4-11 4-4 11-4-11-11-4 11-4z"/>';
+    route.forEach((card,i)=>{
+      fx.trail(i ? route[i-1] : fx.source,card,{color:"#90d9d5",delay:60*i,duration:195,arc:12});
+      fx.sprite(star,"wayfinder-star",card,card,{size:20,delay:60*i,duration:245});
+    });
+  });
 
   function secondShadow(fx, facts) {
     if (facts.event !== "hand" || !facts.copiedFrom || !fx.source) return;

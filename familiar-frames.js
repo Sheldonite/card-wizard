@@ -166,12 +166,6 @@
     const frame = id ? ' data-familiar-frame="' + id + '"' : '';
     return frame + (item?.kind === 'familiar' && item.edition === 'negative' ? ' data-familiar-edition="negative"' : '');
   }
-  function inkGauge(item) {
-    const filled = Math.min(12, Math.max(0, (Number(item.stackAmount) || 4) - 4));
-    return Array.from({length:12}, (_, i) =>
-      '<rect class="frame-ink-mark' + (i < filled ? ' charged' : '') + '" x="2.3" y="' + (89 - i * 4) + '" width="5.4" height="2.6" rx=".6"/>'
-    ).join('');
-  }
   const progressScales = {
     mire_printer: {base:28, step:15, marks:6},
     granite_tinker: {base:35, step:12, marks:8},
@@ -197,7 +191,7 @@
   }
   function chargeMarks(id, item) {
     if (Object.hasOwn(progressScales, id)) return progressMarks(id, item);
-    if (id === 'fox_in_ink') return inkGauge(item);
+    if (id === 'fox_in_ink' && item.inkReady !== false) return '<path d="M81 43q5 3 12 0l-2 6-10-1z" fill="#ec9cdb"/>';
     if (id === 'kettle_hag') return item.charge?.value === 1 ? '<path d="M63 30h26l-2 8q-4 4-10 4t-11-4Z" fill="#8de5c1" stroke="#dffff1" stroke-width="1.1"/><path class="frame-steam" d="M65 24q-5-4-1-8t-1-8m6 12q-3-3 0-6" fill="none" stroke="#d7f5cd" stroke-width="2"/><circle cx="83" cy="35" r="2.3" fill="#effff1"/>' : '';
     if (id === 'dusk_undertaker') {
       const charge = Math.round(((item.charge?.value ?? 1) - 1) / .15);

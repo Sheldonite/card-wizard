@@ -5,7 +5,6 @@
   const spells = {};
   const vouchers = {};
   const packs = {};
-  const effects = {};
   const colors = {
     merlin: "#ab89eb", owl: "#efc577", orb: "#8cc9ee",
     grimoire: "#b6c883", moth: "#f49aaa", dragon: "#eb9a70",
@@ -19,131 +18,6 @@
       icon: glyphs[art], color: colors[art], ...details
     };
   }
-
-  function familiar(id, name, art, cost, rarity, description, effect) {
-    definition(familiars, "familiar", id, name, art, cost, rarity, description);
-    effects[id] = typeof effect === "function" ? { hand: effect } : effect;
-  }
-
-  const count = (cards, test) => cards.filter(test).length;
-  const wild = card => card.enhancement === "wild";
-  const red = card => wild(card) || card.suit === "D" || card.suit === "H";
-  const black = card => wild(card) || card.suit === "C" || card.suit === "S";
-  const isFace = card => card.rank >= 11 && card.rank <= 13;
-  const ranksOf = cards => cards.map(card => card.rank).filter(Number.isInteger);
-  const suitKinds = cards => {
-    const suits = new Set(cards.filter(card => card.suit && !wild(card)).map(card => card.suit));
-    return Math.min(4, suits.size + count(cards, wild));
-  };
-  function largestSuit(cards) {
-    return Math.max(...["H", "D", "C", "S"].map(suit => count(cards, card => card.suit === suit || wild(card))));
-  }
-  function longestRun(cards) {
-    const ranks = new Set(ranksOf(cards));
-    if (ranks.has(14)) ranks.add(1);
-    let longest = 0, streak = 0;
-    for (let rank = 1; rank <= 14; rank++) {
-      streak = ranks.has(rank) ? streak + 1 : 0;
-      longest = Math.max(longest, streak);
-    }
-    return longest;
-  }
-
-  familiar("merlin", "Merlin", "merlin", 4, "Common",
-    "+4 Mult, plus +3 Mult per consumable you carry.", c => ({ mult: 4 + 3 * c.consumableCount }));
-  familiar("ember_moth", "Ember Moth", "moth", 5, "Common",
-    "Each scoring card gives +2 Mult. Lead with a red scoring card to double the bonus.", {
-      scoredCard: c => ({ mult: red(c.scoring[0]) ? 4 : 2 })
-    });
-  familiar("thornwing", "Thornwing", "moth", 5, "Common",
-    "Each scoring card gives +12 Chips. Black cards also give +2 Mult.", {
-      scoredCard: c => ({ chips: 12, mult: black(c.card) ? 2 : 0 })
-    });
-  familiar("night_owl", "Night Owl", "owl", 5, "Common",
-    "+20 Chips per black card you play, including kickers.", c => ({ chips: 20 * count(c.cards, black) }));
-  familiar("gilded_eye", "Gilded Eye", "orb", 6, "Uncommon",
-    "Earn $1 per suit among scoring cards, up to $3 per hand.", c => ({ money: Math.min(3, suitKinds(c.scoring)) }));
-  familiar("twin_lights", "Twin Lights", "orb", 4, "Common",
-    "+3 Mult. Each extra copy of a rank you play adds +5 more.",
-    c => {
-      const ranks = ranksOf(c.cards);
-      return { mult: 3 + 5 * (ranks.length - new Set(ranks).size) };
-    });
-  familiar("pocket_grimoire", "Pocket Grimoire", "grimoire", 5, "Common",
-    "+75 Chips for playing one card. Each extra played card reduces this bonus by 12.",
-    c => ({ chips: 75 - 12 * (c.cards.length - 1) }));
-  familiar("royal_reader", "Royal Reader", "merlin", 5, "Common",
-    "Scoring cards give +8 Chips. Face cards give +25 Chips and +3 Mult instead.", {
-      scoredCard: c => isFace(c.card) ? { chips: 25, mult: 3 } : { chips: 8 }
-    });
-  familiar("opal_owl", "Opal Owl", "owl", 5, "Common",
-    "+20 Chips per suit you play. Kickers count and Wild cards fill missing suits.",
-    c => ({ chips: 20 * suitKinds(c.cards) }));
-  familiar("mooncalf", "Mooncalf", "owl", 5, "Common",
-    "Each scoring card ranked 2 through 7 gives +6 Mult. All other scoring cards give +1 Mult.", {
-      scoredCard: c => ({ mult: c.card.rank <= 7 ? 6 : 1 })
-    });
-  familiar("cold_reader", "Cold Reader", "merlin", 5, "Common",
-    "+3 Mult per hand left after playing. On your last hand, earn $3 instead.",
-    c => c.handsLeft === 0 ? { money: 3 } : { mult: 3 * c.handsLeft });
-  familiar("tidal_lens", "Tidal Lens", "orb", 6, "Uncommon",
-    "Start at x1 Mult. Gain x0.25 per card in your largest played suit.",
-    c => ({ xmult: 1 + 0.25 * largestSuit(c.cards) }));
-  familiar("wayfinder", "Wayfinder", "owl", 6, "Uncommon",
-    "Start at x1 Mult. Gain x0.3 per rank in your longest played sequence. Aces count high or low.",
-    c => ({ xmult: 1 + 0.3 * longestRun(c.cards) }));
-  familiar("many_minds", "Many Minds", "dragon", 7, "Uncommon",
-    "Each scoring card gives +2 Mult. Then gain x1.5 Mult if two scoring ranks match.",
-    c => {
-      const ranks = ranksOf(c.scoring);
-      return { mult: 2 * c.scoring.length, xmult: ranks.length > new Set(ranks).size ? 1.5 : 1 };
-    });
-  familiar("echo_book", "Book of Echoes", "grimoire", 5, "Uncommon",
-    "+4 Mult. Each earlier play of this hand type in the blind adds +8 more.",
-    c => ({ mult: 4 + 8 * Math.max(0, (c.handCounts[c.name] || 0) - 1) }));
-  familiar("empty_inkwell", "Empty Inkwell", "potion", 6, "Uncommon",
-    "Start each blind at x1.25 Mult. Each discard adds x0.4, up to x2.85.",
-    c => ({ xmult: 1.25 + 0.4 * Math.min(4, c.discardCount) }));
-  familiar("vesper", "Vesper", "moth", 6, "Uncommon",
-    "x1.25 Mult on your opening hand. Each later play this blind raises it by x0.45, up to x3.05.",
-    c => ({ xmult: 1.25 + 0.45 * Math.min(4, Math.max(0, c.playedCount - 1)) }));
-  familiar("vault_watcher", "Vault Watcher", "owl", 6, "Uncommon",
-    "+20 Chips plus +2 per dollar you hold, up to +170 Chips total.", c => ({ chips: 20 + Math.min(150, 2 * c.money) }));
-  familiar("dust_scribe", "Dust Scribe", "merlin", 6, "Uncommon",
-    "+20 Chips plus +4 for every discard action taken this run.", c => ({ chips: 20 + 4 * c.totalDiscards }));
-  familiar("tower_oracle", "Tower Oracle", "merlin", 7, "Uncommon",
-    "+3 Mult per Ante. During Boss Blinds, gain +3 more per Ante.", c => ({ mult: c.ante * (c.blind === 2 ? 6 : 3) }));
-  familiar("last_leaf", "Last Leaf", "moth", 6, "Uncommon",
-    "Earn $3 on the first hand of each blind. Every later hand earns $1.", c => ({ money: c.playedCount === 1 ? 3 : 1 }));
-  familiar("folio", "Endless Folio", "grimoire", 7, "Uncommon",
-    "+1 Chip per card in your deck. Each card above 52 gives another +8 Chips.",
-    c => ({ chips: c.deckSize + 8 * Math.max(0, c.deckSize - 52) }));
-  familiar("crown_glass", "Crown Glass", "orb", 8, "Rare",
-    "Retrigger your first scoring face card each hand. If no face scores, retrigger the first scoring card.", {
-      scoredCard: c => {
-        const firstFace = c.scoring.findIndex(isFace);
-        return c.cardIndex === Math.max(0, firstFace) ? { retriggers: 1 } : {};
-      }
-    });
-  familiar("prism_wing", "Prism Wing", "moth", 8, "Rare",
-    "Each suit you play adds x0.5 Mult to x1. Wild cards fill missing suits.",
-    c => ({ xmult: 1 + 0.5 * suitKinds(c.cards) }));
-  familiar("star_eater", "Star Eater", "dragon", 9, "Rare",
-    "x1.4 Mult at hand level 1. Each extra level adds x0.4 Mult.",
-    c => ({ xmult: 1 + 0.4 * c.level }));
-  familiar("quiet_court", "Quiet Court", "merlin", 8, "Rare",
-    "Each held face card or Ace gives x1.25 Mult.", {
-      heldCard: c => isFace(c.card) || c.card.rank === 14 ? { xmult: 1.25 } : {}
-    });
-  familiar("coven", "The Coven", "grimoire", 9, "Rare",
-    "Each equipped familiar, including this one, adds x0.35 Mult to x1.",
-    c => ({ xmult: 1 + 0.35 * c.ownedCount }));
-  familiar("paper_king", "Paper King", "merlin", 8, "Rare",
-    "x1.5 Mult. Each card below a 52-card deck adds x0.2 Mult, up to x3.5.",
-    c => ({ xmult: 1.5 + 0.2 * Math.min(10, Math.max(0, 52 - c.deckSize)) }));
-  familiar("horizon_owl", "Horizon Owl", "owl", 8, "Rare",
-    "Your highest scoring rank sets your Mult bonus, from x1.2 on a 2 to x2.4 on an Ace.",
-    c => ({ xmult: 1 + Math.max(0, ...ranksOf(c.scoring)) / 10 }));
 
   function spell(id, name, art, cost, description, effect, value, minTargets = 0, maxTargets = 0) {
     definition(spells, "spell", id, name, art, cost, effect === "level" ? "Constellation" : "Spell", description,
@@ -204,17 +78,6 @@
 
   function get(id) {
     return familiars[id] || spells[id] || vouchers[id] || packs[id];
-  }
-
-  function score(id, context) {
-    const effect = effects[typeof id === "string" ? id : id.id];
-    const result = effect?.hand?.(context) || {};
-    return { chips: 0, mult: 0, xmult: 1, money: 0, ...result };
-  }
-
-  function trigger(id, event, context, memory) {
-    if (effects[id]) return event === "hand" ? score(id, context) : effects[id][event]?.(context, memory) || {};
-    return expansion.trigger(id, event, context, memory) || {};
   }
 
   function portrait(name) {
@@ -283,7 +146,7 @@
     const burst = elapsed < 1050 ? '<i class="familiar-burst" style="animation-delay:-'+elapsed+'ms">✦</i>' : '';
     return '<span class="familiar-finish finish-'+finish+'" aria-hidden="true">'+burst+'</span>';
   }
-  const api = { familiarFinish, cardTypes, cardType, typeBadge, familiars, spells, vouchers, packs, get, score, trigger, portrait, colorStats };
+  const api = { familiarFinish, cardTypes, cardType, typeBadge, familiars, spells, vouchers, packs, get, portrait, colorStats };
   root.CWContent = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);
