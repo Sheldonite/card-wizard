@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="94" height="132" viewBox="0 0 94 132">
+<defs><pattern id="lace" width="10" height="12" patternUnits="userSpaceOnUse"><path d="M0 6 5 0l5 6-5 6z" fill="none" stroke="#9d83bf" stroke-width=".65"/><path d="m5 4 1.4 2L5 8 3.6 6z" fill="#ac8fc3"/></pattern><g id="corner"><path d="M9 25V9h17m-14 2v8l7-7m-7 10 3-3m3-3 4-4" fill="none" stroke="#dbc890" stroke-width="1.35"/><path d="m10 8 2.4 2.4L10 13l-2.5-2.5z" fill="#e8d9a8"/></g></defs>
+<rect x="1.4" y="1.4" width="91.2" height="129.2" rx="5" fill="#d8c6b0" stroke="#645869" stroke-width="2"/>
+<rect x="4" y="4" width="86" height="124" rx="3" fill="#50416e" stroke="#6e5a78"/>
+<rect x="6.6" y="6.6" width="80.8" height="118.8" rx="2" fill="url(#lace)" stroke="#d8bb8a" stroke-width="1"/>
+<use href="#corner"/><use href="#corner" transform="translate(94 0) scale(-1 1)"/><use href="#corner" transform="translate(0 132) scale(1 -1)"/><use href="#corner" transform="translate(94 132) scale(-1 -1)"/>
+<g stroke="#d8bb8a" fill="#50416e"><path d="M47 24c5 12 12 21 23 29l7 13-7 13C59 86 52 96 47 108c-5-12-12-22-23-29l-7-13 7-13c11-8 18-17 23-29Z"/><path d="m47 31 23 35-23 35-23-35Z" fill="none" stroke-width=".8"/><ellipse cx="47" cy="66" rx="18" ry="22"/><ellipse cx="47" cy="66" rx="15.6" ry="19.5" fill="none" stroke-width=".55"/></g>
+<g fill="#e1cb9c"><path d="m47 46 2.5 12.5L58 53l-5.5 9L64 66l-11.5 3.2L58 79l-8.8-6-2.2 14-2.6-14L36 79l5.5-9.8L30 66l11.5-4L36 53l8.4 5.5z"/><path d="m47 14 2 4-2 4-2-4zm0 96 2 4-2 4-2-4z"/></g><path d="m47 58 4.7 8-4.7 8-4.7-8Z" fill="#55456c"/>
+</svg>
