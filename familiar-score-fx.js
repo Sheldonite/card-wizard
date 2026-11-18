@@ -54,9 +54,12 @@
     const group = svg("g", {"data-familiar-proc":id});
     layer.append(group);
     const speed = Math.min(4, Math.max(.35, Number(options.speed) || 1));
+    const leadIn = Math.min(240, Math.max(0, Number(options.startDelay) || 0));
     const still = options.reducedMotion || root.matchMedia?.("(prefers-reduced-motion: reduce)").matches || !group.animate;
-    const fx = {source, point, still, cardFace:options.cardFace};
-    if (Array.isArray(options.cards)) fx.cards = options.cards.map(anchor).filter(Boolean);
+    const fx = {source, point, still, cardFace:options.cardFace, newGroup:options.newGroup};
+    // A single Wild can occupy several suit slots. Preserve their positions even
+    // when another contributor has no visible card in this layout.
+    if (Array.isArray(options.cards)) fx.cards = options.cards.map(anchor);
     // Extra anchor names allow shop and consumable effects to share this layer.
     for (const [name, value] of Object.entries(options)) {
       if (name === "facts" || name === "source" || name === "cards" || name === "cardFace" || !value || typeof value !== "object") continue;
@@ -66,7 +69,7 @@
     let lifespan = 0;
     let elements = 0;
     function motion(node, frames, delay, duration) {
-      delay = Math.min(1000, Math.max(0, delay)) / speed;
+      delay = (leadIn + Math.min(1000, Math.max(0, delay))) / speed;
       duration = Math.min(1100, Math.max(65, duration)) / speed;
       lifespan = Math.max(lifespan, delay + duration);
       node.animate(frames, {delay, duration, fill:"both", easing:"linear"});
@@ -121,6 +124,7 @@
       active.set(group, setTimeout(()=>remove(group), lifespan + 35));
     }
     if (!elements) remove(group);
+    else if (!still) options.onTiming?.(lifespan * speed);
     return elements > 0;
   }
 

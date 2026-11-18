@@ -109,3 +109,68 @@
 .item-card[data-familiar-edition=negative] > :is(.item-mark,.type-badge),
 .cw-owned-emblem[data-familiar-edition=negative] > .type-badge { display:none; }
 .pack-negative-label { color:#b0f3fa;font-weight:700;white-space:nowrap; }
+[data-familiar-frame=alabaster_finch] {--frame-edge:#e6dfd3;--frame-dark:#615d69;}
+[data-familiar-frame=dustfin] {--frame-edge:#aad7d9;--frame-dark:#335760;}
+[data-familiar-frame=glimmer_orca] {--frame-edge:#d3e4dd;--frame-dark:#233a51;}
+[data-familiar-frame=moss_badger] {--frame-edge:#a6ae84;--frame-dark:#414e3e;}
+[data-familiar-frame=lattice_toad] {--frame-edge:#d5ba84;--frame-dark:#3e5840;}
+[data-familiar-frame=veil_firefly] {--frame-edge:#c6bad0;--frame-dark:#47405e;}
+.frame-finch-eye {transform-box:fill-box;transform-origin:center;transform:scaleY(.16);fill:#85455a;}
+[data-proc-solo] .frame-finch-eye {transform:scale(1.12);fill:#ff4877;stroke:#fff0c4;}
+[data-proc-solo] .frame-finch-eye + path {opacity:0;}
+[data-proc-active] .frame-dust-grains {fill:#e5fbff;}
+[data-proc-active] .frame-orca-crest {stroke:#daeaff;}
+[data-proc-active] .frame-moss-stone {fill:#afd0ab;stroke:#eff2ba;}
+[data-proc-ranks~="1"] .frame-rank-1, [data-proc-ranks~="2"] .frame-rank-2,
+[data-proc-ranks~="3"] .frame-rank-3, [data-proc-ranks~="4"] .frame-rank-4 {
+  fill:#ff916c;stroke:#ffe5ae;stroke-width:2;
+}
+[data-proc-active] .frame-firefly-lamp {fill:#ffda71;stroke:#fff9bd;}
+[data-proc-suits~="S"] .frame-suit-S, [data-proc-suits~="C"] .frame-suit-C {
+  fill:#a2e4df;stroke:#fffbd0;stroke-width:1.8;
+}
+[data-proc-suits~="H"] .frame-suit-H, [data-proc-suits~="D"] .frame-suit-D {
+  fill:#ffa481;stroke:#fff3c6;stroke-width:1.8;
+}
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) [data-proc-active] .frame-marble-perch {animation:frame-perch-shake .35s ease-out;}
+  body:not(.still) [data-proc-active] .frame-shell-scoop {transform-box:fill-box;transform-origin:20% 65%;animation:frame-scoop .34s ease-out;}
+  body:not(.still) [data-proc-active] .frame-dust-grains {animation:frame-grains .34s ease-out;}
+  body:not(.still) [data-proc-active] .frame-orca-crest {animation:frame-breaker .44s ease-out;}
+  body:not(.still) [data-proc-active] .frame-badger-claws {animation:frame-claw-scrape .32s ease-out;}
+}
+@keyframes frame-perch-shake {28% {transform:translateY(2px);}62% {transform:translateY(-1px);}}
+@keyframes frame-scoop {48% {transform:rotate(-7deg);}}
+@keyframes frame-grains {60% {transform:translate(2px,5px);}90% {opacity:.3;}}
+@keyframes frame-breaker {48% {transform:translate(2px,-2px);}}
+@keyframes frame-claw-scrape {50% {transform:translate(-1px,3px);}}
+[data-proc-active] .frame-marble-perch > path:first-child {fill:#f8f6e6;stroke:#bfdded;}
+[data-familiar-frame=brass_lantern] {--frame-edge:#e3c787;--frame-dark:#654b35;}
+[data-familiar-frame=mire_printer] {--frame-edge:#b1aa87;--frame-dark:#434a40;}
+[data-familiar-frame=silken_broker] {--frame-edge:#e6bab2;--frame-dark:#684659;}
+[data-familiar-frame=granite_tinker] {--frame-edge:#c7c4b0;--frame-dark:#4e5660;}
+[data-familiar-frame=shopbell_sprite] {--frame-edge:#e2b773;--frame-dark:#604a38;}
+[data-familiar-frame=vault_maggot] {--frame-edge:#cebb8f;--frame-dark:#4b4841;}
+[data-proc-active] .frame-lantern-wick {fill:#fffadb;}
+[data-proc-active] .frame-print-stamp, [data-proc-active] .frame-broker-clasp,
+[data-proc-active] .frame-doorbell, [data-proc-active] .frame-vault-latch {filter:brightness(1.24);}
+[data-proc-active] .frame-keystone {fill:#e9d3ad;}
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) [data-proc-active] .frame-lantern-door {transform-box:fill-box;transform-origin:left center;animation:frame-unhinge .46s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=sell] .frame-print-roller {animation:frame-impression .36s ease-out;}
+  body:not(.still) [data-proc-active] .frame-print-stamp {animation:frame-impression .36s ease-out;}
+  body:not(.still) [data-proc-active] .frame-broker-clasp {animation:frame-case-click .32s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=packOpen] .frame-broker-ribbon {animation:frame-ribbon-slip .42s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=packOpen] .frame-mason-gear {transform-box:fill-box;transform-origin:center;animation:frame-mason-turn .4s ease-out;}
+  body:not(.still) [data-proc-active] .frame-keystone {animation:frame-impression .34s ease-out;}
+  body:not(.still) [data-proc-active] .frame-doorbell {transform-box:fill-box;transform-origin:50% 0;animation:frame-bell-swing .38s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=reroll] .frame-doorbell {animation-duration:.23s;animation-iteration-count:2;}
+  body:not(.still) [data-proc-active] .frame-vault-latch {transform-origin:3% 49.3%;animation:frame-vault-click .38s ease-out;}
+}
+@keyframes frame-unhinge {45% {transform:scaleX(.66);}}
+@keyframes frame-impression {45% {transform:translateY(3px);}75% {transform:translateY(-1px);}}
+@keyframes frame-case-click {45% {transform:translateX(-3px);}}
+@keyframes frame-ribbon-slip {55% {transform:translate(-1px,-3px);}}
+@keyframes frame-mason-turn {to {transform:rotate(45deg);}}
+@keyframes frame-bell-swing {30% {transform:rotate(-13deg);}65% {transform:rotate(9deg);}}
+@keyframes frame-vault-click {55% {transform:rotate(25deg);}}

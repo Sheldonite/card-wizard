@@ -198,6 +198,14 @@
     s.blindMods ??= {hands:0,discards:0,handSize:0};
     s.nextBlind ??= {};
     s.familiarMemory ??= {};
+    if (s.phase === "shop" && s.shopRerolled == null) {
+      // Older saves tracked paid rerolls only. A claimed free reroll from the
+      // consecutive skips leading here also counts once its token is spent.
+      s.shopRerolled = Boolean(s.rerolls || s.familiarMemory.shopbell_sprite?.paid);
+      for (let i = s.blind - 1; !s.shopRerolled && !s.freeReroll && s.skipReceipts?.[i]; i--) {
+        s.shopRerolled = tagFamily(s.tags[i]) === "freeReroll";
+      }
+    }
     s.tallyPerPlay ??= 0;
     s.discovered ??= [s.deckId,...s.familiars,...s.consumables,...s.vouchers];
     s.runId ??= "legacy-" + s.seed;
@@ -438,18 +446,27 @@
       const stat = content.familiars[key].trackedStat;
       if (stat && memory && memory.bonus > oldBonus) {
         const snapshot = {...ctx,random:()=>0};
-        const before = content.trigger(key,"hand",snapshot,{...memory,bonus:oldBonus})[stat];
-        const after = content.trigger(key,"hand",snapshot,{...memory})[stat];
-        if (Number.isFinite(before) && Number.isFinite(after) && after > before) growth = {stat,before,after};
+        const oldValue = content.trigger(key,"hand",snapshot,{...memory,bonus:oldBonus})[stat];
+        const newValue = content.trigger(key,"hand",snapshot,{...memory})[stat];
+        if (Number.isFinite(oldValue) && Number.isFinite(newValue)) {
+          // Match the precision shown on inventory cards, including fractional Mult at its cap.
+          const before = Number(oldValue.toFixed(2)), after = Number(newValue.toFixed(2));
+          if (after > before) growth = {stat,before,after};
+        }
       }
       const charge = previousCharge && chargeChange(previousCharge,familiarCharge(key,memory));
       if (growth || charge || effect.money || created.length) {
         const fact = {event,familiarId:id};
-        if (extra?.item) fact.itemId = extra.item.id;
+        const sourceItem = extra?.item || extra?.pack;
+        if (sourceItem) fact.itemId = sourceItem.id;
         if (extra?.cards) fact.cardIds = extra.cards.map(c=>c.id);
         if (growth) fact.growth = growth;
         if (charge) fact.charge = charge;
-        if (effect.money) fact.money = effect.money;
+        if (effect.money) {
+          fact.money = effect.money;
+          fact.moneyBefore = ctx.money;
+          fact.moneyAfter = s.money;
+        }
         if (created.length) fact.created = created;
         enqueueFamiliarEvent(s,fact);
       }
@@ -500,6 +517,7 @@
         const fact = {...source};
         for (const key of ["chips","mult","money","retriggers"]) if (effect[key]) fact[key] = effect[key];
         if (effect.xmult != null && effect.xmult !== 1) fact.xmult = effect.xmult;
+        if (effect.contributors) fact.contributors = effect.contributors;
         Object.assign(fact,origin);
         Object.defineProperty(step,"fact",{value:fact});
         steps.push(step);
@@ -768,6 +786,7 @@
   function enterShop(s) {
     s.phase = "shop";
     s.rerolls = 0;
+    s.shopRerolled = false;
     s.pack = null;
     s.shopDiscount = s.nextShopDiscount || 1;
     s.nextShopDiscount = 1;
@@ -811,7 +830,9 @@
     if (s.freeReroll) s.freeReroll = false;
     else s.rerolls++;
     s.offers.splice(0,s.shopOfferCount,...stock(s));
-    dispatch(s,"reroll");
+    const firstShopReroll = !s.shopRerolled;
+    s.shopRerolled = true;
+    dispatch(s,"reroll",{firstShopReroll});
     return true;
   }
   function space(s,def) {

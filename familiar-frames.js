@@ -2,6 +2,86 @@
 (() => {
   'use strict';
   const frames = {
+    brass_lantern: `
+      <path d="M4 135V19L16 5h66l14 14v116Z" fill="none" stroke="#61422c" stroke-width="6"/><path d="M6 128V20L17 8h64l12 13v103" fill="none" stroke="#caa65f" stroke-width="2"/>
+      <path d="M3 34h8v13H3zm0 48h8v13H3" fill="#c7a260" stroke="#594733"/><path d="M4 36h5m-5 49h5" stroke="#fae4a1"/>
+      <g class="frame-lantern-door"><path d="m74 8 14-4 9 10-1 28-19-7Z" fill="#785336" stroke="#e2be78" stroke-width="1.5"/><path d="m78 12 8-3 7 6-1 19-11-3Z" fill="#342c30" stroke="#a17d4d"/>
+      <path class="frame-lantern-wick" d="M81 27q3-3 1-10l4 2 2-4q3 6 1 13Z" fill="#ffe19b" stroke="#c8894c"/><path d="m82 30 9 2-2 3-9-3Z" fill="#e3b771"/></g>
+      <path d="M93 69h5v12h-5l-4-5Z" fill="#cca66e" stroke="#705035"/>`,
+    mire_printer: `
+      <path d="M5 135V8L96 5v131Z" fill="none" stroke="#494539" stroke-width="6"/>
+      <path d="M6 20q3 14 0 22t1 21m84 35q3 13 0 22" fill="none" stroke="#89836a" stroke-width="2"/>
+      <g class="frame-print-roller"><path d="M14 4h58l3 3-3 5H14l-3-4Z" fill="#8c7153" stroke="#493e32"/><ellipse cx="14" cy="8" rx="4" ry="5" fill="#c09a73"/>
+      <path d="m22 5-3 6m16-6-3 6m16-6-3 6m16-6-3 6" stroke="#544637" stroke-width="2"/></g>
+      <g class="frame-print-stamp"><path d="m78 5 7-3 7 4-1 7-4 2 1 5-10 2-1-6-4-3Z" fill="#78573d" stroke="#514131"/><path d="m73 21 20-4 2 7-20 4Z" fill="#383c39" stroke="#b1a187"/><path d="m76 27 16-3" stroke="#67a1a7" stroke-width="2"/></g>
+      <path d="M4 39h8v68H3Z" fill="#303c38" stroke="#746b50"/>`,
+    silken_broker: `
+      <rect x="4" y="4" width="92" height="132" rx="12" fill="none" stroke="#775465" stroke-width="6"/>
+      <rect x="6" y="6" width="88" height="128" rx="9" fill="none" stroke="#d5a989" stroke-width="1.6"/>
+      <path class="frame-broker-ribbon" d="M1 23Q14 8 32 8L47 4H20Q7 4 1 14Zm2 4q15-14 24-14l-5 5-6 1 1 5-7 7 1-8Z" fill="#dd92a1" stroke="#854f68" stroke-width="1.3"/>
+      <g class="frame-broker-clasp"><path d="m85 53 9-5 5 5v16l-5 4-9-6Z" fill="#a77450" stroke="#6f4a44"/><ellipse cx="92" cy="60" rx="5.9" ry="7.2" fill="#e4bc78" stroke="#ffe2a0"/>
+      <path d="m92 55 3 5-3 5-3-5Z" fill="#a06670"/></g>
+      <path d="M3 106 12 121l-7 9m78 1 10-11" fill="none" stroke="#b17c88" stroke-width="2.6"/>`,
+    granite_tinker: `
+      <path d="M4 136V18L18 4h64l14 14v118Z" fill="none" stroke="#686e6d" stroke-width="6"/>
+      <path d="M8 14 19 7H80l12 11m0 13v89" fill="none" stroke="#aeb7a9" stroke-width="2.2"/>
+      <path d="M3 25h9v84h-9Z" fill="#455059" stroke="#989491"/><path d="M2 111h17l-5 6H2" fill="#b6ab91" stroke="#6c6865"/>
+      <g class="frame-mason-gear"><path d="m78 5 2-4 4 1 1 4 4-1 3 3-2 4 3 2-1 4-4 1 1 4-4 2-3-3-3 2-3-3 1-3-4-1-1-4 4-2-2-4 3-3Z" fill="#bab9ab" stroke="#545e61"/><circle cx="81" cy="13" r="5" fill="#697575" stroke="#e3d6ba"/></g>
+      <path class="frame-keystone" d="M43 2h16l-4 13H47Z" fill="#9a9d9e" stroke="#54545d" stroke-width="1.5"/><path d="m47 5 3 2-1 3" fill="none" stroke="#d5c6b7"/>`,
+    shopbell_sprite: `
+      <path d="M4 136V15l9-10h73l10 12v118Z" fill="none" stroke="#725135" stroke-width="6"/>
+      <path d="M5 126V16l9-8h67l12 10v87" fill="none" stroke="#c69b68" stroke-width="2"/>
+      <path d="M52 4h40l3 6-7 2-4-3H52Z" fill="#9b6944" stroke="#63412d"/><circle cx="56" cy="7" r="2" fill="#edcc86"/>
+      <g class="frame-doorbell"><path d="m80 8 6 2-9 3 9 2-8 3 6 1" fill="none" stroke="#d9d5b5" stroke-width="1.7"/>
+      <path d="M72 33q5-3 4-9-1-6 6-7 7 0 7 6t6 9l-1 3-21 2Z" fill="#d9ae62" stroke="#775035" stroke-width="1.6"/>
+      <path d="m76 32 14-2m-13-3q2-1 1-5" stroke="#ffe6a1" fill="none" stroke-width="2"/><circle cx="84" cy="36" r="2.5" fill="#edcb86" stroke="#906444"/></g>`,
+    vault_maggot: `
+      <path d="M3 135V14L13 4h72l12 12v119Z" fill="none" stroke="#605847" stroke-width="6"/><path d="M5 126V17L14 7h70l10 12v104" fill="none" stroke="#c3ab7a" stroke-width="1.6"/>
+      <path d="M1 30q15 11 15 39t-15 42Z" fill="#716c5d" stroke="#c7b383" stroke-width="1.7"/>
+      <path d="M1 43q10 9 10 26t-10 29Z" fill="#423e3e" stroke="#b6a581"/>
+      <g class="frame-vault-latch"><circle cx="3" cy="69" r="5" fill="#cbb67f" stroke="#5c4d3e"/><path d="m3 67 6-4-4 7Z" fill="#fff0b4"/></g>
+      <path d="M90 13h6v15h-6Zm1 89h5v12h-5Z" fill="#a9936e" stroke="#695e4b"/>`,
+    alabaster_finch: `
+      <path d="M3 135V18L14 4h72l11 14v118Z" fill="none" stroke="#706976" stroke-width="6"/>
+      <path d="M5 126V20l10-13h67l12 12v103" fill="none" stroke="#deded3" stroke-width="2.6"/>
+      <path d="m4 25 6 3-5 4m87 57-3 5 5 5" fill="none" stroke="#9a919a" stroke-width="1.6"/>
+      <g transform="translate(-24 -1)"><g class="frame-marble-perch"><path d="M63 23q5 0 7-4l20-1 6 6-4 3-4-2-5 3-5-2-5 2-4-3-6 1Z" fill="#d6d2c9" stroke="#716d7d" stroke-width="1.2"/>
+      <path d="M66 20q6-3 10-10 4-8 10-7 4 1 5 5l5 3-6 2q-2 6-8 8l-5-1-4 3Z" fill="#faf1d9" stroke="#807880" stroke-width="1.5"/><path d="M71 19q8-2 13-10-2 9-8 11Z" fill="#bab7b5"/>
+      <path class="frame-finch-eye" d="M81 10q3-5 7-1-2 5-7 1Z" fill="#ef4876" stroke="#82334c"/><path d="m81 10 6-1" stroke="#665465" stroke-width="1.2"/></g></g>`,
+    dustfin: `
+      <path d="M4 135V24Q5 6 17 5h64q15 1 15 19v110Z" fill="none" stroke="#40666d" stroke-width="6"/>
+      <path d="M4 120q-4-27 2-51m88 13q5 27-1 41" fill="none" stroke="#a4d3cf" stroke-width="2"/>
+      <g class="frame-shell-scoop"><path d="M72 8Q45 5 36 16q8-1 9-1l-3 5q11-3 15-9l15 2Z" fill="#63aaa9" stroke="#305e71" stroke-width="1.4"/>
+      <path d="M71 5q12 0 21 7l-2 12q-10-5-24-5Z" fill="#beded8" stroke="#3b7484" stroke-width="1.8"/><path d="M71 16q8-3 17 4l1-7q-6-4-15-5Z" fill="#709ebb"/><path d="m74 10 1 6m4-5 1 6m4-5 1 6" stroke="#daeae1" stroke-width="1.3"/></g>
+      <g class="frame-dust-grains" fill="#a6dcf6"><circle cx="88" cy="30" r="1.7"/><circle cx="93" cy="34" r="1.4"/><circle cx="90" cy="38" r="1.8"/></g>`,
+    glimmer_orca: `
+      <path d="M4 135V24Q6 3 32 4h44q18 0 20 19v111Z" fill="none" stroke="#1f3c57" stroke-width="6"/>
+      <path d="M4 119q7-11 4-20-4-9-2-16-7 6-6 16m94-72q-14-5-20-14 6 2 10 1-9-6-10-12 16 4 22 12" fill="#e5ece9" stroke="#364957" stroke-width="1.5"/>
+      <path class="frame-orca-crest" d="M3 74Q1 50 5 31 10 5 36 4q13 0 13 9-3-4-8-3-6 3-9 10 0-6 3-9Q13 15 12 35q-6 15-9 39Z" fill="#131f33" stroke="#99d3da" stroke-width="1.7"/><path d="M10 27Q14 13 29 9q-8 3-12 11Z" fill="#eef1db"/>
+      <path d="M4 127q14-6 20-1t14 3m43-27q12-7 12-19" fill="none" stroke="#74a4b5" stroke-width="2"/>`,
+    moss_badger: `
+      <path d="M4 136V25L12 8l20-3 49-1 13 16 3 113Z" fill="none" stroke="#55594b" stroke-width="6"/>
+      <path d="M4 103q-5-16 0-20-2-6 3-11 0 10 5 13l-4 12m84-55q-5-7-2-12-3-6 2-10l5 13" fill="#65804c" stroke="#42543b" stroke-width="1.2"/>
+      <path class="frame-moss-stone" d="m60 5 8-4 15 3 5 7-9 7-14-1-7-5Z" fill="#929483" stroke="#515451" stroke-width="1.8"/><path d="m58 7 9-6 7 1 6-1 7 5-4 3-5-1-4 3-7-2-4 2Z" fill="#829659" stroke="#495e3f"/>
+      <path class="frame-badger-claws" d="m54 10 12 10-4-9m26-4-7 12 9-7" fill="#e6dabb" stroke="#585952"/><path d="m71 10 5 3 4-4" fill="none" stroke="#c2c2a6"/>`,
+    lattice_toad: `
+      <path d="M4 134 5 6l90-1 1 130ZM10 8l81 1M9 16 9 125m82-111v111" fill="none" stroke="#887c4a" stroke-width="3"/>
+      <path d="M3 15 12 8m-9 13 10-8m76-1 8 6m-8 1 8 6" stroke="#ad604f" stroke-width="2.5"/>
+      <path d="M39 7q14-12 28 0-8 8-23 6l9-6-14 3Z" fill="#719663" stroke="#485a42"/>
+      <g fill="#384e42" stroke="#c7b17b" stroke-width="1.6">
+        <path class="frame-rank-1" d="m7 41 6 8-6 8-6-8Z"/><path class="frame-rank-2" d="m93 41 6 8-6 8-6-8Z"/>
+        <path class="frame-rank-3" d="m7 76 6 8-6 8-6-8Z"/><path class="frame-rank-4" d="m93 76 6 8-6 8-6-8Z"/>
+      </g><path d="m3 56 7 2m80 1 7-2M3 92l7 2m80 0 7-2" stroke="#d57c67" stroke-width="2.5"/>`,
+    veil_firefly: `
+      <path d="M4 136V17L14 4h73l9 14v117Z" fill="none" stroke="#534a70" stroke-width="5"/>
+      <path d="M3 35q6-20 18-27m-16 5q10 2 18-5m57-2q12 9 16 25m-17-23q9 7 14 5m-90 90q4 11 12 16m70-1 11-16" fill="none" stroke="#aaa0b6" stroke-width="1.5"/>
+      <path class="frame-firefly-lamp" d="M46 2h8v3l3 5-3 5h-8l-3-5 3-5Z" fill="#adab76" stroke="#595368" stroke-width="1.5"/>
+      <g fill="#534861" stroke="#d2c3ad" stroke-width="1.3">
+        <path class="frame-suit-S" d="M8 36q-9 8-6 11 3 3 6-1l-2 5h5l-2-5q3 4 6 1 3-3-7-11Z"/>
+        <path class="frame-suit-H" d="M92 51q-13-11-6-14 4-2 6 2 2-4 6-2 6 3-6 14Z"/>
+        <path class="frame-suit-C" d="M7 76q-4-4-1-7 3-3 6 0 2 3-1 7 5-4 6 1 1 6-7 3l2 6H6l2-6q-6 3-7-1 0-5 6-3Z"/>
+        <path class="frame-suit-D" d="m92 68 7 9-7 9-7-9Z"/>
+      </g>`,
     kettle_hag: `
       <path d="M4 137V23Q4 5 27 5H71Q96 6 96 26V136Z" fill="none" stroke="#383438" stroke-width="6"/><path d="M6 129V23Q6 7 29 7H71Q93 8 93 26" fill="none" stroke="#948b78" stroke-width="1.8"/>
       <path d="M72 5v7q0 8 5 7 4-1 3-5M63 28q5-8 12-10 10 1 16 10" fill="none" stroke="#b9a386" stroke-width="2"/>
@@ -92,7 +172,31 @@
       '<rect class="frame-ink-mark' + (i < filled ? ' charged' : '') + '" x="2.3" y="' + (89 - i * 4) + '" width="5.4" height="2.6" rx=".6"/>'
     ).join('');
   }
+  const progressScales = {
+    mire_printer: {base:28, step:15, marks:6},
+    granite_tinker: {base:35, step:12, marks:8},
+    vault_maggot: {base:1.3, step:.15, marks:10}
+  };
+  function progressMarks(id, item) {
+    const {base, step, marks} = progressScales[id];
+    const amount = Number(String(item.stackAmount ?? base).replace(/^[+x×]/i, ''));
+    const filled = Number.isFinite(amount) ? Math.max(0, Math.min(marks, Math.round((amount-base)/step))) : 0;
+    return Array.from({length:marks}, (_,i) => {
+      const lit = i < filled;
+      const css = 'class="frame-progress-mark' + (lit ? ' lit' : '') + '"';
+      if (id === 'vault_maggot') {
+        const angle = -1.38 + i * 2.76 / (marks-1);
+        const x = 2 + 12*Math.cos(angle), y = 69 + 35*Math.sin(angle);
+        return '<ellipse ' + css + ' cx="' + x.toFixed(2) + '" cy="' + y.toFixed(2) + '" rx="2.7" ry="2.9" fill="' + (lit ? '#fce294' : '#45403b') + '" stroke="' + (lit ? '#fff3bc' : '#a19376') + '"/>';
+      }
+      if (id === 'granite_tinker') {
+        return '<path ' + css + ' d="M3 ' + (101-9*i) + 'h7l-2 4H3Z" fill="' + (lit ? '#ffcd77' : '#8a9390') + '" stroke="' + (lit ? '#ffe4a0' : '#4a5359') + '"/>';
+      }
+      return '<rect ' + css + ' x="4" y="' + (98-10*i) + '" width="7" height="6" rx="1" fill="' + (lit ? '#9ce1d2' : '#485b54') + '" stroke="' + (lit ? '#d7f8dd' : '#73786a') + '"/>';
+    }).join('');
+  }
   function chargeMarks(id, item) {
+    if (Object.hasOwn(progressScales, id)) return progressMarks(id, item);
     if (id === 'fox_in_ink') return inkGauge(item);
     if (id === 'kettle_hag') return item.charge?.value === 1 ? '<path d="M63 30h26l-2 8q-4 4-10 4t-11-4Z" fill="#8de5c1" stroke="#dffff1" stroke-width="1.1"/><path class="frame-steam" d="M65 24q-5-4-1-8t-1-8m6 12q-3-3 0-6" fill="none" stroke="#d7f5cd" stroke-width="2"/><circle cx="83" cy="35" r="2.3" fill="#effff1"/>' : '';
     if (id === 'dusk_undertaker') {

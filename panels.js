@@ -38,11 +38,6 @@
   function esc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function num(value) { return numbers.format(Number(value) || 0); }
   function rank(n) { return ({11:'J',12:'Q',13:'K',14:'A'})[n] || String(n); }
-  function cardModifiers(c) {
-    const title = word => word.charAt(0).toUpperCase()+word.slice(1);
-    return [c.enhancement && title(c.enhancement), c.edition && title(c.edition), c.seal && title(c.seal)+' Seal',
-      c.tallyChips && '+'+num(c.tallyChips)+' Chips banked'].filter(Boolean);
-  }
   function red(suit) { return suit === 'H' || suit === 'D' ? ' cw-red-suit' : ''; }
   function api() { return global.CW; }
   function state() { return options.getState?.(); }
@@ -105,14 +100,15 @@
       button.setAttribute('aria-label',label+' '+entry.name);
       button.addEventListener('click',event=>{
         event.stopPropagation();
+        const sourceRect=card.getBoundingClientRect();
         dismissSell();
-        if (card.isConnected && state()===s && s[category][index]===id) activate();
+        if (card.isConnected && state()===s && s[category][index]===id) activate(sourceRect);
       });
       sellTab.append(button);
     }
     const canSell=api().canSell(s,category,index);
     addAction(canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
-      canSell,()=>perform(card.getBoundingClientRect(),category==='familiars'?'sell':'sellConsumable',index));
+      canSell,sourceRect=>perform(sourceRect,category==='familiars'?'sell':'sellConsumable',index));
     if (category==='consumables') addAction('Use',api().canUse(s,index),()=>act('use-item',String(index),card));
     card.after(sellTab);
     global.CWContent.colorStats(sellTab);
@@ -180,7 +176,7 @@
     layer = document.createElement('div');
     layer.className = 'cw-backdrop';
     layer.hidden = true;
-    layer.innerHTML = '<section class="cw-dialog" role="dialog" aria-modal="true" aria-labelledby="cw-panel-title" tabindex="-1"><header class="cw-head"></header><div class="cw-message" aria-live="polite"></div><div class="cw-body"></div><footer class="cw-footer"></footer></section>';
+    layer.innerHTML = '<section class="cw-dialog" role="dialog" aria-modal="true" aria-labelledby="cw-panel-title" tabindex="-1"><header class="cw-head"></header><div class="cw-message" aria-live="polite"></div><div class="cw-familiar-announcement visually-hidden" aria-live="polite" aria-atomic="true"></div><div class="cw-body"></div><footer class="cw-footer"></footer></section>';
     document.body.append(layer);
     const fitTrials = () => {
       const panel = dialog();
@@ -234,7 +230,7 @@
         event.preventDefault(); event.stopImmediatePropagation();
         if (isDismissible()) close();
       } else if (event.key === 'Tab') {
-        const buttons = [...layer.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), summary')].filter(el=>el.getClientRects().length);
+        const buttons = [...layer.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), summary, [tabindex="0"]')].filter(el=>el.getClientRects().length);
         if (!buttons.length) { event.preventDefault(); return; }
         const first = buttons[0], last = buttons[buttons.length-1];
         if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog() || !layer.contains(document.activeElement))) {
@@ -249,6 +245,12 @@
   function isDismissible() { return page !== readPhase(state()); }
   function route(next, value = '') {
     const wasOpen = !!page;
+    if(wasOpen && page!==next){
+      dialog()?.querySelector('.familiar-proc-witnesses')?.remove();
+      const announcement=dialog()?.querySelector('.cw-familiar-announcement');
+      if(announcement)announcement.textContent='';
+      global.CWFamiliarScoreFX?.clear();
+    }
     page = next;
     detail = value;
     message = '';
@@ -430,26 +432,25 @@
     return result('Grimoire',guideTab==='rules'?'How to play':'Hand guide',tabs+section);
   }
   function deckView(s) {
-    const source = deckTab === 'draw' ? s.draw : s.deck;
-    const tabs = '<div class="cw-tabs">' + tab('deck-tab','draw','Draw pile · '+s.draw.length,deckTab) + tab('deck-tab','all','Full deck · '+s.deck.length,deckTab) + '</div>';
-    const ranks = Array.from({length:13},(_,i)=>14-i);
-    let grid = '<div class="cw-deck-grid" aria-label="Card counts by suit and rank"><span></span>' + ranks.map(r=>'<span class="cw-rank-label">'+rank(r)+'</span>').join('');
-    for (const suit of suitOrder) {
-      grid += '<span class="cw-suit-label'+red(suit)+'" aria-label="'+suitNames[suit]+'">'+suits[suit]+'</span>';
-      for (const r of ranks) {
-        const copies = source.filter(c=>c.rank===r && c.suit===suit);
-        const n = copies.length;
-        const label = rank(r)+' of '+suitNames[suit]+', '+n+' copies';
-        const descriptions = copies.map(c=>global.CWCardTip.details(c,s.phase==='play' && api().debuffed(s,c)));
-        const crossed = n && s.phase==='play' && copies.every(c=>api().debuffed(s,c));
-        const variants = [...new Set(descriptions)];
-        const tip = n ? global.CWCardTip.attribute(variants.length===1 ? variants[0] : [label,...variants.map(v=>descriptions.filter(d=>d===v).length+' × '+v.replaceAll('\n',' · '))].join('\n')) : '';
-        grid += '<span class="cw-deck-tile'+red(suit)+(n?'':' cw-spent')+'"'+(n?' tabindex="0"'+tip:'')+' aria-label="'+esc(label)+'">'+(n>1?'×'+n:n?rank(r):'–')+(crossed?global.CWCardTip.cross:'')+'</span>';
-      }
-    }
-    const modified = source.filter(c=>c.enhancement || c.edition || c.seal || c.tallyChips);
-    const mods = modified.length ? heading('Modified cards')+'<div class="cw-mod-list">'+modified.map(c=>'<span tabindex="0"'+cardTip(c)+'>'+esc(rank(c.rank)+suits[c.suit]+' · '+cardModifiers(c).join(' · '))+(s.phase==='play' && api().debuffed(s,c)?global.CWCardTip.cross:'')+'</span>').join('')+'</div>' : '';
-    return result('Deck inspection','Your deck',tabs+grid+'</div>'+mods);
+    const inBlind = s.phase === 'play';
+    const remaining = inBlind && deckTab === 'draw' ? new Set(s.draw.map(c=>c.id)) : null;
+    const fullLabel = 'Full deck · '+s.deck.length;
+    const controls = inBlind
+      ? tab('deck-tab','draw','Draw pile · '+s.draw.length,deckTab) + tab('deck-tab','all',fullLabel,deckTab)
+      : '<strong>'+fullLabel+'</strong>';
+    const legend = remaining && remaining.size < s.deck.length ? '<span class="cw-deck-key">Dimmed = already drawn</span>' : '';
+    const rows = suitOrder.map(suit => {
+      const cards = s.deck.filter(c=>c.suit===suit).sort((a,b)=>b.rank-a.rank);
+      const count = remaining ? cards.filter(c=>remaining.has(c.id)).length : cards.length;
+      const faces = cards.map(c=>{
+        const drawn = remaining && !remaining.has(c.id);
+        const slot = drawn ? 'class="cw-deck-slot cw-drawn" aria-label="Already drawn"' : 'class="cw-deck-slot"';
+        return '<li '+slot+'>'+options.cardPreview(c)+'</li>';
+      }).join('');
+      return '<section class="cw-deck-row" aria-label="'+suitNames[suit]+'"><div class="cw-deck-count'+red(suit)+'" aria-hidden="true">'+
+        '<span>'+suits[suit]+'</span><b>'+count+'</b></div><ul class="cw-deck-cards" aria-label="'+count+' '+suitNames[suit]+(remaining?' remaining':'')+'">'+faces+'</ul></section>';
+    }).join('');
+    return result('Deck inspection','Your deck','<div class="cw-tabs cw-deck-tabs">'+controls+legend+'</div><div class="cw-deck-rows">'+rows+'</div>');
   }
   function road(s) {
     return '<div class="cw-road">'+[0,1,2].map(i=>{
@@ -685,8 +686,8 @@
       '<div class="moon-spell-slots">'+spellSlots+'</div>'+marketPurse(s.money)+'</section>';
   }
 
-  function marketPurse(money) {
-    return '<div class="cw-purse roost-purse" aria-label="Coin purse"><strong class="stat-money">'+cash(money)+'</strong></div>';
+  function marketPurse(money, compact=false) {
+    return '<div class="cw-purse roost-purse'+(compact?' pack-purse':'')+'" role="group" aria-label="Coin purse"><strong class="stat-money">'+cash(money)+'</strong></div>';
   }
 
   function marketFamiliar(d) {
@@ -815,7 +816,7 @@
       return '<button type="button" data-owned-category="'+category+'" data-slot="'+i+'" aria-expanded="false"'+cardTip(d)+'>'+esc(d.name)+mark+'</button>';
     })).join('');
     const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,ownedCards+button('close-pack','Skip remaining'));
-    view.headerEnd='<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong>';
+    view.headerEnd='<div class="pack-status">'+marketPurse(s.money,true)+'<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong></div>';
     return view;
   }
   function tallySpoils(body) {
@@ -1073,7 +1074,6 @@
       return;
     }
     if (name==='leave-shop' && hasFreeReward(s)) return open('leave-rewards');
-    if (page==='leave-rewards' && (name==='reroll' || name==='reward-pack')) close();
     const commands={
       'buy':['buy',index],'close-pack':['closePack'],reroll:['reroll'],'reward-pack':['claimRewardPack'],
       'leave-shop':['leaveShop'],'leave-anyway':['leaveShop'],'cash-out':['cashOut'],'start-blind':['startBlind'],skip:['skipBlind'],
@@ -1081,7 +1081,12 @@
       'move-left':['reorder',index,index-1],'move-right':['reorder',index,index+1],endless:['endless'],
       'reroll-boss':['rerollBoss'],'disable-boss':['disableBoss']
     };
-    if(commands[name]) perform(control?.getBoundingClientRect(),...commands[name]);
+    if(commands[name]) {
+      const itemArt=control?.closest('.moon-item')?.querySelector('.moon-art');
+      const sourceRect=(itemArt || control)?.getBoundingClientRect();
+      if (page==='leave-rewards' && (name==='reroll' || name==='reward-pack')) close();
+      perform(sourceRect,...commands[name]);
+    }
   }
   global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page,getPage:()=>page};
 })(window);

@@ -21,3 +21,6 @@
   .familiar-proc-mark > svg {filter:none}
 }
 #table-purse {width:clamp(21px,1.85vw,31px);height:auto;flex:none;}
+.playing-card[data-proc-credit] {outline:2px solid #8bdafa;outline-offset:-3px;}
+.playing-card[data-proc-credit="mult"] {outline-color:#f7929b;}
+.cw-fx-lane .cw-fx-card.cw-fx-quiet[data-proc-credit] {opacity:1;}

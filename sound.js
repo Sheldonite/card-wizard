@@ -444,6 +444,73 @@
         tone(fx, 68, now + .03, .095, .051, 'sine', -12, .012);
         bell(fx, 76, now + .102, .095, .036);
         break;
+      case 'proc-alabaster_finch':
+        tone(fx, 62, now, .053, .061, 'triangle', -5, .003);
+        tone(fx, 80, now + .042, .078, .032, 'sine', 6, .008);
+        if (step === 1) bell(fx, 84, now + .109, .145, .039);
+        break;
+      case 'proc-dustfin':
+        brush(fx, now, .163, .061, 1620, .95);
+        brush(fx, now + .063, .107, .039, 2510, 1.3);
+        tone(fx, 72, now + .141, .089, .041, 'sine', -3, .004);
+        break;
+      case 'proc-glimmer_orca':
+        tone(fx, 62, now, .152, .061, 'sine', -18, .018);
+        brush(fx, now + .09, .134, .048, 790, .8);
+        tone(fx, 48, now + .129, .166, .048, 'sine', 10, .041);
+        break;
+      case 'proc-moss_badger':
+        brush(fx, now, .071, .055, 1020, 1.7);
+        [55, 51, 47].forEach((note, i) => tone(fx, note, now + .045 + i * .047, .067, .051 - i * .009, 'triangle', -5, .003));
+        break;
+      case 'proc-lattice_toad':
+        [53, 60, 65].forEach((note, i) => tone(fx, note, now + i * .043, .106, .043, 'triangle', -1, .003));
+        break;
+      case 'proc-veil_firefly':
+        bell(fx, 73, now, .192, .039);
+        bell(fx, 85, now + .091, .188, .028);
+        break;
+      case 'proc-brass_lantern':
+        tone(fx, 57, now, .122, .051, 'triangle', 0, .007);
+        bell(fx, 76, now + .035, .14, .043);
+        if (step === 2) {
+          brush(fx, now + .095, .101, .03, 1800);
+          tone(fx, 81, now + .115, .15, .035, 'sine', 5);
+        }
+        break;
+      case 'proc-silken_broker':
+        brush(fx, now, .113, .048, 2290, 1.4);
+        tone(fx, 72, now + .032, .089, .043, 'sine', 5, .019);
+        bell(fx, 81, now + .092, .104, .038);
+        if (step === 2) bell(fx, 86, now + .15, .099, .029);
+        break;
+      case 'proc-shopbell_sprite':
+        bell(fx, 78, now, .165, .062);
+        tone(fx, 70, now + .014, .085, .026, 'triangle', -1, .003);
+        if (step === 2) bell(fx, 78, now + .105, .164, .041);
+        break;
+      case 'proc-mire_printer':
+        if (step === 1) brush(fx, now, .095, .048, 1310, 1.2);
+        tone(fx, 49, now + .05, .072, .065, 'triangle', -9, .004);
+        brush(fx, now + .054, .055, .036, 840);
+        if (step === 1) tone(fx, 66, now + .117, .086, .031, 'triangle', 2, .006);
+        break;
+      case 'proc-granite_tinker':
+        tone(fx, 66, now, .086, .05, 'triangle', -2, .003);
+        tone(fx, 84, now + .003, .047, .027, 'sine', -1, .003);
+        if (step === 1) {
+          brush(fx, now + .067, .067, .031, 2880, 2.1);
+          bell(fx, 73, now + .116, .138, .04);
+        }
+        break;
+      case 'proc-vault_maggot':
+        tone(fx, 44, now, .073, .063, 'sine', 5, .008);
+        tone(fx, 54, now + .068, .126, .043, 'triangle', -5, .019);
+        if (step === 1) {
+          brush(fx, now + .128, .057, .035, 910, 1.6);
+          tone(fx, 62, now + .163, .099, .036, 'sine', 7, .008);
+        }
+        break;
       case 'coin':
         bell(fx, 82+step*2, now, .16, .11);
         bell(fx, 94+step*2, now+.028, .12, .055);

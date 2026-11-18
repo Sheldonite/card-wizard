@@ -118,7 +118,8 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
   overflow: hidden;
   text-align: left;
 }
-.cw-dialog[data-page="shop"], .cw-dialog[data-page="guide"], .cw-dialog[data-page="deck"] { width: min(100%, 774px); }
+.cw-dialog[data-page="shop"], .cw-dialog[data-page="guide"] { width: min(100%, 774px); }
+.cw-dialog[data-page="deck"] { width: min(100%, 990px); }
 .cw-head {
   display: grid;
   grid-template-columns: minmax(0,1fr) auto;
@@ -178,15 +179,32 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
 .cw-instructions { margin: 0; display: grid; gap: 13px; }
 .cw-instructions dt { color: var(--cw-gold); font-weight: 750; }
 .cw-instructions dd { margin: 2px 0 0; color: var(--cw-muted); }
-.cw-deck-grid { display: grid; grid-template-columns: auto repeat(13,minmax(0,1fr)); gap: 4px; align-items: center; margin: 10px 0; }
-.cw-rank-label { font-size: 11px; text-align: center; color: var(--cw-muted); }
-.cw-suit-label { font: bold 23px/1 Georgia,serif; text-align:center; padding-right:4px; color:#e6dfed; }
-.cw-suit-label.cw-red-suit { color:#ec989c; }
-.cw-mod-list { display:flex; flex-wrap:wrap; gap:5px; }
-.cw-mod-list span { border:1px solid #5d4d68; border-radius:4px; background:#332b3d; padding:4px 8px; color:#e2cdeb; font-size:12px; }
-.cw-deck-tile { display:grid; place-items:center; min-height: 36px; border-radius:4px; text-align:center; font:bold 14px/1 Georgia,serif; background:#e9e0cd; color:#282734; border:1px solid #bbb0a1; }
-.cw-deck-tile.cw-red-suit { color:#af4858; }
-.cw-deck-tile.cw-spent { color:#827989; background:#2c2835; border-color:#443b4c; }
+.cw-deck-tabs { align-items:center; margin-bottom:10px; }
+.cw-deck-key { margin-left:auto; color:var(--cw-muted); font-size:12px; }
+.cw-deck-rows {
+  --face:clamp(49px,min(6.3vw,9.6dvh),67px);
+  border:1px solid #514358; border-radius:8px;
+  background:linear-gradient(105deg,#302737,#25212e 38%,#292331);
+}
+.cw-deck-row { display:grid; grid-template-columns:clamp(32px,4vw,48px) minmax(0,1fr); align-items:center; }
+.cw-deck-row + .cw-deck-row { border-top:1px solid #45394d; }
+.cw-deck-count { display:grid; justify-items:center; gap:2px; color:#efe6f4; }
+.cw-deck-count span { font:24px/1 Georgia,serif; }
+.cw-deck-count b { color:var(--cw-muted); font:700 12px/1.2 var(--mono,monospace); }
+.cw-deck-count.cw-red-suit span { color:#f29d9e; }
+.cw-deck-cards {
+  display:flex; align-items:center; list-style:none; margin:0; padding:10px 8px 9px 4px;
+  min-height:calc(var(--face) * 99 / 70 + 19px); overflow-x:auto; scrollbar-width:thin;
+  scrollbar-color:#72607c transparent;
+}
+.cw-deck-slot { flex:0 1 calc(var(--face) + 3px); min-width:22px; }
+.cw-deck-slot:last-child { flex:0 0 var(--face); }
+.cw-deck-slot .playing-card { display:block; width:var(--face); max-height:none; border-radius:5px; cursor:help; }
+.cw-deck-slot .corner-rank { font-size:calc(var(--face) * .26); gap:1px; }
+.cw-deck-slot .card-enhance b { display:none; }
+.cw-deck-slot .boss-cross { font-size:calc(var(--face) * .36); }
+.cw-deck-slot.cw-drawn .playing-card { filter:grayscale(1) brightness(.54); }
+.cw-deck-slot .playing-card:is(:hover,:focus-visible) { --lift:4px; z-index:4; }
 .cw-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(102px,1fr)); gap:8px; }
 .cw-stat { border:1px solid #4b4057; background:#292433; padding:10px 12px; border-radius:6px; }
 .cw-stat span { display:block; color:var(--cw-muted); font-size:11px; }
@@ -325,9 +343,6 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
  .cw-offer h3 {font-size:16px;}
  .cw-item-image {height:66px;}
  .cw-owned {flex-wrap:wrap; gap:7px;}
- .cw-deck-grid {gap:2px;}
- .cw-suit-label {font-size:17px;padding:0;}
- .cw-deck-tile {min-height:27px;font-size:11px;}
  .cw-stat {padding:8px;}
  .cw-dialog[data-page="lobby"] .cw-head {padding-block:18px 12px;}
  .cw-lobby-nav {margin-bottom:12px;}
@@ -351,6 +366,20 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
 [data-page="pack"] .cw-body {display:flex;flex-direction:column;align-items:center;padding:clamp(16px,4vw,60px);isolation:isolate}
 [data-page="pack"] .cw-head,[data-page="pack"] .cw-footer {padding-inline:max(5vw,18px);background:#171425b5;border-color:#aa8b603b}
 .pack-remaining {background:#352c44;color:#ffe4a3;padding:7px 13px;border:1px solid #9c8057;border-radius:5px}
+.pack-status {display:flex;align-items:center;gap:clamp(4px,1vw,12px);white-space:nowrap}
+.pack-status .pack-purse {
+  display:block;position:relative;width:clamp(64px,8vw,82px);aspect-ratio:200/154;
+  background:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTU0Ij4KIDxkZWZzPgogIDxsaW5lYXJHcmFkaWVudCBpZD0ic2lsayIgeDI9Ii44NSIgeTI9IjEiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94Ij48c3RvcCBzdG9wLWNvbG9yPSIjZDU4OTZjIi8+PHN0b3Agb2Zmc2V0PSIuMjYiIHN0b3AtY29sb3I9IiM5MTQ0NTEiLz48c3RvcCBvZmZzZXQ9Ii41OCIgc3RvcC1jb2xvcj0iIzY0MmU0NiIvPjxzdG9wIG9mZnNldD0iLjg0IiBzdG9wLWNvbG9yPSIjNDUyMTNhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMjkxYjMyIi8+PC9saW5lYXJHcmFkaWVudD4KICA8bGluZWFyR3JhZGllbnQgaWQ9ImNvcmQiIHgyPSIwIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iI2ZmZjFhOSIvPjxzdG9wIG9mZnNldD0iLjUyIiBzdG9wLWNvbG9yPSIjZTdhYzU0Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOTc1MTJlIi8+PC9saW5lYXJHcmFkaWVudD4KIDwvZGVmcz4KIDxnIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogPHBhdGggZmlsbD0idXJsKCNzaWxrKSIgc3Ryb2tlPSIjZDA5YTY5IiBzdHJva2Utd2lkdGg9IjIuNSIgZD0iTTcwIDQ0IDU2IDE3cTctOCAxOC0zbDEwIDVROTAgMyA5OSA3bDE0IDExcTExLTEzIDI2LTZsLTExIDMyYzE5IDEzIDUzIDQ0IDU1IDY1IDQgMjgtMzAgMzktODIgMzktNTQgMC04NS0xMC04NS0zNSAwLTIzIDI4LTU0IDU0LTY5WiIvPgogPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZGQ5ODc4IiBvcGFjaXR5PSIuNTUiIHN0cm9rZS13aWR0aD0iMyIgZD0ibTc1IDE4IDEyIDIzbTEyLTI4IDIgMjZtMjMtMTgtMTEgMjBNNzcgNDlRMzEgOTQgMzQgMTExbTkzLTYxcTM2IDM2IDQxIDU3Ii8+CiA8cGF0aCBmaWxsPSIjNDUyMjM3IiBzdHJva2U9IiNiZDgyNWEiIHN0cm9rZS13aWR0aD0iMS41IiBkPSJNMjkgOTFxNjktMTggMTQwIDBsMSAyOXEtNjYgMjEtMTQxIDBaIi8+CiA8ZyBmaWxsPSJub25lIiBzdHJva2U9InVybCgjY29yZCkiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48cGF0aCBkPSJNNjkgNDBxMjkgOSA2MSAwbS02MCA3cTMyIDEwIDYwLTFtLTItMXEyMCAzIDIwIDIxbDYgN20tMjYtMjhxMjMtMjIgMjYtMTEgMyAxMi0yNCAxMSIvPjwvZz4KIDxnIGZpbGw9IiNmNmNjNzkiPjxwYXRoIGQ9Im0xNTUgNjggNSA5LTUgOC01LTh6TTk5IDU3bDMgOCA4IDMtOCAzLTMgOC0zLTgtOC0zIDgtM3oiLz48Y2lyY2xlIGN4PSIzOSIgY3k9IjEwNSIgcj0iMiIvPjxjaXJjbGUgY3g9IjE2MCIgY3k9IjEwNSIgcj0iMiIvPjwvZz4KIDwvZz4KPC9zdmc+DQo=") center/contain no-repeat
+}
+.pack-status .pack-purse strong.stat-money {font-size:clamp(13px,1.6vw,19px)}
+.cw-familiar-announcement.visually-hidden {
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap;border:0
+}
+@media(max-width:480px) {
+  .pack-status {flex-direction:column;gap:1px}
+  .pack-status .pack-remaining {font-size:11px;padding:2px 6px}
+}
 .pack-spread {display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap;gap:clamp(7px,1vw,16px);width:100%;margin:auto 0;padding:30px 0}
 .pack-slot {display:flex;width:clamp(120px,15vw,194px);transform:translateY(var(--drop)) rotate(var(--tilt));animation:pack-deal .55s cubic-bezier(.16,.76,.25,1.05) var(--delay) backwards;transition:transform .18s}
 .pack-slot:hover,.pack-slot:focus-within,.pack-slot.chosen {transform:translateY(-9px);z-index:2}
@@ -818,7 +847,7 @@ body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
 .stat-money::before {content:"";display:inline-block;width:1.15em;height:.9em;vertical-align:-.08em;margin-right:.14em;background:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAxOCI+CiAgPGcgc3Ryb2tlPSIjNzU0NTE5IiBzdHJva2Utd2lkdGg9Ii45IiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgIDxwYXRoIGZpbGw9IiNkMDkyMjQiIGQ9Ik0yIDhoMTJ2NmMwIDMuNS0xMiAzLjUtMTIgMHoiLz4KICAgIDxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0yIDEwYzAgMy4yIDEyIDMuMiAxMiAwTTIgMTIuNWMwIDMuMiAxMiAzLjIgMTIgMCIvPgogICAgPGVsbGlwc2UgY3g9IjgiIGN5PSI4IiByeD0iNiIgcnk9IjIuNSIgZmlsbD0iI2ZmZGE2NSIvPgogICAgPHBhdGggZmlsbD0iI2UzYTUyZSIgZD0iTTEwIDRoMTJ2N2MwIDMuNS0xMiAzLjUtMTIgMHoiLz4KICAgIDxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0xMCA2YzAgMy4yIDEyIDMuMiAxMiAwbS0xMiAyLjVjMCAzLjIgMTIgMy4yIDEyIDAiLz4KICAgIDxlbGxpcHNlIGN4PSIxNiIgY3k9IjQiIHJ4PSI2IiByeT0iMi42IiBmaWxsPSIjZmZkZjc0Ii8+CiAgPC9nPgogIDxwYXRoIGQ9Im0xMi44IDMuNyAyLjgtLjhtLTExIDQuOCAyLjUtLjciIHN0cm9rZT0iI2ZmZjFiMCIgc3Ryb2tlLXdpZHRoPSIxLjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4NCg==") center/contain no-repeat}
 
 /* Keep the boss mark legible on light cards and dark familiar portraits. */
-:where(.item-card,.cw-owned-emblem,.cw-item-image,.cw-target,.cw-deck-tile,.cw-mod-list > span,#deck-suits > span):has(> .boss-cross) { position:relative }
+:where(.item-card,.cw-owned-emblem,.cw-item-image,.cw-target,#deck-suits > span):has(> .boss-cross) { position:relative }
 .boss-cross {
   pointer-events:none; position:absolute; z-index:8; left:50%; top:48%;
   transform:translate(-50%,-50%) rotate(-8deg); display:grid; place-items:center;
@@ -827,7 +856,7 @@ body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
   box-shadow:0 2px 5px #230917b3;
 }
 .playing-card[data-debuffed=true]::after {content:none}
-.cw-deck-tile > .boss-cross,#deck-suits > span > .boss-cross,.cw-mod-list .boss-cross {
+#deck-suits > span > .boss-cross {
   left:auto; right:-2px; top:-3px; transform:none; font-size:12px; border-width:1px;
 }
 .boss-partial {
@@ -2259,6 +2288,71 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .item-card[data-familiar-edition=negative] > :is(.item-mark,.type-badge),
 .cw-owned-emblem[data-familiar-edition=negative] > .type-badge { display:none; }
 .pack-negative-label { color:#b0f3fa;font-weight:700;white-space:nowrap; }
+[data-familiar-frame=alabaster_finch] {--frame-edge:#e6dfd3;--frame-dark:#615d69;}
+[data-familiar-frame=dustfin] {--frame-edge:#aad7d9;--frame-dark:#335760;}
+[data-familiar-frame=glimmer_orca] {--frame-edge:#d3e4dd;--frame-dark:#233a51;}
+[data-familiar-frame=moss_badger] {--frame-edge:#a6ae84;--frame-dark:#414e3e;}
+[data-familiar-frame=lattice_toad] {--frame-edge:#d5ba84;--frame-dark:#3e5840;}
+[data-familiar-frame=veil_firefly] {--frame-edge:#c6bad0;--frame-dark:#47405e;}
+.frame-finch-eye {transform-box:fill-box;transform-origin:center;transform:scaleY(.16);fill:#85455a;}
+[data-proc-solo] .frame-finch-eye {transform:scale(1.12);fill:#ff4877;stroke:#fff0c4;}
+[data-proc-solo] .frame-finch-eye + path {opacity:0;}
+[data-proc-active] .frame-dust-grains {fill:#e5fbff;}
+[data-proc-active] .frame-orca-crest {stroke:#daeaff;}
+[data-proc-active] .frame-moss-stone {fill:#afd0ab;stroke:#eff2ba;}
+[data-proc-ranks~="1"] .frame-rank-1, [data-proc-ranks~="2"] .frame-rank-2,
+[data-proc-ranks~="3"] .frame-rank-3, [data-proc-ranks~="4"] .frame-rank-4 {
+  fill:#ff916c;stroke:#ffe5ae;stroke-width:2;
+}
+[data-proc-active] .frame-firefly-lamp {fill:#ffda71;stroke:#fff9bd;}
+[data-proc-suits~="S"] .frame-suit-S, [data-proc-suits~="C"] .frame-suit-C {
+  fill:#a2e4df;stroke:#fffbd0;stroke-width:1.8;
+}
+[data-proc-suits~="H"] .frame-suit-H, [data-proc-suits~="D"] .frame-suit-D {
+  fill:#ffa481;stroke:#fff3c6;stroke-width:1.8;
+}
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) [data-proc-active] .frame-marble-perch {animation:frame-perch-shake .35s ease-out;}
+  body:not(.still) [data-proc-active] .frame-shell-scoop {transform-box:fill-box;transform-origin:20% 65%;animation:frame-scoop .34s ease-out;}
+  body:not(.still) [data-proc-active] .frame-dust-grains {animation:frame-grains .34s ease-out;}
+  body:not(.still) [data-proc-active] .frame-orca-crest {animation:frame-breaker .44s ease-out;}
+  body:not(.still) [data-proc-active] .frame-badger-claws {animation:frame-claw-scrape .32s ease-out;}
+}
+@keyframes frame-perch-shake {28% {transform:translateY(2px);}62% {transform:translateY(-1px);}}
+@keyframes frame-scoop {48% {transform:rotate(-7deg);}}
+@keyframes frame-grains {60% {transform:translate(2px,5px);}90% {opacity:.3;}}
+@keyframes frame-breaker {48% {transform:translate(2px,-2px);}}
+@keyframes frame-claw-scrape {50% {transform:translate(-1px,3px);}}
+[data-proc-active] .frame-marble-perch > path:first-child {fill:#f8f6e6;stroke:#bfdded;}
+[data-familiar-frame=brass_lantern] {--frame-edge:#e3c787;--frame-dark:#654b35;}
+[data-familiar-frame=mire_printer] {--frame-edge:#b1aa87;--frame-dark:#434a40;}
+[data-familiar-frame=silken_broker] {--frame-edge:#e6bab2;--frame-dark:#684659;}
+[data-familiar-frame=granite_tinker] {--frame-edge:#c7c4b0;--frame-dark:#4e5660;}
+[data-familiar-frame=shopbell_sprite] {--frame-edge:#e2b773;--frame-dark:#604a38;}
+[data-familiar-frame=vault_maggot] {--frame-edge:#cebb8f;--frame-dark:#4b4841;}
+[data-proc-active] .frame-lantern-wick {fill:#fffadb;}
+[data-proc-active] .frame-print-stamp, [data-proc-active] .frame-broker-clasp,
+[data-proc-active] .frame-doorbell, [data-proc-active] .frame-vault-latch {filter:brightness(1.24);}
+[data-proc-active] .frame-keystone {fill:#e9d3ad;}
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) [data-proc-active] .frame-lantern-door {transform-box:fill-box;transform-origin:left center;animation:frame-unhinge .46s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=sell] .frame-print-roller {animation:frame-impression .36s ease-out;}
+  body:not(.still) [data-proc-active] .frame-print-stamp {animation:frame-impression .36s ease-out;}
+  body:not(.still) [data-proc-active] .frame-broker-clasp {animation:frame-case-click .32s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=packOpen] .frame-broker-ribbon {animation:frame-ribbon-slip .42s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=packOpen] .frame-mason-gear {transform-box:fill-box;transform-origin:center;animation:frame-mason-turn .4s ease-out;}
+  body:not(.still) [data-proc-active] .frame-keystone {animation:frame-impression .34s ease-out;}
+  body:not(.still) [data-proc-active] .frame-doorbell {transform-box:fill-box;transform-origin:50% 0;animation:frame-bell-swing .38s ease-out;}
+  body:not(.still) [data-proc-active][data-proc-event=reroll] .frame-doorbell {animation-duration:.23s;animation-iteration-count:2;}
+  body:not(.still) [data-proc-active] .frame-vault-latch {transform-origin:3% 49.3%;animation:frame-vault-click .38s ease-out;}
+}
+@keyframes frame-unhinge {45% {transform:scaleX(.66);}}
+@keyframes frame-impression {45% {transform:translateY(3px);}75% {transform:translateY(-1px);}}
+@keyframes frame-case-click {45% {transform:translateX(-3px);}}
+@keyframes frame-ribbon-slip {55% {transform:translate(-1px,-3px);}}
+@keyframes frame-mason-turn {to {transform:rotate(45deg);}}
+@keyframes frame-bell-swing {30% {transform:rotate(-13deg);}65% {transform:rotate(9deg);}}
+@keyframes frame-vault-click {55% {transform:rotate(25deg);}}
 
 </style>
   <style>
@@ -2285,6 +2379,9 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
   .familiar-proc-mark > svg {filter:none}
 }
 #table-purse {width:clamp(21px,1.85vw,31px);height:auto;flex:none;}
+.playing-card[data-proc-credit] {outline:2px solid #8bdafa;outline-offset:-3px;}
+.playing-card[data-proc-credit="mult"] {outline-color:#f7929b;}
+.cw-fx-lane .cw-fx-card.cw-fx-quiet[data-proc-credit] {opacity:1;}
 
 </style>
   <style>
@@ -2304,13 +2401,86 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .shadow-wing { fill:#d9bbf0; }
 .shadow-echo-back { fill:#30213f; stroke:#e4d5f2; stroke-width:1.3; stroke-linejoin:round; }
 .shadow-echo-front { fill:#b99bcd; }
-.familiar-proc-witness {
-  position:fixed;right:clamp(8px,4vw,52px);bottom:clamp(12px,10vh,90px);z-index:550;
-  display:flex;align-items:center;gap:8px;max-width:85vw;padding:5px 12px 5px 5px;
-  background:#37213c;border:1px solid #ca937b;border-radius:6px;
-  color:#ffd0a5;font:700 15px Georgia,serif;box-shadow:0 3px 12px #1b1024a8;pointer-events:none;
+.familiar-proc-witnesses {
+  position:fixed;
+  z-index:550;
+  right:max(env(safe-area-inset-right),clamp(10px,3vw,42px));
+  bottom:calc(env(safe-area-inset-bottom) + clamp(56px,11vh,94px));
+  display:flex;
+  flex-flow:column-reverse nowrap;
+  align-items:flex-end;
+  gap:5px;
+  max-width:calc(100vw - 20px);
+  pointer-events:none;
+  user-select:none;
 }
-.familiar-proc-witness img {width:34px;height:44px;object-fit:cover;border:1px solid #b88775;border-radius:4px;image-rendering:pixelated;}
+.familiar-proc-witness {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  max-width:min(240px,100%);
+  padding:3px 11px 3px 3px;
+  border:1px solid #b6957e;
+  border-radius:6px;
+  background:linear-gradient(110deg,#312238,#261d30);
+  box-shadow:inset 0 0 0 1px #544358,0 3px 9px #100c1a80;
+  color:#fff0d3;
+  font:700 14px/1.12 Georgia,serif;
+  pointer-events:none;
+}
+.proc-witness-portrait,.proc-witness-purse {
+  position:relative;
+  display:block;
+  flex:0 0 auto;
+  width:30px;
+  height:38px;
+}
+.proc-witness-portrait {
+  overflow:hidden;
+  border:1px solid #ad927c;
+  border-color:var(--frame-edge,#ad927c);
+  border-radius:4px;
+  background:#271d30;
+}
+.proc-witness-portrait > img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  image-rendering:pixelated;
+}
+.proc-witness-purse {
+  width:38px;
+  background:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTU0Ij4KIDxkZWZzPgogIDxsaW5lYXJHcmFkaWVudCBpZD0ic2lsayIgeDI9Ii44NSIgeTI9IjEiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94Ij48c3RvcCBzdG9wLWNvbG9yPSIjZDU4OTZjIi8+PHN0b3Agb2Zmc2V0PSIuMjYiIHN0b3AtY29sb3I9IiM5MTQ0NTEiLz48c3RvcCBvZmZzZXQ9Ii41OCIgc3RvcC1jb2xvcj0iIzY0MmU0NiIvPjxzdG9wIG9mZnNldD0iLjg0IiBzdG9wLWNvbG9yPSIjNDUyMTNhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMjkxYjMyIi8+PC9saW5lYXJHcmFkaWVudD4KICA8bGluZWFyR3JhZGllbnQgaWQ9ImNvcmQiIHgyPSIwIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iI2ZmZjFhOSIvPjxzdG9wIG9mZnNldD0iLjUyIiBzdG9wLWNvbG9yPSIjZTdhYzU0Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOTc1MTJlIi8+PC9saW5lYXJHcmFkaWVudD4KIDwvZGVmcz4KIDxnIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogPHBhdGggZmlsbD0idXJsKCNzaWxrKSIgc3Ryb2tlPSIjZDA5YTY5IiBzdHJva2Utd2lkdGg9IjIuNSIgZD0iTTcwIDQ0IDU2IDE3cTctOCAxOC0zbDEwIDVROTAgMyA5OSA3bDE0IDExcTExLTEzIDI2LTZsLTExIDMyYzE5IDEzIDUzIDQ0IDU1IDY1IDQgMjgtMzAgMzktODIgMzktNTQgMC04NS0xMC04NS0zNSAwLTIzIDI4LTU0IDU0LTY5WiIvPgogPHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZGQ5ODc4IiBvcGFjaXR5PSIuNTUiIHN0cm9rZS13aWR0aD0iMyIgZD0ibTc1IDE4IDEyIDIzbTEyLTI4IDIgMjZtMjMtMTgtMTEgMjBNNzcgNDlRMzEgOTQgMzQgMTExbTkzLTYxcTM2IDM2IDQxIDU3Ii8+CiA8cGF0aCBmaWxsPSIjNDUyMjM3IiBzdHJva2U9IiNiZDgyNWEiIHN0cm9rZS13aWR0aD0iMS41IiBkPSJNMjkgOTFxNjktMTggMTQwIDBsMSAyOXEtNjYgMjEtMTQxIDBaIi8+CiA8ZyBmaWxsPSJub25lIiBzdHJva2U9InVybCgjY29yZCkiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48cGF0aCBkPSJNNjkgNDBxMjkgOSA2MSAwbS02MCA3cTMyIDEwIDYwLTFtLTItMXEyMCAzIDIwIDIxbDYgN20tMjYtMjhxMjMtMjIgMjYtMTEgMyAxMi0yNCAxMSIvPjwvZz4KIDxnIGZpbGw9IiNmNmNjNzkiPjxwYXRoIGQ9Im0xNTUgNjggNSA5LTUgOC01LTh6TTk5IDU3bDMgOCA4IDMtOCAzLTMgOC0zLTgtOC0zIDgtM3oiLz48Y2lyY2xlIGN4PSIzOSIgY3k9IjEwNSIgcj0iMiIvPjxjaXJjbGUgY3g9IjE2MCIgY3k9IjEwNSIgcj0iMiIvPjwvZz4KIDwvZz4KPC9zdmc+DQo=") center/contain no-repeat;
+}
+.familiar-proc-witness > span:last-child:not(.proc-witness-portrait,.proc-witness-purse) {
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+.familiar-proc-witness strong[data-stat] {
+  display:inline-block;
+  margin-inline-start:.3em;
+  font:800 1em/1.15 var(--sans,Arial,sans-serif);
+  font-variant-numeric:tabular-nums;
+}
+.familiar-proc-witness strong[data-stat=money] {color:#ffd36e;}
+.familiar-proc-witness strong[data-stat=chips] {color:#89dcff;}
+.familiar-proc-witness strong[data-stat=mult] {color:#ffa1a0;}
+@media (max-width:600px), (max-height:520px) {
+  .familiar-proc-witnesses {
+    right:max(6px,env(safe-area-inset-right));
+    bottom:calc(48px + env(safe-area-inset-bottom));
+    gap:3px;
+  }
+  .familiar-proc-witness {
+    max-width:min(64vw,190px);
+    gap:5px;
+    padding:2px 7px 2px 2px;
+    font-size:12px;
+  }
+  .proc-witness-portrait {width:23px;height:29px;}
+  .proc-witness-purse {width:29px;height:29px;}
+}
 
 </style>
 </head>
@@ -2426,6 +2596,11 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   const size = c => c.cards?.length || 0;
   const held = c => c.held?.length || 0;
   const scored = c => c.scoring?.length || 0;
+  const sameCard = (a,b) => a === b || (a.id != null && a.id === b.id);
+  function extraPlayedCards(c) {
+    return (c.cards || []).filter(card => !c.scoring?.some(scorer => sameCard(scorer,card)))
+      .map(card => ({cardId:card.id}));
+  }
   const opposite = cards => (cards || []).some(red) && (cards || []).some(black);
   const growth = (event, test, step, limit, key, baseline = 0) => ({
     trackedStat: key,
@@ -2457,8 +2632,19 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     ["Mantle Rabbit", "owl", "+12 Chips per card played, including cards outside the scoring hand.", "hand", c => ({ chips: 12 * size(c) })],
     ["Tin Echo", "grimoire", "Retrigger the last scoring card of every hand.", "scoredCard", when(c => c.cardIndex === scored(c) - 1, { retriggers: 1 })],
     ["Mist Hare", "moth", "+2 Mult per card played. Fill all five spots for +20 Chips too.", "hand", c => ({ mult: 2 * size(c), chips: size(c) === 5 ? 20 : 0 })],
-    ["Dustfin", "moth", "+15 Chips. Each extra card played outside the scoring hand adds +15 more.", "hand", c => ({ chips: 15 * (1 + size(c) - scored(c)) })],
-    ["Lattice Toad", "potion", "+3 Mult for each different rank you keep in hand, up to +12.", "hand", c => ({ mult: 3 * Math.min(4, new Set(c.held.map(card => card.rank).filter(Number.isInteger)).size) })],
+    ["Dustfin", "moth", "+15 Chips. Each extra card played outside the scoring hand adds +15 more.", "hand", c => {
+      const contributors = extraPlayedCards(c);
+      return { chips:15 * (1 + contributors.length), contributors };
+    }],
+    ["Lattice Toad", "potion", "+3 Mult for each different rank you keep in hand, up to +12.", "hand", c => {
+      const contributors = [];
+      for (const card of c.held) {
+        if (!Number.isInteger(card.rank) || contributors.some(other => other.rank === card.rank)) continue;
+        contributors.push({cardId:card.id,rank:card.rank});
+        if (contributors.length === 4) break;
+      }
+      return { mult:3 * contributors.length, contributors };
+    }],
     ["Marrow Lark", "owl", "Your first held card gives +4 Mult. Each other held card gives +1.", "heldCard", c => ({ mult: c.cardIndex === 0 ? 4 : 1 })],
     ["Crooked Tern", "owl", "Start each blind at +70 Chips. Lose 15 Chips with each hand played, down to +10.", "hand", c => ({ chips: Math.max(10, 70 - 15 * (c.playedCount - 1)) })],
     ["Wicker Lamp", "orb", "Start each blind at +3 Mult. Each hand played adds +3 more for the next hand.", "hand", c => ({ mult: 3 * c.playedCount })],
@@ -2474,7 +2660,14 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       hand(c, memory) { const mult = memory.charge || 0; memory.charge = 0; return { mult }; },
       blindStart(c, memory) { memory.charge = 0; }
     }],
-    ["Moss Badger", "owl", "+25 Chips per scoring card that shares its rank with another scoring card.", "scoredCard", onCard("chips", 25, (card, c) => card.rank && count(c.scoring, other => other.rank === card.rank) >= 2)],
+    ["Moss Badger", "owl", "+25 Chips per scoring card that shares its rank with another scoring card.", "scoredCard", c => {
+      if (!Number.isInteger(c.card?.rank)) return {};
+      const matches = (c.scoring || []).filter(card => card.rank === c.card.rank);
+      if (matches.length < 2) return {};
+      const contributors = matches.filter(card => !sameCard(card,c.card))
+        .map(card => ({cardId:card.id,rank:card.rank}));
+      return contributors.length ? { chips:25, contributors } : {};
+    }],
     ["Juniper Kite", "owl", "+2 Mult for each different rank you play. Extra cards count too.", "hand", c => ({ mult: 2 * new Set(c.cards.map(card => card.rank).filter(Number.isInteger)).size })],
     ["Basalt Sprite", "orb", "+20 Chips for each different rank that scores.", "hand", c => ({ chips: 20 * new Set(c.scoring.map(card => card.rank).filter(Number.isInteger)).size })],
     ["Willow Cricket", "moth", "After your first scoring card, every scoring card adds +3 Mult.", "scoredCard", when(c => c.cardIndex > 0, { mult: 3 })],
@@ -2483,7 +2676,16 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     ["Swamp Lantern", "orb", "+15 Chips for each different hand type you've played this blind, including this one.", "hand", c => ({ chips: 15 * Object.keys(c.handCounts).filter(name => c.handCounts[name] > 0).length })],
     ["Ochre Scribe", "merlin", "Each scoring card gives +8 Chips, plus +15 per enhancement, seal, or edition on it.", "scoredCard", c => ({ chips: 8 + 15 * [c.card.enhancement, c.card.seal, c.card.edition].filter(Boolean).length })],
     ["Milkglass Fawn", "owl", "Each scoring card without an enhancement gives +2 Mult. Unenhanced faces give +5 instead.", "scoredCard", c => ({ mult: c.card.enhancement ? 0 : face(c.card) ? 5 : 2 })],
-    ["Veil Firefly", "moth", "+20 Chips. Each different suit you hold adds +10 more. Wild cards count as every suit.", "hand", c => ({ chips: 20 + 10 * ["S", "H", "C", "D"].filter(suit => includes(c.held, suited(suit))).length })],
+    ["Veil Firefly", "moth", "+20 Chips. Each different suit you hold adds +10 more. Wild cards count as every suit.", "hand", c => {
+      const contributors = [];
+      const heldCards = c.held || [];
+      const wild = heldCards.find(card => card.enhancement === "wild");
+      for (const suit of ["S","H","C","D"]) {
+        const card = heldCards.find(candidate => candidate.suit === suit && candidate.enhancement !== "wild") || wild;
+        if (card) contributors.push({cardId:card.id,suit});
+      }
+      return { chips:20 + 10 * contributors.length, contributors };
+    }],
     ["Rookery Gecko", "dragon", "Held face cards give +3 Mult each. If any face card scores, gain +25 Chips too.", {
       heldCard: onCard("mult", 3, face),
       hand: when(c => includes(c.scoring, face), { chips: 25 })
@@ -2501,7 +2703,10 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     ["Mantled Viper", "dragon", "Gain x1.2 Mult for each card that scores, up to five cards.", "hand",
       c => ({ xmult: 1.2 ** Math.min(5, scored(c)) })],
     ["Glimmer Orca", "potion", "+4 Mult. Each played card that doesn't score adds another +4 Mult.", "hand",
-      c => ({ mult: 4 + 4 * (size(c) - scored(c)) })],
+      c => {
+        const contributors = extraPlayedCards(c);
+        return { mult:4 * (1 + contributors.length), contributors };
+      }],
     ["Cinder Coil", "dragon", "The first scoring card gives +6 Mult each time it triggers.", "scoredCard",
       onCard("mult", 6, (_, c) => c.cardIndex === 0)],
     ["Pale Axolotl", "potion", "x1.25 Mult. Raise it to x1.75 if an enhanced card scores or stays in hand.", "hand",
@@ -2574,8 +2779,8 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     ["Pearl Pigeon", "owl", "Win a blind to earn $2, plus $1 per consumable you carry.", "roundEnd",
       c => ({ money: 2 + c.consumableCount })],
     ["Shopbell Sprite", "orb", "Entering a shop pays $1. Your first reroll there pays another $2.", {
-      shop(c, memory) { memory.paid = false; return { money: 1 }; },
-      reroll(c, memory) { if (!memory.paid) { memory.paid = true; return { money: 2 }; } }
+      shop: () => ({ money:1 }),
+      reroll: when(c => c.firstShopReroll, { money:2 })
     }],
     ["Silken Broker", "key", "Opening any booster earns $2. Casting any consumable earns $1.", {
       packOpen: () => ({ money: 2 }),
@@ -3792,6 +3997,14 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     s.blindMods ??= {hands:0,discards:0,handSize:0};
     s.nextBlind ??= {};
     s.familiarMemory ??= {};
+    if (s.phase === "shop" && s.shopRerolled == null) {
+      // Older saves tracked paid rerolls only. A claimed free reroll from the
+      // consecutive skips leading here also counts once its token is spent.
+      s.shopRerolled = Boolean(s.rerolls || s.familiarMemory.shopbell_sprite?.paid);
+      for (let i = s.blind - 1; !s.shopRerolled && !s.freeReroll && s.skipReceipts?.[i]; i--) {
+        s.shopRerolled = tagFamily(s.tags[i]) === "freeReroll";
+      }
+    }
     s.tallyPerPlay ??= 0;
     s.discovered ??= [s.deckId,...s.familiars,...s.consumables,...s.vouchers];
     s.runId ??= "legacy-" + s.seed;
@@ -4032,18 +4245,27 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       const stat = content.familiars[key].trackedStat;
       if (stat && memory && memory.bonus > oldBonus) {
         const snapshot = {...ctx,random:()=>0};
-        const before = content.trigger(key,"hand",snapshot,{...memory,bonus:oldBonus})[stat];
-        const after = content.trigger(key,"hand",snapshot,{...memory})[stat];
-        if (Number.isFinite(before) && Number.isFinite(after) && after > before) growth = {stat,before,after};
+        const oldValue = content.trigger(key,"hand",snapshot,{...memory,bonus:oldBonus})[stat];
+        const newValue = content.trigger(key,"hand",snapshot,{...memory})[stat];
+        if (Number.isFinite(oldValue) && Number.isFinite(newValue)) {
+          // Match the precision shown on inventory cards, including fractional Mult at its cap.
+          const before = Number(oldValue.toFixed(2)), after = Number(newValue.toFixed(2));
+          if (after > before) growth = {stat,before,after};
+        }
       }
       const charge = previousCharge && chargeChange(previousCharge,familiarCharge(key,memory));
       if (growth || charge || effect.money || created.length) {
         const fact = {event,familiarId:id};
-        if (extra?.item) fact.itemId = extra.item.id;
+        const sourceItem = extra?.item || extra?.pack;
+        if (sourceItem) fact.itemId = sourceItem.id;
         if (extra?.cards) fact.cardIds = extra.cards.map(c=>c.id);
         if (growth) fact.growth = growth;
         if (charge) fact.charge = charge;
-        if (effect.money) fact.money = effect.money;
+        if (effect.money) {
+          fact.money = effect.money;
+          fact.moneyBefore = ctx.money;
+          fact.moneyAfter = s.money;
+        }
         if (created.length) fact.created = created;
         enqueueFamiliarEvent(s,fact);
       }
@@ -4094,6 +4316,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         const fact = {...source};
         for (const key of ["chips","mult","money","retriggers"]) if (effect[key]) fact[key] = effect[key];
         if (effect.xmult != null && effect.xmult !== 1) fact.xmult = effect.xmult;
+        if (effect.contributors) fact.contributors = effect.contributors;
         Object.assign(fact,origin);
         Object.defineProperty(step,"fact",{value:fact});
         steps.push(step);
@@ -4362,6 +4585,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function enterShop(s) {
     s.phase = "shop";
     s.rerolls = 0;
+    s.shopRerolled = false;
     s.pack = null;
     s.shopDiscount = s.nextShopDiscount || 1;
     s.nextShopDiscount = 1;
@@ -4405,7 +4629,9 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     if (s.freeReroll) s.freeReroll = false;
     else s.rerolls++;
     s.offers.splice(0,s.shopOfferCount,...stock(s));
-    dispatch(s,"reroll");
+    const firstShopReroll = !s.shopRerolled;
+    s.shopRerolled = true;
+    dispatch(s,"reroll",{firstShopReroll});
     return true;
   }
   function space(s,def) {
@@ -5519,6 +5745,73 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         tone(fx, 68, now + .03, .095, .051, 'sine', -12, .012);
         bell(fx, 76, now + .102, .095, .036);
         break;
+      case 'proc-alabaster_finch':
+        tone(fx, 62, now, .053, .061, 'triangle', -5, .003);
+        tone(fx, 80, now + .042, .078, .032, 'sine', 6, .008);
+        if (step === 1) bell(fx, 84, now + .109, .145, .039);
+        break;
+      case 'proc-dustfin':
+        brush(fx, now, .163, .061, 1620, .95);
+        brush(fx, now + .063, .107, .039, 2510, 1.3);
+        tone(fx, 72, now + .141, .089, .041, 'sine', -3, .004);
+        break;
+      case 'proc-glimmer_orca':
+        tone(fx, 62, now, .152, .061, 'sine', -18, .018);
+        brush(fx, now + .09, .134, .048, 790, .8);
+        tone(fx, 48, now + .129, .166, .048, 'sine', 10, .041);
+        break;
+      case 'proc-moss_badger':
+        brush(fx, now, .071, .055, 1020, 1.7);
+        [55, 51, 47].forEach((note, i) => tone(fx, note, now + .045 + i * .047, .067, .051 - i * .009, 'triangle', -5, .003));
+        break;
+      case 'proc-lattice_toad':
+        [53, 60, 65].forEach((note, i) => tone(fx, note, now + i * .043, .106, .043, 'triangle', -1, .003));
+        break;
+      case 'proc-veil_firefly':
+        bell(fx, 73, now, .192, .039);
+        bell(fx, 85, now + .091, .188, .028);
+        break;
+      case 'proc-brass_lantern':
+        tone(fx, 57, now, .122, .051, 'triangle', 0, .007);
+        bell(fx, 76, now + .035, .14, .043);
+        if (step === 2) {
+          brush(fx, now + .095, .101, .03, 1800);
+          tone(fx, 81, now + .115, .15, .035, 'sine', 5);
+        }
+        break;
+      case 'proc-silken_broker':
+        brush(fx, now, .113, .048, 2290, 1.4);
+        tone(fx, 72, now + .032, .089, .043, 'sine', 5, .019);
+        bell(fx, 81, now + .092, .104, .038);
+        if (step === 2) bell(fx, 86, now + .15, .099, .029);
+        break;
+      case 'proc-shopbell_sprite':
+        bell(fx, 78, now, .165, .062);
+        tone(fx, 70, now + .014, .085, .026, 'triangle', -1, .003);
+        if (step === 2) bell(fx, 78, now + .105, .164, .041);
+        break;
+      case 'proc-mire_printer':
+        if (step === 1) brush(fx, now, .095, .048, 1310, 1.2);
+        tone(fx, 49, now + .05, .072, .065, 'triangle', -9, .004);
+        brush(fx, now + .054, .055, .036, 840);
+        if (step === 1) tone(fx, 66, now + .117, .086, .031, 'triangle', 2, .006);
+        break;
+      case 'proc-granite_tinker':
+        tone(fx, 66, now, .086, .05, 'triangle', -2, .003);
+        tone(fx, 84, now + .003, .047, .027, 'sine', -1, .003);
+        if (step === 1) {
+          brush(fx, now + .067, .067, .031, 2880, 2.1);
+          bell(fx, 73, now + .116, .138, .04);
+        }
+        break;
+      case 'proc-vault_maggot':
+        tone(fx, 44, now, .073, .063, 'sine', 5, .008);
+        tone(fx, 54, now + .068, .126, .043, 'triangle', -5, .019);
+        if (step === 1) {
+          brush(fx, now + .128, .057, .035, 910, 1.6);
+          tone(fx, 62, now + .163, .099, .036, 'sine', 7, .008);
+        }
+        break;
       case 'coin':
         bell(fx, 82+step*2, now, .16, .11);
         bell(fx, 94+step*2, now+.028, .12, .055);
@@ -5656,6 +5949,86 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
 (() => {
   'use strict';
   const frames = {
+    brass_lantern: `
+      <path d="M4 135V19L16 5h66l14 14v116Z" fill="none" stroke="#61422c" stroke-width="6"/><path d="M6 128V20L17 8h64l12 13v103" fill="none" stroke="#caa65f" stroke-width="2"/>
+      <path d="M3 34h8v13H3zm0 48h8v13H3" fill="#c7a260" stroke="#594733"/><path d="M4 36h5m-5 49h5" stroke="#fae4a1"/>
+      <g class="frame-lantern-door"><path d="m74 8 14-4 9 10-1 28-19-7Z" fill="#785336" stroke="#e2be78" stroke-width="1.5"/><path d="m78 12 8-3 7 6-1 19-11-3Z" fill="#342c30" stroke="#a17d4d"/>
+      <path class="frame-lantern-wick" d="M81 27q3-3 1-10l4 2 2-4q3 6 1 13Z" fill="#ffe19b" stroke="#c8894c"/><path d="m82 30 9 2-2 3-9-3Z" fill="#e3b771"/></g>
+      <path d="M93 69h5v12h-5l-4-5Z" fill="#cca66e" stroke="#705035"/>`,
+    mire_printer: `
+      <path d="M5 135V8L96 5v131Z" fill="none" stroke="#494539" stroke-width="6"/>
+      <path d="M6 20q3 14 0 22t1 21m84 35q3 13 0 22" fill="none" stroke="#89836a" stroke-width="2"/>
+      <g class="frame-print-roller"><path d="M14 4h58l3 3-3 5H14l-3-4Z" fill="#8c7153" stroke="#493e32"/><ellipse cx="14" cy="8" rx="4" ry="5" fill="#c09a73"/>
+      <path d="m22 5-3 6m16-6-3 6m16-6-3 6m16-6-3 6" stroke="#544637" stroke-width="2"/></g>
+      <g class="frame-print-stamp"><path d="m78 5 7-3 7 4-1 7-4 2 1 5-10 2-1-6-4-3Z" fill="#78573d" stroke="#514131"/><path d="m73 21 20-4 2 7-20 4Z" fill="#383c39" stroke="#b1a187"/><path d="m76 27 16-3" stroke="#67a1a7" stroke-width="2"/></g>
+      <path d="M4 39h8v68H3Z" fill="#303c38" stroke="#746b50"/>`,
+    silken_broker: `
+      <rect x="4" y="4" width="92" height="132" rx="12" fill="none" stroke="#775465" stroke-width="6"/>
+      <rect x="6" y="6" width="88" height="128" rx="9" fill="none" stroke="#d5a989" stroke-width="1.6"/>
+      <path class="frame-broker-ribbon" d="M1 23Q14 8 32 8L47 4H20Q7 4 1 14Zm2 4q15-14 24-14l-5 5-6 1 1 5-7 7 1-8Z" fill="#dd92a1" stroke="#854f68" stroke-width="1.3"/>
+      <g class="frame-broker-clasp"><path d="m85 53 9-5 5 5v16l-5 4-9-6Z" fill="#a77450" stroke="#6f4a44"/><ellipse cx="92" cy="60" rx="5.9" ry="7.2" fill="#e4bc78" stroke="#ffe2a0"/>
+      <path d="m92 55 3 5-3 5-3-5Z" fill="#a06670"/></g>
+      <path d="M3 106 12 121l-7 9m78 1 10-11" fill="none" stroke="#b17c88" stroke-width="2.6"/>`,
+    granite_tinker: `
+      <path d="M4 136V18L18 4h64l14 14v118Z" fill="none" stroke="#686e6d" stroke-width="6"/>
+      <path d="M8 14 19 7H80l12 11m0 13v89" fill="none" stroke="#aeb7a9" stroke-width="2.2"/>
+      <path d="M3 25h9v84h-9Z" fill="#455059" stroke="#989491"/><path d="M2 111h17l-5 6H2" fill="#b6ab91" stroke="#6c6865"/>
+      <g class="frame-mason-gear"><path d="m78 5 2-4 4 1 1 4 4-1 3 3-2 4 3 2-1 4-4 1 1 4-4 2-3-3-3 2-3-3 1-3-4-1-1-4 4-2-2-4 3-3Z" fill="#bab9ab" stroke="#545e61"/><circle cx="81" cy="13" r="5" fill="#697575" stroke="#e3d6ba"/></g>
+      <path class="frame-keystone" d="M43 2h16l-4 13H47Z" fill="#9a9d9e" stroke="#54545d" stroke-width="1.5"/><path d="m47 5 3 2-1 3" fill="none" stroke="#d5c6b7"/>`,
+    shopbell_sprite: `
+      <path d="M4 136V15l9-10h73l10 12v118Z" fill="none" stroke="#725135" stroke-width="6"/>
+      <path d="M5 126V16l9-8h67l12 10v87" fill="none" stroke="#c69b68" stroke-width="2"/>
+      <path d="M52 4h40l3 6-7 2-4-3H52Z" fill="#9b6944" stroke="#63412d"/><circle cx="56" cy="7" r="2" fill="#edcc86"/>
+      <g class="frame-doorbell"><path d="m80 8 6 2-9 3 9 2-8 3 6 1" fill="none" stroke="#d9d5b5" stroke-width="1.7"/>
+      <path d="M72 33q5-3 4-9-1-6 6-7 7 0 7 6t6 9l-1 3-21 2Z" fill="#d9ae62" stroke="#775035" stroke-width="1.6"/>
+      <path d="m76 32 14-2m-13-3q2-1 1-5" stroke="#ffe6a1" fill="none" stroke-width="2"/><circle cx="84" cy="36" r="2.5" fill="#edcb86" stroke="#906444"/></g>`,
+    vault_maggot: `
+      <path d="M3 135V14L13 4h72l12 12v119Z" fill="none" stroke="#605847" stroke-width="6"/><path d="M5 126V17L14 7h70l10 12v104" fill="none" stroke="#c3ab7a" stroke-width="1.6"/>
+      <path d="M1 30q15 11 15 39t-15 42Z" fill="#716c5d" stroke="#c7b383" stroke-width="1.7"/>
+      <path d="M1 43q10 9 10 26t-10 29Z" fill="#423e3e" stroke="#b6a581"/>
+      <g class="frame-vault-latch"><circle cx="3" cy="69" r="5" fill="#cbb67f" stroke="#5c4d3e"/><path d="m3 67 6-4-4 7Z" fill="#fff0b4"/></g>
+      <path d="M90 13h6v15h-6Zm1 89h5v12h-5Z" fill="#a9936e" stroke="#695e4b"/>`,
+    alabaster_finch: `
+      <path d="M3 135V18L14 4h72l11 14v118Z" fill="none" stroke="#706976" stroke-width="6"/>
+      <path d="M5 126V20l10-13h67l12 12v103" fill="none" stroke="#deded3" stroke-width="2.6"/>
+      <path d="m4 25 6 3-5 4m87 57-3 5 5 5" fill="none" stroke="#9a919a" stroke-width="1.6"/>
+      <g transform="translate(-24 -1)"><g class="frame-marble-perch"><path d="M63 23q5 0 7-4l20-1 6 6-4 3-4-2-5 3-5-2-5 2-4-3-6 1Z" fill="#d6d2c9" stroke="#716d7d" stroke-width="1.2"/>
+      <path d="M66 20q6-3 10-10 4-8 10-7 4 1 5 5l5 3-6 2q-2 6-8 8l-5-1-4 3Z" fill="#faf1d9" stroke="#807880" stroke-width="1.5"/><path d="M71 19q8-2 13-10-2 9-8 11Z" fill="#bab7b5"/>
+      <path class="frame-finch-eye" d="M81 10q3-5 7-1-2 5-7 1Z" fill="#ef4876" stroke="#82334c"/><path d="m81 10 6-1" stroke="#665465" stroke-width="1.2"/></g></g>`,
+    dustfin: `
+      <path d="M4 135V24Q5 6 17 5h64q15 1 15 19v110Z" fill="none" stroke="#40666d" stroke-width="6"/>
+      <path d="M4 120q-4-27 2-51m88 13q5 27-1 41" fill="none" stroke="#a4d3cf" stroke-width="2"/>
+      <g class="frame-shell-scoop"><path d="M72 8Q45 5 36 16q8-1 9-1l-3 5q11-3 15-9l15 2Z" fill="#63aaa9" stroke="#305e71" stroke-width="1.4"/>
+      <path d="M71 5q12 0 21 7l-2 12q-10-5-24-5Z" fill="#beded8" stroke="#3b7484" stroke-width="1.8"/><path d="M71 16q8-3 17 4l1-7q-6-4-15-5Z" fill="#709ebb"/><path d="m74 10 1 6m4-5 1 6m4-5 1 6" stroke="#daeae1" stroke-width="1.3"/></g>
+      <g class="frame-dust-grains" fill="#a6dcf6"><circle cx="88" cy="30" r="1.7"/><circle cx="93" cy="34" r="1.4"/><circle cx="90" cy="38" r="1.8"/></g>`,
+    glimmer_orca: `
+      <path d="M4 135V24Q6 3 32 4h44q18 0 20 19v111Z" fill="none" stroke="#1f3c57" stroke-width="6"/>
+      <path d="M4 119q7-11 4-20-4-9-2-16-7 6-6 16m94-72q-14-5-20-14 6 2 10 1-9-6-10-12 16 4 22 12" fill="#e5ece9" stroke="#364957" stroke-width="1.5"/>
+      <path class="frame-orca-crest" d="M3 74Q1 50 5 31 10 5 36 4q13 0 13 9-3-4-8-3-6 3-9 10 0-6 3-9Q13 15 12 35q-6 15-9 39Z" fill="#131f33" stroke="#99d3da" stroke-width="1.7"/><path d="M10 27Q14 13 29 9q-8 3-12 11Z" fill="#eef1db"/>
+      <path d="M4 127q14-6 20-1t14 3m43-27q12-7 12-19" fill="none" stroke="#74a4b5" stroke-width="2"/>`,
+    moss_badger: `
+      <path d="M4 136V25L12 8l20-3 49-1 13 16 3 113Z" fill="none" stroke="#55594b" stroke-width="6"/>
+      <path d="M4 103q-5-16 0-20-2-6 3-11 0 10 5 13l-4 12m84-55q-5-7-2-12-3-6 2-10l5 13" fill="#65804c" stroke="#42543b" stroke-width="1.2"/>
+      <path class="frame-moss-stone" d="m60 5 8-4 15 3 5 7-9 7-14-1-7-5Z" fill="#929483" stroke="#515451" stroke-width="1.8"/><path d="m58 7 9-6 7 1 6-1 7 5-4 3-5-1-4 3-7-2-4 2Z" fill="#829659" stroke="#495e3f"/>
+      <path class="frame-badger-claws" d="m54 10 12 10-4-9m26-4-7 12 9-7" fill="#e6dabb" stroke="#585952"/><path d="m71 10 5 3 4-4" fill="none" stroke="#c2c2a6"/>`,
+    lattice_toad: `
+      <path d="M4 134 5 6l90-1 1 130ZM10 8l81 1M9 16 9 125m82-111v111" fill="none" stroke="#887c4a" stroke-width="3"/>
+      <path d="M3 15 12 8m-9 13 10-8m76-1 8 6m-8 1 8 6" stroke="#ad604f" stroke-width="2.5"/>
+      <path d="M39 7q14-12 28 0-8 8-23 6l9-6-14 3Z" fill="#719663" stroke="#485a42"/>
+      <g fill="#384e42" stroke="#c7b17b" stroke-width="1.6">
+        <path class="frame-rank-1" d="m7 41 6 8-6 8-6-8Z"/><path class="frame-rank-2" d="m93 41 6 8-6 8-6-8Z"/>
+        <path class="frame-rank-3" d="m7 76 6 8-6 8-6-8Z"/><path class="frame-rank-4" d="m93 76 6 8-6 8-6-8Z"/>
+      </g><path d="m3 56 7 2m80 1 7-2M3 92l7 2m80 0 7-2" stroke="#d57c67" stroke-width="2.5"/>`,
+    veil_firefly: `
+      <path d="M4 136V17L14 4h73l9 14v117Z" fill="none" stroke="#534a70" stroke-width="5"/>
+      <path d="M3 35q6-20 18-27m-16 5q10 2 18-5m57-2q12 9 16 25m-17-23q9 7 14 5m-90 90q4 11 12 16m70-1 11-16" fill="none" stroke="#aaa0b6" stroke-width="1.5"/>
+      <path class="frame-firefly-lamp" d="M46 2h8v3l3 5-3 5h-8l-3-5 3-5Z" fill="#adab76" stroke="#595368" stroke-width="1.5"/>
+      <g fill="#534861" stroke="#d2c3ad" stroke-width="1.3">
+        <path class="frame-suit-S" d="M8 36q-9 8-6 11 3 3 6-1l-2 5h5l-2-5q3 4 6 1 3-3-7-11Z"/>
+        <path class="frame-suit-H" d="M92 51q-13-11-6-14 4-2 6 2 2-4 6-2 6 3-6 14Z"/>
+        <path class="frame-suit-C" d="M7 76q-4-4-1-7 3-3 6 0 2 3-1 7 5-4 6 1 1 6-7 3l2 6H6l2-6q-6 3-7-1 0-5 6-3Z"/>
+        <path class="frame-suit-D" d="m92 68 7 9-7 9-7-9Z"/>
+      </g>`,
     kettle_hag: `
       <path d="M4 137V23Q4 5 27 5H71Q96 6 96 26V136Z" fill="none" stroke="#383438" stroke-width="6"/><path d="M6 129V23Q6 7 29 7H71Q93 8 93 26" fill="none" stroke="#948b78" stroke-width="1.8"/>
       <path d="M72 5v7q0 8 5 7 4-1 3-5M63 28q5-8 12-10 10 1 16 10" fill="none" stroke="#b9a386" stroke-width="2"/>
@@ -5746,7 +6119,31 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       '<rect class="frame-ink-mark' + (i < filled ? ' charged' : '') + '" x="2.3" y="' + (89 - i * 4) + '" width="5.4" height="2.6" rx=".6"/>'
     ).join('');
   }
+  const progressScales = {
+    mire_printer: {base:28, step:15, marks:6},
+    granite_tinker: {base:35, step:12, marks:8},
+    vault_maggot: {base:1.3, step:.15, marks:10}
+  };
+  function progressMarks(id, item) {
+    const {base, step, marks} = progressScales[id];
+    const amount = Number(String(item.stackAmount ?? base).replace(/^[+x×]/i, ''));
+    const filled = Number.isFinite(amount) ? Math.max(0, Math.min(marks, Math.round((amount-base)/step))) : 0;
+    return Array.from({length:marks}, (_,i) => {
+      const lit = i < filled;
+      const css = 'class="frame-progress-mark' + (lit ? ' lit' : '') + '"';
+      if (id === 'vault_maggot') {
+        const angle = -1.38 + i * 2.76 / (marks-1);
+        const x = 2 + 12*Math.cos(angle), y = 69 + 35*Math.sin(angle);
+        return '<ellipse ' + css + ' cx="' + x.toFixed(2) + '" cy="' + y.toFixed(2) + '" rx="2.7" ry="2.9" fill="' + (lit ? '#fce294' : '#45403b') + '" stroke="' + (lit ? '#fff3bc' : '#a19376') + '"/>';
+      }
+      if (id === 'granite_tinker') {
+        return '<path ' + css + ' d="M3 ' + (101-9*i) + 'h7l-2 4H3Z" fill="' + (lit ? '#ffcd77' : '#8a9390') + '" stroke="' + (lit ? '#ffe4a0' : '#4a5359') + '"/>';
+      }
+      return '<rect ' + css + ' x="4" y="' + (98-10*i) + '" width="7" height="6" rx="1" fill="' + (lit ? '#9ce1d2' : '#485b54') + '" stroke="' + (lit ? '#d7f8dd' : '#73786a') + '"/>';
+    }).join('');
+  }
   function chargeMarks(id, item) {
+    if (Object.hasOwn(progressScales, id)) return progressMarks(id, item);
     if (id === 'fox_in_ink') return inkGauge(item);
     if (id === 'kettle_hag') return item.charge?.value === 1 ? '<path d="M63 30h26l-2 8q-4 4-10 4t-11-4Z" fill="#8de5c1" stroke="#dffff1" stroke-width="1.1"/><path class="frame-steam" d="M65 24q-5-4-1-8t-1-8m6 12q-3-3 0-6" fill="none" stroke="#d7f5cd" stroke-width="2"/><circle cx="83" cy="35" r="2.3" fill="#effff1"/>' : '';
     if (id === 'dusk_undertaker') {
@@ -5833,9 +6230,12 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const group = svg("g", {"data-familiar-proc":id});
     layer.append(group);
     const speed = Math.min(4, Math.max(.35, Number(options.speed) || 1));
+    const leadIn = Math.min(240, Math.max(0, Number(options.startDelay) || 0));
     const still = options.reducedMotion || root.matchMedia?.("(prefers-reduced-motion: reduce)").matches || !group.animate;
-    const fx = {source, point, still, cardFace:options.cardFace};
-    if (Array.isArray(options.cards)) fx.cards = options.cards.map(anchor).filter(Boolean);
+    const fx = {source, point, still, cardFace:options.cardFace, newGroup:options.newGroup};
+    // A single Wild can occupy several suit slots. Preserve their positions even
+    // when another contributor has no visible card in this layout.
+    if (Array.isArray(options.cards)) fx.cards = options.cards.map(anchor);
     // Extra anchor names allow shop and consumable effects to share this layer.
     for (const [name, value] of Object.entries(options)) {
       if (name === "facts" || name === "source" || name === "cards" || name === "cardFace" || !value || typeof value !== "object") continue;
@@ -5845,7 +6245,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     let lifespan = 0;
     let elements = 0;
     function motion(node, frames, delay, duration) {
-      delay = Math.min(1000, Math.max(0, delay)) / speed;
+      delay = (leadIn + Math.min(1000, Math.max(0, delay))) / speed;
       duration = Math.min(1100, Math.max(65, duration)) / speed;
       lifespan = Math.max(lifespan, delay + duration);
       node.animate(frames, {delay, duration, fill:"both", easing:"linear"});
@@ -5900,6 +6300,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       active.set(group, setTimeout(()=>remove(group), lifespan + 35));
     }
     if (!elements) remove(group);
+    else if (!still) options.onTiming?.(lifespan * speed);
     return elements > 0;
   }
 
@@ -6239,6 +6640,413 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
 (function (root) {
   "use strict";
 
+  const registry = root.CWFamiliarScoreFX;
+  const finch = '<path fill="#493f55" d="m3 8 10 5 5-1 2-7 6-2 3 4 3 2-5 3-1 6-5 5h-3l1 3h5v3H9v-3h5l-1-4-7-5z"/><path fill="#dad4c6" d="m5 10 9 6 5-3 2-6 4-2 2 3-2 3-1 7-4 3-7-1-4-4z"/><path fill="#fff9e3" d="m19 12 3-6 3-1 2 3-4 1-1 7-4 3-5-1z"/><path fill="#a6a3a3" d="m10 14 8 1-4 4-4-2zm0 13h12v1H10z"/><path fill="none" stroke="#aaa0b0" stroke-width=".8" d="m21 10-2 5-3 1 1 2m-3 1 3 1"/><path fill="#523548" d="M24 7h2v2h-2z"/>';
+  const ruby = '<path fill="#f34968" stroke="#5a2941" d="m21 6 4-2 4 3-2 4-4 1-3-3z"/><path fill="#fff0ba" d="m24 6 2-1 1 2-2 1z"/>';
+  const pedestal = '<path fill="#716774" d="M3 12h26v5h-3v5h3v3H3v-3h3v-5H3z"/><path fill="#f4eada" d="M3 12h26v3H3zm4 5h18v4H7z"/><path fill="#c6bfba" d="M4 22h24v2H4z"/><path fill="none" stroke="#a294a4" d="m11 13 4 1m4 4-3 1 2 2"/>';
+  const fragments = '<path fill="#f4eedc" stroke="#706b7c" d="m4 11 7-5 5 7-8 4zm12 6 7-7 5 8-8 4z"/><path fill="#a6d9ed" stroke="#53617b" d="m8 21 6-3 3 5-5 4z"/>';
+  const scoop = '<path fill="#254760" d="m2 17 11-1L25 3l4-1-1 8-9 11-6 7-7-2z"/><path fill="#569fb3" d="m4 18 9-1L25 6l-4 8-9 11-5-1z"/><path fill="#99dbdd" d="m4 18 10-1 8-7-7 10-8 3z"/><path fill="none" stroke="#d8f6d8" stroke-width="1.2" d="m6 20 7-1m-4 3 6-2m1-3 5-5"/>';
+  const shellDust = '<path fill="#1c5e80" stroke="#b6f2fa" d="m5 19 5-8 4 2 3-6 5 2 1 4 4 2-4 7-9 4z"/><path fill="none" stroke="#d4fff0" stroke-width="1.5" d="m9 19 2-5m3 7 3-10m0 11 5-7"/><path fill="#bbe0e8" d="M4 22h3v2H4zm20-17h2v2h-2z"/>';
+  const orca = '<path fill="#272136" stroke="#b5c8df" stroke-width=".9" d="m1 14 6 1 4 3 3-8 1-8 4 4 1 8 5 1 6 4-1 4-5 3-8-1-6-4-5 5-2-2 2-6z"/><path fill="#ddece4" d="m11 20 6 2 6 1 6-3-2 4-6 2-7-2z"/><path fill="#f6f0db" d="m21 17 5-1 2 2-4 2-3-1z"/><path fill="#776a8a" d="M8 17l6 1 3-8v6l-2 4-4-1z"/><path fill="#d798b5" d="m18 21 3 1-2 3-3 2z"/>';
+  const wake = '<path fill="#605674" stroke="#c5d2e9" stroke-width="1" d="M1 21q5 0 8-6t9-7q-4 2-3 7 5-5 11-4-4 2-3 7l7 1-4 4H8z"/><path fill="none" stroke="#e0c2e0" stroke-width="1.3" d="M3 21q5 0 9-6m4 5 4-4m4 3h5"/>';
+
+  // A single readable tally fits inside the compositor's one static reduced-motion sprite.
+  function stillTally(fx, glyph, stat, extra = "") {
+    const line = '<text x="16" y="29" text-anchor="middle" font-family="system-ui,sans-serif" font-size="6" font-weight="800" fill="'+
+      (extra ? '#ffe6d6' : stat.endsWith("Mult") ? '#ffc2c3' : '#bdeaff')+'">'+stat+extra+'</text>';
+    const width = extra ? 67 : 39;
+    const badge = '<g transform="translate(5 -1) scale(.7)">'+glyph+'</g><rect x="'+(16-width/2)+'" y="21" width="'+width+'" height="10" rx="3" fill="#251e32" stroke="#c8a998" stroke-width=".8"/>'+line;
+    fx.sprite(badge,"kicker-still-tally",fx.source,fx.source,{size:47});
+  }
+  function alabasterFinch(fx, facts) {
+    if (facts.event !== "scoredCard" || !Number.isFinite(facts.chips) || facts.chips <= 0) return;
+    const hasRuby = Number.isFinite(facts.mult) && facts.mult > 0;
+    const bird = hasRuby ? finch + ruby : finch;
+    if (fx.still) return stillTally(fx,bird,"+"+facts.chips+" Chips",hasRuby ? " +"+facts.mult+" Mult" : "");
+    const card = fx.card || fx.cards?.[0] || fx.source;
+    const perch = fx.point(card,0,-12);
+    const slab = fx.point(perch,0,12);
+    fx.sprite(bird,"alabaster-flight",fx.source,perch,{size:38,arc:21,duration:210});
+    fx.sprite(pedestal,"alabaster-footing",slab,fx.point(slab,3,0),{size:39,rotation:5,delay:155,duration:210});
+    fx.sprite(bird,"alabaster-alight",perch,fx.point(perch,-3,1),{size:38,rotation:-9,delay:148,duration:240});
+    if (fx.chips) {
+      fx.trail(slab,fx.chips,{color:"#b7dfea",width:3,arc:17,delay:218,duration:265});
+      fx.sprite(fragments,"alabaster-chip-flakes",slab,fx.chips,{size:22,arc:17,rotation:26,delay:218,duration:265});
+    }
+    if (hasRuby && fx.mult) {
+      const eye = fx.point(perch,9,-9);
+      fx.trail(eye,fx.mult,{color:"#e34267",width:6,delay:263,duration:240});
+      fx.trail(eye,fx.mult,{color:"#ffe3bd",width:1.5,delay:276,duration:222});
+      fx.burst(fx.mult,{color:"#ffc4c9",count:4,reach:13,delay:451,duration:160});
+    }
+  }
+
+  function dustfin(fx, facts) {
+    if (facts.event !== "hand" || !Number.isFinite(facts.chips) || facts.chips <= 0) return;
+    if (fx.still) return stillTally(fx,scoop,"+"+facts.chips+" Chips");
+    const chips = fx.chips || fx.source;
+    fx.sprite(shellDust,"dustfin-base",fx.source,chips,{size:18,arc:24,duration:340});
+    let previous = fx.source;
+    for (const [i,card] of (fx.cards || []).entries()) {
+      if (!card) continue;
+      const delay = 70+i*112;
+      const lip = fx.point(card,-3,Math.min(15,(card.h || 40)/4));
+      fx.sprite(scoop,"dustfin-shell-scoop",previous,lip,{size:30,arc:-9,rotation:-16,delay,duration:158});
+      fx.trail(lip,chips,{color:"#88c7d6",width:2,arc:20,delay:delay+119,duration:245});
+      fx.sprite(shellDust,"dustfin-card-measure",lip,chips,{size:21,arc:20,rotation:27,delay:delay+119,duration:245});
+      previous = lip;
+    }
+    if (!fx.cards?.length) fx.sprite(scoop,"dustfin-level-measure",fx.source,fx.point(fx.source,-4,4),{size:29,rotation:12,duration:180});
+  }
+
+  function glimmerOrca(fx, facts) {
+    if (facts.event !== "hand" || !Number.isFinite(facts.mult) || facts.mult <= 0) return;
+    if (fx.still) return stillTally(fx,orca,"+"+facts.mult+" Mult");
+    const cards = fx.cards || [];
+    let previous = fx.source;
+    for (const [i,card] of cards.entries()) {
+      if (!card) continue;
+      const delay = 104*i;
+      const below = fx.point(card,0,Math.min(18,(card.h || 45)/3));
+      fx.trail(previous,below,{color:"#aea0ce",width:2+i,arc:-14-i*2,delay,duration:170});
+      fx.sprite(orca,"orca-dive",previous,below,{size:30+i*2,arc:-14-i*2,delay,duration:170});
+      fx.sprite(wake,"orca-wake",below,fx.point(below,-5,0),{size:17+i*5,delay:delay+101,duration:200});
+      previous = below;
+    }
+    const mult = fx.mult || fx.source;
+    const delay = cards.length*104;
+    fx.sprite(orca,"orca-breach",previous,mult,{size:32+cards.length*2,arc:30,rotation:-14,delay,duration:295});
+    fx.sprite(wake,"orca-breaking-crest",previous,mult,{size:21+cards.length*4,arc:20,rotation:9,delay:delay+39,duration:292});
+    fx.burst(mult,{color:"#edcee9",count:3+cards.length,reach:16+cards.length*2,delay:delay+285,duration:155});
+  }
+  registry.register("alabaster_finch",alabasterFinch);
+  registry.register("dustfin",dustfin);
+  registry.register("glimmer_orca",glimmerOrca);
+})(window);
+
+;
+(function (root) {
+  "use strict";
+
+  const registry = root.CWFamiliarScoreFX;
+  const moss = '<path d="M2 24c2-7 6-10 11-11l2-6 4 5c5 0 8 4 11 11l-5 3-8-1-6 3z" fill="#477958" stroke="#263f3b" stroke-width="1.7"/><path d="m5 22 6-7 3 2-3 4zm13-6 3-2 5 5-5-1z" fill="#bad57c"/><path d="m7 15 2-6m5 4 2-8m3 9 5-7" stroke="#e6d6aa" stroke-width="1.7" stroke-linecap="round"/>';
+  const rankStone = '<path d="m3 19 5-10 11-4 10 8-2 11-12 5-10-3z" fill="#326b93" stroke="#243e48" stroke-width="2"/><path d="m8 11 11-4 7 6-12 5-8 1z" fill="#9ce8e3"/><path d="m15 20 10-4-3 7-7 3z" fill="#539fc8"/><path d="m4 19 4-7 5-2-2 4 7-1-4 5-5-1-2 4z" fill="#789944"/>';
+  const toad = '<path d="M1 24q1-5 8-4l4-4 14 3 4 5q-12 8-30 0z" fill="#587c51" stroke="#263b35" stroke-width="1.6"/><path d="M7 20q-1-7 3-10 3-4 6 0 5-5 8-1 3 3 1 11-10 6-18 0z" fill="#a1ba57" stroke="#354535" stroke-width="1.8"/><path d="M10 18q5 3 12-1" fill="none" stroke="#52663e" stroke-width="1.6"/><circle cx="12" cy="11" r="1.5" fill="#292d36"/><circle cx="21" cy="10" r="1.5" fill="#292d36"/>';
+  const fly = '<g stroke="#40394d" stroke-width="1.5" stroke-linejoin="round"><path d="M16 17Q2 17 3 6q8-1 14 10Q15 3 26 4q4 8-8 15z" fill="#c1e7ea"/><path d="M20 13q6 0 5 5-1 7-8 9-7 1-6-5z" fill="#edd776"/><path d="M10 21q-4 0-4-4 0-5 5-5l6 3-3 7z" fill="#626384"/></g><path d="m16 23 3-5 4 1-3 5z" fill="#fff9b0"/><path d="m7 15-3-3m6 1-1-5" stroke="#d8d3ec" stroke-width="1.6" stroke-linecap="round"/>';
+  const reedCord = '<path d="m2 22 7-7 6 4 7-14 2 9 6-2" fill="none" stroke="#623344" stroke-linejoin="round" stroke-width="4"/><path d="m2 21 7-7 6 4 7-14 2 9 6-2" fill="none" stroke="#ff9c91" stroke-linejoin="round" stroke-width="2.3"/>';
+  const suits = {
+    S: ['M16 7c-3 4-9 7-8 12 1 4 5 5 8 1l-2 5h5l-2-5c4 4 8 2 8-2 0-4-6-8-9-11Z', '#bcccf4'],
+    H: ['M16 24 9 17c-6-8 2-13 7-6 6-7 13-1 7 6Z', '#ff9d9e'],
+    C: ['M16 7c-4 0-5 4-3 7-6-3-9 3-5 6 2 2 5 1 8-1l-2 6h5l-2-6c4 4 8 3 9-1 1-4-3-6-6-4 2-4 0-7-4-7Z', '#a3dfbd'],
+    D: ['m16 6 8 10-8 10-8-10Z', '#ffc192']
+  };
+  const lanterns = Object.keys(suits);
+
+  function label(mark, amount) {
+    return '<g transform="translate(3,-2) scale(.82)">' + mark + '</g><rect x="1" y="21" width="30" height="10" rx="4" fill="#292839" stroke="#ebd5a9"/><text x="16" y="29" text-anchor="middle" fill="#fff5d9" font-family="Arial,sans-serif" font-weight="bold" font-size="9">+' + Number(amount) + '</text>';
+  }
+
+  function badger(fx, facts) {
+    if (facts.event !== "scoredCard" || !(facts.chips > 0) || !fx.chips) return;
+    const scorer = fx.card || fx.source;
+    if (fx.still) {
+      fx.sprite(label(rankStone, facts.chips), "grove-matched-rank", scorer, scorer, {size:39});
+      return;
+    }
+    const partners = (fx.cards || []).filter(Boolean);
+    fx.sprite(moss, "grove-badger-claw", scorer, scorer, {size:33, duration:250});
+    if (!fx.card || !partners.length) {
+      fx.sprite(rankStone, "grove-badger-payout", scorer, fx.chips, {size:24, arc:22, duration:330});
+      return;
+    }
+    const group = [fx.card, ...partners].sort((a,b) => a.x - b.x || a.y - b.y);
+    // Build one bridge for this rank. Later scorers and repeats use it without
+    // drawing another set of vines between every possible pair.
+    if (fx.newGroup !== false && !facts.pass) {
+      const start = group[0];
+      const end = group[group.length - 1];
+      fx.trail(start, end, {color:"#628e57", width:5, arc:16, duration:370});
+      fx.trail(start, end, {color:"#c8dc95", width:1.8, arc:20, delay:25, duration:315});
+      fx.sprite(moss, "grove-bridge-foot", end, end, {size:26, delay:100, duration:235});
+    }
+    const index = group.indexOf(fx.card);
+    const next = group[index + 1] || group[index - 1];
+    fx.sprite(rankStone, "grove-badger-crossing", scorer, next, {size:22, arc:16, duration:180});
+    fx.sprite(rankStone, "grove-badger-payout", next, fx.chips, {size:24, arc:22, delay:145, duration:280});
+  }
+
+  function reedWindow(rank) {
+    const rankLabel = ({11:"J",12:"Q",13:"K",14:"A"})[rank] || rank;
+    return '<path d="M5 26V7l9-4 13 3v20l-10 3z" fill="#677744" stroke="#394738" stroke-width="1.8"/><path d="m9 23-1-14 7-3 9 2-1 15-6 3z" fill="#e1d98b"/><path d="m5 9 5 1m12 12 6-1" stroke="#af514d" stroke-width="2.3"/><text x="16" y="21" font-size="14" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#3d4b33">' + rankLabel + '</text>';
+  }
+
+  function toadProc(fx, facts) {
+    if (facts.event !== "hand" || !(facts.mult > 0) || !fx.mult) return;
+    if (fx.still) {
+      fx.sprite(label(toad, facts.mult), "grove-toad-stamp", fx.source, fx.source, {size:40});
+      return;
+    }
+    const ranks = new Set();
+    const limit = Math.min(4, Math.floor(facts.mult / 3));
+    fx.sprite(toad, "grove-lattice-toad", fx.source, fx.source, {size:34, duration:390});
+    for (const [i, entry] of (facts.contributors || []).entries()) {
+      if (ranks.size >= limit) break;
+      if (!Number.isInteger(entry.rank) || entry.rank < 2 || entry.rank > 14 || ranks.has(entry.rank)) continue;
+      const side = ranks.size;
+      ranks.add(entry.rank);
+      const slot = fx.point(fx.source, [-17,17,-17,17][side], [-13,-13,12,12][side]);
+      const origin = fx.cards?.[i];
+      if (origin) fx.trail(origin, slot, {color:"#c5d880", arc:16, delay:side*18, width:2, duration:180});
+      fx.sprite(reedWindow(entry.rank), "grove-lit-reed", slot, slot, {size:22, delay:35+side*18, duration:245});
+    }
+    fx.trail(fx.source, fx.mult, {color:"#fa837e", arc:-18, width:3, delay:175, duration:305});
+    fx.sprite(reedCord, "grove-plucked-cord", fx.source, fx.mult, {size:27, arc:-18, delay:175, duration:305});
+  }
+
+  function lantern(suit) {
+    const [shape, glow] = suits[suit];
+    return '<path d="M13 5V3h6v2m-11 2h16l4 12-7 9H11l-7-9z" fill="#34364f" stroke="#ddbf85" stroke-width="1.6" stroke-linejoin="round"/><path d="' + shape + '" fill="' + glow + '"/>';
+  }
+
+  function firefly(fx, facts) {
+    if (facts.event !== "hand" || !(facts.chips > 0) || !fx.chips) return;
+    if (fx.still) {
+      fx.sprite(label(fly, facts.chips), "grove-firefly-stamp", fx.source, fx.source, {size:40});
+      return;
+    }
+    fx.sprite(fly, "grove-firefly", fx.source, fx.chips, {size:34, arc:26, delay:125, duration:340});
+    fx.trail(fx.source, fx.chips, {color:"#f3e795", arc:26, delay:125, width:3, duration:340});
+    const lit = new Set();
+    const limit = Math.min(4, Math.floor((facts.chips - 20) / 10));
+    for (const [i, entry] of (facts.contributors || []).entries()) {
+      const suitIndex = lanterns.indexOf(entry.suit);
+      if (lit.size >= limit) break;
+      if (suitIndex < 0 || lit.has(entry.suit)) continue;
+      lit.add(entry.suit);
+      const slot = fx.point(fx.source, (suitIndex - 1.5) * 14, -16 + Math.abs(suitIndex - 1.5) * 3);
+      const origin = fx.cards?.[i];
+      const color = suits[entry.suit][1];
+      const delay = i * 20;
+      if (origin) fx.trail(origin, slot, {color, width:2, arc:15, delay, duration:175});
+      const mark = lantern(entry.suit);
+      fx.sprite(mark, "grove-suit-lantern", slot, slot, {size:19, delay:45+delay, duration:240});
+      fx.sprite(mark, "grove-suit-lantern-payout", slot, fx.chips, {size:17, arc:12+3*suitIndex, delay:175+delay, duration:280});
+    }
+  }
+
+  registry.register("moss_badger", badger);
+  registry.register("lattice_toad", toadProc);
+  registry.register("veil_firefly", firefly);
+})(window);
+
+;
+(function (root) {
+  "use strict";
+
+  const registry = root.CWFamiliarScoreFX;
+  // Authored 32px glyphs for the market's three distinct casting materials.
+  const lamp = '<path fill="#352634" d="M12 3q0-5 4-5t4 5h2v3l5 5-2 15 3 3H4l3-3-2-15 5-5V3z"/><path fill="none" stroke="#e4ae60" stroke-width="2" d="M13 4V2q3-5 6 0v2"/><path fill="#c79252" d="M10 5h12v2l4 4H6zM7 26h18l2 2H5z"/><path fill="#ffe6a6" d="M11 5h9v1h-9zm-4 6h17v2H7z"/><path fill="#72543d" d="m7 13 2 12h14l2-12z"/><path fill="#254d4d" d="M11 14h10l-1 9h-8z"/><path fill="#ffbd6d" d="M13 22q-2-3 1-5t2-5q5 5 3 8l-2 3z"/><path fill="#fff2a9" d="M15 22q-1-3 2-5l1 4-2 2z"/>';
+  const tray = '<path fill="#5b3b39" d="M1 10h30l-4 10-5 3H9l-5-4z"/><path fill="#bd834c" d="M4 12h24l-3 6-4 2H10l-4-3z"/><path fill="#f9cf78" d="M2 10h28v3H2zm6 7 3 2h10l3-2v2l-3 2H11l-3-2z"/>';
+  const wickScroll = '<path fill="#6d443d" d="m6 7 19-2 3 4-3 4 2 11-3 3-18 1-3-4 3-4-2-9z"/><path fill="#fae6ac" d="m8 9 16-1-1 5 2 10-16 2 1-5z"/><path fill="none" stroke="#a87048" stroke-width="1.5" d="m11 13 9-1m-8 5 9-1m-8 5 7-1"/><path fill="#ffac4d" d="M12 9q-4-4 1-7 0 2 2 2l2-4q5 8-1 10z"/><path fill="#fff5be" d="m14 9-1-3 3-2 1 3z"/>';
+  const jewelCase = '<path fill="#3c2639" d="m3 12 4-8h18l4 8v13l-4 3H7l-4-3z"/><path fill="#944765" d="m5 12 4-6h14l4 6z"/><path fill="#e8afaf" d="m8 12 3-4h10l4 4-7-1z"/><path fill="#563449" d="M5 15h22v9l-3 2H8l-3-2z"/><path fill="#c79455" d="M5 14h22v2H5z"/><path fill="#f6d79a" d="m14 13 4-1 2 3-2 4h-4l-2-3z"/>';
+  const bow = '<path fill="#632e4f" d="m2 4 12 5 3 4 10-8 4 2-3 14-9-3 5 11-7-3-2-8-5 10-1-6-6 1 8-9-9 2z"/><path fill="#db82a4" d="m4 7 9 5-1 3-8 1zm13 7 10-6-1 9-8-1zm-2 2 3 1 1 6z"/><path fill="#ffc5c2" d="m5 8 6 4-6-1zm16 4 5-3-1 2z"/><path fill="#f2cc80" d="m13 12 4-1 2 4-3 4-4-3z"/>';
+  const lintel = '<path fill="#3b2939" d="M1 4h30v5H1zm3 6h3v17H4zm21 0h3v17h-3z"/><path fill="#b18b66" d="M2 5h28v2H2zm2 5h2v14H4zm22 0h2v14h-2z"/><path fill="none" stroke="#ebd099" stroke-width="1.5" d="m15 8 3 1-4 2 4 1-3 2"/>';
+  const brassBell = '<path fill="#604139" d="M13 4h6v3l4 2 2 4v6l4 4v3H3v-3l4-4v-6l2-4 4-2z"/><path fill="#c89b53" d="m10 12 5-4h3l4 4 1 8 3 3H6l3-3z"/><path fill="#fff0ac" d="m12 12 3-2 1 2-3 3v4h-3zm-6 11h20v2H6z"/><path fill="#e0ad64" d="M13 26h6l-2 4h-2z"/>';
+  const gold = '<path fill="#8a5935" stroke="#513940" stroke-width="1" d="m5 9 6-5h11l6 6v12l-7 7h-9l-7-5z"/><path fill="#edb557" d="m6 10 6-4h9l5 5v9l-6 6h-8l-6-4z"/><path fill="none" stroke="#fff3b5" stroke-width="1.5" d="m10 12 4-3h5l4 4v6l-5 4h-5l-3-3z"/><path fill="#fff3bd" d="m16 12 3 4-3 4-3-4z"/>';
+  const chime = '<path fill="none" stroke="#ffe2a0" stroke-width="2" stroke-linecap="round" d="m4 12 4 3-4 2m24-5-4 3 4 2"/>';
+
+  function staticReceipt(fx, emblem, amount, created = false) {
+    // Only one glyph is shown in reduced motion; include both outcomes on it.
+    const text = "+$" + amount + (created ? " + Spell" : "");
+    const width = created ? 45 : 27;
+    const markup = '<g transform="translate(5 -1) scale(.7)">'+emblem+'</g><rect x="'+(16-width/2)+'" y="21" width="'+width+'" height="10" rx="3" fill="#2c2133" stroke="#d9a86f"/><text x="16" y="28.6" text-anchor="middle" font-family="system-ui,sans-serif" font-size="6.3" font-weight="800" fill="#ffe4a0">'+text+'</text>';
+    fx.sprite(markup,"market-still-receipt",fx.source,fx.source,{size:48});
+  }
+  function tossCoin(fx, from, index, delay, arc, trailColor = "#ebbc67") {
+    if (!fx.money) return;
+    const side = index%2 ? 1 : -1;
+    const start = fx.point(from,side*4,0);
+    fx.trail(start,fx.money,{color:trailColor,width:2,arc,delay,duration:310});
+    fx.sprite(gold,"market-paid-coin",start,fx.money,{size:20,arc,delay,duration:310,rotation:side*45});
+  }
+  function brassLantern(fx, facts) {
+    if (facts.event !== "shop" || facts.money !== 2) return;
+    const created = facts.created?.some(entry => entry.category === "consumables");
+    if (fx.still) return staticReceipt(fx,lamp,facts.money,created);
+    const dish = fx.point(fx.source,2,13);
+    fx.sprite(lamp,"market-brass-door",fx.source,fx.source,{size:40,duration:430});
+    fx.sprite(tray,"market-brass-tray",dish,fx.point(dish,4,1),{size:34,rotation:10,delay:65,duration:260});
+    for (let i=0;i<facts.money;i++) tossCoin(fx,dish,i,145+i*82,28+i*13);
+    if (created && fx.consumable) {
+      const wick = fx.point(fx.source,0,-5);
+      fx.trail(wick,fx.consumable,{color:"#ffcc7b",arc:30,width:4,delay:208,duration:360});
+      fx.sprite(wickScroll,"market-parchment-wick",wick,fx.consumable,{size:29,arc:30,rotation:8,delay:208,duration:360});
+      fx.burst(fx.consumable,{color:"#fcddb0",count:4,reach:13,delay:505,duration:165});
+    }
+  }
+  function silkenBroker(fx, facts) {
+    const booster = facts.event === "packOpen" && facts.money === 2;
+    const cast = facts.event === "cast" && facts.money === 1;
+    if (!booster && !cast) return;
+    if (fx.still) return staticReceipt(fx,jewelCase,facts.money);
+    const item = fx.card || fx.source;
+    fx.sprite(jewelCase,"market-silk-case",fx.source,fx.source,{size:35,duration:360});
+    if (fx.card) fx.trail(fx.source,item,{color:"#e5a9b3",arc:12,width:2,duration:165});
+    fx.sprite(bow,"market-satin-clasp",item,item,{size:26,delay:50,duration:200});
+    if (fx.money) {
+      // Twin highlights follow the same arc as the actual coin on the silk.
+      fx.trail(item,fx.money,{color:"#a3517e",width:7,arc:25,delay:119,duration:386});
+      fx.trail(fx.point(item,0,-1),fx.point(fx.money,0,-1),{color:"#ffd4bc",width:2,arc:25,delay:125,duration:380});
+    }
+    for (let i=0;i<facts.money;i++) tossCoin(fx,item,i,145+i*100,25,"#f2bcad");
+  }
+  function shopbellSprite(fx, facts) {
+    const entry = facts.event === "shop" && facts.money === 1;
+    const reroll = facts.event === "reroll" && facts.money === 2;
+    if (!entry && !reroll) return;
+    if (fx.still) return staticReceipt(fx,brassBell,facts.money);
+    const bellAt = fx.point(fx.source,0,4);
+    if (reroll && fx.card) fx.trail(fx.card,fx.source,{color:"#dbb57e",width:2,arc:16,duration:154});
+    fx.sprite(lintel,"market-spring-lintel",fx.source,fx.source,{size:47,duration:entry ? 390 : 535});
+    for (let i=0;i<facts.money;i++) {
+      const delay = (reroll ? 105 : 15)+i*150;
+      const side = i%2 ? -1 : 1;
+      fx.sprite(brassBell,"market-door-swing",bellAt,fx.point(bellAt,side*6,-3),{size:30,rotation:side*25,delay,duration:215});
+      fx.sprite(chime,"market-clapper-ring",bellAt,bellAt,{size:37,delay:delay+55,duration:180});
+      tossCoin(fx,bellAt,i,delay+90,21+i*8);
+    }
+  }
+  registry.register("brass_lantern",brassLantern);
+  registry.register("silken_broker",silkenBroker);
+  registry.register("shopbell_sprite",shopbellSprite);
+})(window);
+
+;
+(function (root) {
+  "use strict";
+
+  const registry = root.CWFamiliarScoreFX;
+  const roller = '<path d="M2 14h28v5H2z" fill="#a6a69c" stroke="#302a35" stroke-width="1.4"/><path d="m5 13 4-4h14l4 3v8l-4 3H9l-4-3z" fill="#715040" stroke="#322b35" stroke-width="1.8"/><path d="m9 13 3-2m-4 5 6-4m1 6 7-5m-3 7 5-4" fill="none" stroke="#ad9469" stroke-width="1.4" stroke-linecap="round"/><path d="M7 20q9 3 18-1l-2 3H10z" fill="#39464a"/>';
+  const hammer = '<path d="m6 27-3-4L19 9l4 4Z" fill="#c78d58" stroke="#413442" stroke-width="1.6"/><path d="m15 10 7-8 8 5-7 9z" fill="#8799a0" stroke="#343341" stroke-width="1.8"/><path d="m19 9 5-5 4 3-5 5z" fill="#e5d9b3"/><path d="M6 23 16 14" stroke="#f4c792" stroke-width="1.4"/>';
+  const gear = '<path d="m13 2 6 0 1 4 3 2 4-1 3 5-3 3v3l3 3-3 5-4-1-3 1-1 4h-6l-1-4-3-1-4 1-3-5 3-3v-3l-3-3 3-5 4 1 3-2z" fill="#a58e6c" stroke="#403645" stroke-width="1.6"/><circle cx="16" cy="16" r="7" fill="#574e5a" stroke="#efcd89" stroke-width="1.8"/><circle cx="16" cy="16" r="2.7" fill="#ddc089"/>';
+  const looseFlake = '<path d="m4 15 13-8 12 8-7 10-13-3z" fill="#8a9aa9" stroke="#3e3a4a" stroke-width="1.8"/><path d="m7 15 10-5 5 4-8 4z" fill="#c2ced5"/>';
+  const maggot = '<path d="M4 21c1-7 7-3 10-8 2-5 8-8 13-4 4 3 2 9-2 11-5 0-6 6-14 6-5 0-8-2-7-5Z" fill="#e3cda9" stroke="#473743" stroke-width="1.7"/><path d="M8 18q5 2 4 6m2-10q6 2 5 7m1-12q5 2 5 9" fill="none" stroke="#a58e76" stroke-width="2"/><path d="m26 11 4-4-1 7Z" fill="#cfa343" stroke="#544339" stroke-width="1.2"/><circle cx="25" cy="11" r="1.2" fill="#342c37"/>';
+  const glint = '<path d="m4 23 9-10 6 2 9-9-3 11-7 1-8 9Z" fill="#fff4af" stroke="#926a43" stroke-width="1.3"/>';
+
+  function text(value, y, fill) {
+    return '<text x="16" y="' + y + '" fill="' + fill + '" font-family="Arial,sans-serif" font-size="7.5" font-weight="bold" text-anchor="middle">' + value + '</text>';
+  }
+
+  function printBlock(total) {
+    const lined = Math.min(6, Math.max(0, Math.round((total - 28) / 15)));
+    let lines = "";
+    for (let i = 0; i < lined; i++) lines += '<path d="m' + (7 + i*3.5) + ' 9 1.2-2.5" stroke="#c1ddbc" stroke-width="1.4"/>';
+    return '<path d="m3 8 23-4 3 4v18L6 29l-3-3z" fill="#675448" stroke="#2f2e38" stroke-width="1.6"/><path d="m5 10 21-3v16L5 26z" fill="#427d86"/><path d="m7 12 17-3v12L7 23z" fill="#2f5668" stroke="#83d9dc"/>' + lines + text("+" + total, 20, "#d8ffef");
+  }
+
+  function soldPrint(id) {
+    const item = id && root.CW?.item(id);
+    const shape = item?.kind === "familiar" ? 'm7 10 6 3 6-1 5-4v9l-3 5-10 1-4-5Z' :
+      item?.rarity === "Constellation" ? 'm16 7 2 6 6 1-5 4 1 6-5-3-5 3 1-7-4-3 7-1Z' :
+      item?.kind === "spell" ? 'm9 10 14-2 1 12-13 2 2-4-3-1z' :
+      'm16 8 6 8-6 7-6-7Z';
+    return '<path d="m4 5 18-2 6 23-18 3Z" fill="#d8ccb0" stroke="#465149" stroke-width="1.8"/><path d="' + shape + '" fill="#354c53"/>';
+  }
+
+  function keystone(total) {
+    const count = Math.min(8, Math.max(0, Math.round((total - 35) / 12)));
+    let cuts = "";
+    for (let i=0; i<count; i++) cuts += '<path d="m' + (6 + i*2.6) + ' 8 .7 3" stroke="#e7d1a5" stroke-width="1.4"/>';
+    return '<path d="m2 7 4-3 20 1 4 4-6 17-7 3-9-3z" fill="#677d8b" stroke="#353746" stroke-width="1.8"/><path d="m4 8 3-2 18 1 3 2-5 3-16-1z" fill="#99adba"/><path d="m7 12 16 1-2 11-11-1z" fill="#465a69"/>' + cuts + text("+" + total, 20, "#e2f4ef");
+  }
+
+  function dial(total) {
+    const cuts = Math.min(10, Math.max(0, Math.round((total-1.3)/.15)));
+    let notches = "";
+    for (let i=0; i<10; i++) notches += '<path d="M16 4v3" transform="rotate(' + (-135 + i*30) + ' 16 16)" stroke="' + (i < cuts ? "#fff0a6" : "#826e59") + '" stroke-width="1.5"/>';
+    return '<circle cx="16" cy="16" r="14" fill="#785a42" stroke="#332c39" stroke-width="1.8"/><circle cx="16" cy="16" r="10.8" fill="#51444b" stroke="#c3985e" stroke-width="1.3"/>' + notches + text("×"+Number(total.toFixed(2)), 19, "#ffdfa1");
+  }
+
+  function printer(fx, fact) {
+    const g = fact.growth;
+    if (fact.event === "sell" && g?.stat === "chips" && g.after > g.before) {
+      if (fx.still) {
+        fx.sprite(printBlock(g.after), "mire-new-impression", fx.source, fx.source, {size:42});
+        return;
+      }
+      if (fx.card) fx.sprite(soldPrint(fact.itemId), "mire-sold-paper", fx.card, fx.source, {size:30, arc:15, rotation:12, duration:230});
+      // The two bogwood drums close around the sheet. Its proof emerges below.
+      fx.sprite(roller, "mire-upper-drum", fx.point(fx.source,0,-12), fx.point(fx.source,0,-3), {size:44, delay:90, duration:210});
+      fx.sprite(roller, "mire-lower-drum", fx.point(fx.source,0,12), fx.point(fx.source,0,3), {size:44, delay:90, duration:210});
+      fx.sprite(printBlock(g.after), "mire-new-impression", fx.source, fx.point(fx.source,0,13), {size:37, delay:235, duration:235});
+      return;
+    }
+    if (fact.event !== "hand" || !(fact.chips > 0) || !fx.chips) return;
+    const proof = printBlock(fact.chips);
+    if (fx.still) { fx.sprite(proof, "mire-chip-proof", fx.chips, fx.chips, {size:40}); return; }
+    fx.sprite(roller, "mire-print-drum", fx.source, fx.point(fx.source,3,4), {size:38, rotation:9, duration:190});
+    fx.trail(fx.source, fx.chips, {color:"#73bfc1", width:4, arc:-9, delay:55, duration:270});
+    fx.sprite(proof, "mire-chip-proof", fx.source, fx.chips, {size:36, delay:55, arc:-9, duration:285});
+    fx.sprite(proof, "mire-chip-impression", fx.chips, fx.chips, {size:36, delay:295, duration:155});
+  }
+
+  function tinker(fx, fact) {
+    const g = fact.growth;
+    if (fact.event === "packOpen" && g?.stat === "chips" && g.after > g.before) {
+      if (fx.still) {
+        fx.sprite(keystone(g.after), "granite-new-notch", fx.source, fx.source, {size:42});
+        return;
+      }
+      const seam = fx.card ? fx.point(fx.card,0,-fx.card.h*.35) : fx.point(fx.source,0,-15);
+      fx.sprite(gear, "granite-booster-gear", seam, fx.source, {size:24, arc:17, rotation:100, duration:230});
+      fx.sprite(keystone(g.before), "granite-uncut-stone", fx.source, fx.source, {size:36, duration:240});
+      fx.sprite(hammer, "granite-mallet", fx.point(fx.source,8,-20), fx.source, {size:36, arc:3, rotation:-52, delay:115, duration:165});
+      fx.sprite(looseFlake, "granite-fresh-cut", fx.source, fx.point(fx.source,-13,6), {size:13, arc:8, delay:230, duration:165});
+      fx.sprite(keystone(g.after), "granite-new-notch", fx.source, fx.source, {size:41, delay:230, duration:235});
+      return;
+    }
+    if (fact.event !== "hand" || !(fact.chips > 0) || !fx.chips) return;
+    const stone = keystone(fact.chips);
+    if (fx.still) { fx.sprite(stone, "granite-chip-stamp", fx.chips, fx.chips, {size:40}); return; }
+    const above = fx.point(fx.chips,0,-20);
+    fx.sprite(stone, "granite-lift-stone", fx.source, above, {size:36, arc:25, duration:275});
+    fx.sprite(stone, "granite-chip-stamp", above, fx.chips, {size:42, delay:220, duration:165});
+    fx.burst(fx.chips, {color:"#c7dfed", count:4, reach:15, delay:340, duration:150});
+  }
+
+  function vault(fx, fact) {
+    const g = fact.growth;
+    if (fact.event === "reroll" && g?.stat === "xmult" && g.after > g.before) {
+      if (fx.still) {
+        fx.sprite(dial(g.after), "vault-cut-notch", fx.source, fx.source, {size:42});
+        return;
+      }
+      if (fx.card) fx.trail(fx.card, fx.source, {color:"#e8ba6f", width:2, arc:14, duration:175});
+      fx.sprite(dial(g.before), "vault-turn-dial", fx.source, fx.source, {size:40, rotation:30, duration:265});
+      const bite = fx.point(fx.source, 9, -7);
+      fx.sprite(maggot, "vault-cutting-maggot", fx.point(fx.source,-11,6), bite, {size:32, arc:6, rotation:20, duration:250});
+      fx.sprite(glint, "vault-brass-filing", bite, fx.point(bite,7,-6), {size:17, delay:177, duration:130});
+      fx.sprite(dial(g.after), "vault-cut-notch", fx.source, fx.source, {size:42, delay:225, duration:225});
+      return;
+    }
+    if (fact.event !== "hand" || !(fact.xmult > 1) || !fx.mult) return;
+    const engraved = dial(fact.xmult);
+    if (fx.still) { fx.sprite(engraved, "vault-mult-engraving", fx.mult, fx.mult, {size:40}); return; }
+    fx.sprite(engraved, "vault-spin", fx.source, fx.source, {size:38, rotation:-30, duration:230});
+    fx.sprite(glint, "vault-brass-reflection", fx.source, fx.mult, {size:24, arc:-17, delay:125, duration:240});
+    fx.trail(fx.source, fx.mult, {color:"#f4d091", width:3, arc:-17, delay:125, duration:240});
+    fx.sprite(engraved, "vault-mult-engraving", fx.mult, fx.mult, {size:36, delay:312, duration:165});
+  }
+
+  registry.register("mire_printer", printer);
+  registry.register("granite_tinker", tinker);
+  registry.register("vault_maggot", vault);
+})(window);
+
+;
+(function (root) {
+  "use strict";
+
   // Animate a small patch of the painted banner, in its original art coordinates.
   const width = 400, height = 256, step = 16;
   const cols = width / step + 1, rows = height / step + 1;
@@ -6446,11 +7254,6 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function esc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function num(value) { return numbers.format(Number(value) || 0); }
   function rank(n) { return ({11:'J',12:'Q',13:'K',14:'A'})[n] || String(n); }
-  function cardModifiers(c) {
-    const title = word => word.charAt(0).toUpperCase()+word.slice(1);
-    return [c.enhancement && title(c.enhancement), c.edition && title(c.edition), c.seal && title(c.seal)+' Seal',
-      c.tallyChips && '+'+num(c.tallyChips)+' Chips banked'].filter(Boolean);
-  }
   function red(suit) { return suit === 'H' || suit === 'D' ? ' cw-red-suit' : ''; }
   function api() { return global.CW; }
   function state() { return options.getState?.(); }
@@ -6513,14 +7316,15 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       button.setAttribute('aria-label',label+' '+entry.name);
       button.addEventListener('click',event=>{
         event.stopPropagation();
+        const sourceRect=card.getBoundingClientRect();
         dismissSell();
-        if (card.isConnected && state()===s && s[category][index]===id) activate();
+        if (card.isConnected && state()===s && s[category][index]===id) activate(sourceRect);
       });
       sellTab.append(button);
     }
     const canSell=api().canSell(s,category,index);
     addAction(canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
-      canSell,()=>perform(card.getBoundingClientRect(),category==='familiars'?'sell':'sellConsumable',index));
+      canSell,sourceRect=>perform(sourceRect,category==='familiars'?'sell':'sellConsumable',index));
     if (category==='consumables') addAction('Use',api().canUse(s,index),()=>act('use-item',String(index),card));
     card.after(sellTab);
     global.CWContent.colorStats(sellTab);
@@ -6588,7 +7392,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     layer = document.createElement('div');
     layer.className = 'cw-backdrop';
     layer.hidden = true;
-    layer.innerHTML = '<section class="cw-dialog" role="dialog" aria-modal="true" aria-labelledby="cw-panel-title" tabindex="-1"><header class="cw-head"></header><div class="cw-message" aria-live="polite"></div><div class="cw-body"></div><footer class="cw-footer"></footer></section>';
+    layer.innerHTML = '<section class="cw-dialog" role="dialog" aria-modal="true" aria-labelledby="cw-panel-title" tabindex="-1"><header class="cw-head"></header><div class="cw-message" aria-live="polite"></div><div class="cw-familiar-announcement visually-hidden" aria-live="polite" aria-atomic="true"></div><div class="cw-body"></div><footer class="cw-footer"></footer></section>';
     document.body.append(layer);
     const fitTrials = () => {
       const panel = dialog();
@@ -6642,7 +7446,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         event.preventDefault(); event.stopImmediatePropagation();
         if (isDismissible()) close();
       } else if (event.key === 'Tab') {
-        const buttons = [...layer.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), summary')].filter(el=>el.getClientRects().length);
+        const buttons = [...layer.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), summary, [tabindex="0"]')].filter(el=>el.getClientRects().length);
         if (!buttons.length) { event.preventDefault(); return; }
         const first = buttons[0], last = buttons[buttons.length-1];
         if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog() || !layer.contains(document.activeElement))) {
@@ -6657,6 +7461,12 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function isDismissible() { return page !== readPhase(state()); }
   function route(next, value = '') {
     const wasOpen = !!page;
+    if(wasOpen && page!==next){
+      dialog()?.querySelector('.familiar-proc-witnesses')?.remove();
+      const announcement=dialog()?.querySelector('.cw-familiar-announcement');
+      if(announcement)announcement.textContent='';
+      global.CWFamiliarScoreFX?.clear();
+    }
     page = next;
     detail = value;
     message = '';
@@ -6838,26 +7648,25 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     return result('Grimoire',guideTab==='rules'?'How to play':'Hand guide',tabs+section);
   }
   function deckView(s) {
-    const source = deckTab === 'draw' ? s.draw : s.deck;
-    const tabs = '<div class="cw-tabs">' + tab('deck-tab','draw','Draw pile · '+s.draw.length,deckTab) + tab('deck-tab','all','Full deck · '+s.deck.length,deckTab) + '</div>';
-    const ranks = Array.from({length:13},(_,i)=>14-i);
-    let grid = '<div class="cw-deck-grid" aria-label="Card counts by suit and rank"><span></span>' + ranks.map(r=>'<span class="cw-rank-label">'+rank(r)+'</span>').join('');
-    for (const suit of suitOrder) {
-      grid += '<span class="cw-suit-label'+red(suit)+'" aria-label="'+suitNames[suit]+'">'+suits[suit]+'</span>';
-      for (const r of ranks) {
-        const copies = source.filter(c=>c.rank===r && c.suit===suit);
-        const n = copies.length;
-        const label = rank(r)+' of '+suitNames[suit]+', '+n+' copies';
-        const descriptions = copies.map(c=>global.CWCardTip.details(c,s.phase==='play' && api().debuffed(s,c)));
-        const crossed = n && s.phase==='play' && copies.every(c=>api().debuffed(s,c));
-        const variants = [...new Set(descriptions)];
-        const tip = n ? global.CWCardTip.attribute(variants.length===1 ? variants[0] : [label,...variants.map(v=>descriptions.filter(d=>d===v).length+' × '+v.replaceAll('\n',' · '))].join('\n')) : '';
-        grid += '<span class="cw-deck-tile'+red(suit)+(n?'':' cw-spent')+'"'+(n?' tabindex="0"'+tip:'')+' aria-label="'+esc(label)+'">'+(n>1?'×'+n:n?rank(r):'–')+(crossed?global.CWCardTip.cross:'')+'</span>';
-      }
-    }
-    const modified = source.filter(c=>c.enhancement || c.edition || c.seal || c.tallyChips);
-    const mods = modified.length ? heading('Modified cards')+'<div class="cw-mod-list">'+modified.map(c=>'<span tabindex="0"'+cardTip(c)+'>'+esc(rank(c.rank)+suits[c.suit]+' · '+cardModifiers(c).join(' · '))+(s.phase==='play' && api().debuffed(s,c)?global.CWCardTip.cross:'')+'</span>').join('')+'</div>' : '';
-    return result('Deck inspection','Your deck',tabs+grid+'</div>'+mods);
+    const inBlind = s.phase === 'play';
+    const remaining = inBlind && deckTab === 'draw' ? new Set(s.draw.map(c=>c.id)) : null;
+    const fullLabel = 'Full deck · '+s.deck.length;
+    const controls = inBlind
+      ? tab('deck-tab','draw','Draw pile · '+s.draw.length,deckTab) + tab('deck-tab','all',fullLabel,deckTab)
+      : '<strong>'+fullLabel+'</strong>';
+    const legend = remaining && remaining.size < s.deck.length ? '<span class="cw-deck-key">Dimmed = already drawn</span>' : '';
+    const rows = suitOrder.map(suit => {
+      const cards = s.deck.filter(c=>c.suit===suit).sort((a,b)=>b.rank-a.rank);
+      const count = remaining ? cards.filter(c=>remaining.has(c.id)).length : cards.length;
+      const faces = cards.map(c=>{
+        const drawn = remaining && !remaining.has(c.id);
+        const slot = drawn ? 'class="cw-deck-slot cw-drawn" aria-label="Already drawn"' : 'class="cw-deck-slot"';
+        return '<li '+slot+'>'+options.cardPreview(c)+'</li>';
+      }).join('');
+      return '<section class="cw-deck-row" aria-label="'+suitNames[suit]+'"><div class="cw-deck-count'+red(suit)+'" aria-hidden="true">'+
+        '<span>'+suits[suit]+'</span><b>'+count+'</b></div><ul class="cw-deck-cards" aria-label="'+count+' '+suitNames[suit]+(remaining?' remaining':'')+'">'+faces+'</ul></section>';
+    }).join('');
+    return result('Deck inspection','Your deck','<div class="cw-tabs cw-deck-tabs">'+controls+legend+'</div><div class="cw-deck-rows">'+rows+'</div>');
   }
   function road(s) {
     return '<div class="cw-road">'+[0,1,2].map(i=>{
@@ -7093,8 +7902,8 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       '<div class="moon-spell-slots">'+spellSlots+'</div>'+marketPurse(s.money)+'</section>';
   }
 
-  function marketPurse(money) {
-    return '<div class="cw-purse roost-purse" aria-label="Coin purse"><strong class="stat-money">'+cash(money)+'</strong></div>';
+  function marketPurse(money, compact=false) {
+    return '<div class="cw-purse roost-purse'+(compact?' pack-purse':'')+'" role="group" aria-label="Coin purse"><strong class="stat-money">'+cash(money)+'</strong></div>';
   }
 
   function marketFamiliar(d) {
@@ -7223,7 +8032,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       return '<button type="button" data-owned-category="'+category+'" data-slot="'+i+'" aria-expanded="false"'+cardTip(d)+'>'+esc(d.name)+mark+'</button>';
     })).join('');
     const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,ownedCards+button('close-pack','Skip remaining'));
-    view.headerEnd='<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong>';
+    view.headerEnd='<div class="pack-status">'+marketPurse(s.money,true)+'<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong></div>';
     return view;
   }
   function tallySpoils(body) {
@@ -7481,7 +8290,6 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       return;
     }
     if (name==='leave-shop' && hasFreeReward(s)) return open('leave-rewards');
-    if (page==='leave-rewards' && (name==='reroll' || name==='reward-pack')) close();
     const commands={
       'buy':['buy',index],'close-pack':['closePack'],reroll:['reroll'],'reward-pack':['claimRewardPack'],
       'leave-shop':['leaveShop'],'leave-anyway':['leaveShop'],'cash-out':['cashOut'],'start-blind':['startBlind'],skip:['skipBlind'],
@@ -7489,7 +8297,12 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       'move-left':['reorder',index,index-1],'move-right':['reorder',index,index+1],endless:['endless'],
       'reroll-boss':['rerollBoss'],'disable-boss':['disableBoss']
     };
-    if(commands[name]) perform(control?.getBoundingClientRect(),...commands[name]);
+    if(commands[name]) {
+      const itemArt=control?.closest('.moon-item')?.querySelector('.moon-art');
+      const sourceRect=(itemArt || control)?.getBoundingClientRect();
+      if (page==='leave-rewards' && (name==='reroll' || name==='reward-pack')) close();
+      perform(sourceRect,...commands[name]);
+    }
   }
   global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page,getPage:()=>page};
 })(window);
@@ -7813,48 +8626,121 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         }
         clearTimeout(frameTimers.get(frame));
         frame.setAttribute('data-proc-active','');
-        frameTimers.set(frame,setTimeout(()=>frame.removeAttribute('data-proc-active'),480/speed));
+        frame.setAttribute('data-proc-event',fact.event);
+        if(id==='alabaster_finch' && fact.mult)frame.setAttribute('data-proc-solo','');
+        if(id==='lattice_toad')frame.setAttribute('data-proc-ranks',fact.contributors.map((_,i)=>i+1).join(' '));
+        if(id==='veil_firefly')frame.setAttribute('data-proc-suits',fact.contributors.map(entry=>entry.suit).join(' '));
+        frameTimers.set(frame,setTimeout(()=>{
+          for(const attr of ['data-proc-active','data-proc-event','data-proc-solo','data-proc-ranks','data-proc-suits'])frame.removeAttribute(attr);
+        },480/speed));
       }
     }
     return drew;
+  }
+  const marketProcEvents={
+    brass_lantern:['shop'], mire_printer:['sell'], silken_broker:['packOpen','cast'],
+    granite_tinker:['packOpen'], shopbell_sprite:['shop','reroll'], vault_maggot:['reroll']
+  };
+  function visibleProcTarget(node){
+    if(!node)return null;
+    const rect=node.getBoundingClientRect();
+    if(!rect.width || !rect.height)return null;
+    const body=node.closest?.('.cw-body')?.getBoundingClientRect();
+    const x=rect.left+rect.width/2, y=rect.top+rect.height/2;
+    return x>=Math.max(0,body?.left ?? 0) && x<=Math.min(window.innerWidth ?? Infinity,body?.right ?? Infinity)
+      && y>=Math.max(0,body?.top ?? 0) && y<=Math.min(window.innerHeight ?? Infinity,body?.bottom ?? Infinity) ? node : null;
+  }
+  function growthText(growth){
+    const value=Number(growth.after.toFixed(2));
+    if(growth.stat==='xmult')return '×'+value+' Mult';
+    return '+'+value+(growth.stat==='chips'?' Chips':' Mult');
+  }
+  function procWitness(rack, item, label, value, stat){
+    const tile=document.createElement('div');
+    tile.className='familiar-proc-witness';
+    const icon=document.createElement('span');
+    if(item){
+      icon.className='proc-witness-portrait';
+      const portrait=document.createElement('img');
+      portrait.src=CWContent.portrait(item.art);
+      portrait.alt='';
+      icon.append(portrait);
+      if(item.kind==='familiar'){
+        icon.setAttribute('data-familiar-frame',CWMarket.splitVariant(item.id).id);
+        if(item.edition)icon.setAttribute('data-familiar-edition',item.edition);
+        icon.insertAdjacentHTML('beforeend',CWFamiliarFrames.ornament(item));
+      }
+    }else icon.className='proc-witness-purse';
+    const caption=document.createElement('span');
+    caption.textContent=label;
+    if(value){
+      const amount=document.createElement('strong');
+      amount.setAttribute('data-stat',stat);
+      amount.textContent=value;
+      caption.append(amount);
+    }
+    tile.append(icon,caption);
+    rack.append(tile);
+    return tile;
   }
   async function playFamiliarEvents(card, discardCards=[]) {
     const events=CW.drainFamiliarEvents(run);
     if(!events.length)return;
     const panel=document.querySelector('.cw-backdrop:not([hidden]) .cw-dialog');
     const messages=[];
-    let discardBeat=false;
+    let discardBeat=false, marketBeat=0, rack, wallet;
+    function witness(...args){
+      if(!rack){
+        rack=document.createElement('div');
+        rack.className='familiar-proc-witnesses';
+        rack.setAttribute('aria-hidden','true');
+        panel.querySelector('.familiar-proc-witnesses')?.remove();
+        panel.append(rack);
+        setTimeout(()=>rack.remove(),Math.max(1100,1500/prefs.speed));
+      }
+      return procWitness(rack,...args);
+    }
     for(const fact of events){
       const id=CWMarket.splitVariant(fact.familiarId).id;
       const foxCast=id==='fox_in_ink' && fact.event==='cast' && fact.growth;
-      if(!foxCast && !(fact.event==='discard' && discardCards.length))continue;
+      const market=marketProcEvents[id]?.includes(fact.event);
+      if(!market && !foxCast && !(fact.event==='discard' && discardCards.length))continue;
       let source=familiarSlot(fact.familiarId,panel);
       const spell=fact.created?.find(entry=>entry.category==='consumables');
-      const consumable=spell && (panel ? panel.querySelector('[data-owned-category="consumables"][data-slot="'+spell.index+'"]') : $('spells').children[spell.index]);
-      // A pack can stay open after a cast and hide the entire familiar rail.
-      const bounds=source?.getBoundingClientRect();
-      const railVisible=bounds?.width && bounds.bottom>0 && bounds.top<window.innerHeight;
-      if(!railVisible && foxCast && panel){
+      let consumable=spell && (panel ? panel.querySelector('[data-owned-category="consumables"][data-slot="'+spell.index+'"]') : $('spells').children[spell.index]);
+      let money=panel ? null : $('table-purse');
+      if(panel && !visibleProcTarget(source)){
         const item=CW.ownedItem(run,'familiars',run.familiars.indexOf(fact.familiarId));
         if(!item)continue;
-        document.querySelector('.familiar-proc-witness')?.remove();
-        source=document.createElement('div');
-        source.className='familiar-proc-witness';
-        source.setAttribute('aria-hidden','true');
-        const portrait=document.createElement('img');
-        portrait.src=CWContent.portrait(item.art);
-        portrait.alt='';
-        source.append(portrait,item.name+'  +'+fact.growth.after+' Mult');
-        document.body.append(source);
-        setTimeout(()=>source.remove(),Math.max(700,1200/prefs.speed));
+        const value=fact.growth ? growthText(fact.growth) : fact.money ? '+$'+fact.money : '';
+        source=witness(item,item.name,value,fact.growth ? (fact.growth.stat==='chips'?'chips':'mult') : 'money');
       }
-      if(!familiarCue(fact,{source,card,cards:discardCards,consumable,money:$('table-purse')}))continue;
-      audio.event((fact.charge?'charge-':'proc-')+id);
+      if(panel && fact.money){
+        wallet ||= visibleProcTarget(panel.querySelector('.pack-purse')) || visibleProcTarget(panel.querySelector('.cw-purse'))
+          || witness(null,'Coin purse','$'+run.money.toLocaleString(),'money');
+        money=wallet;
+      }
+      if(panel && spell && !visibleProcTarget(consumable)){
+        const created=CW.item(spell.id);
+        consumable=witness(created,created.name);
+      }
+      const startDelay=market && !prefs.reducedMotion ? Math.min(240,marketBeat*110) : 0;
+      if(!familiarCue(fact,{source,card,cards:discardCards,consumable,money,startDelay}))continue;
+      if(market)marketBeat++;
+      let soundStep=0;
+      if(market){
+        const double=(id==='brass_lantern' && spell) || (id==='silken_broker' && fact.event==='packOpen')
+          || (id==='shopbell_sprite' && fact.event==='reroll');
+        soundStep=double ? 2 : 1;
+      }
+      const sound=(fact.charge?'charge-':'proc-')+id;
+      if(startDelay)setTimeout(()=>{if(source?.isConnected)audio.event(sound,soundStep);},startDelay/prefs.speed);
+      else audio.event(sound,soundStep);
       const name=CW.item(fact.familiarId).name;
+      if(fact.money)messages.push(name+' earned $'+fact.money+'.');
       if(spell)messages.push(name+' created '+CW.item(spell.id).name+'.');
-      else if(foxCast)messages.push(name+' grew to +'+fact.growth.after+' Mult.');
-      else if(fact.money)messages.push(name+' earned $'+fact.money+'.');
-      else if(fact.charge){
+      if(fact.growth)messages.push(name+' grew to '+growthText(fact.growth)+'.');
+      if(fact.charge){
         const amount=Number(fact.charge.after.toFixed(2));
         const next=fact.charge.stat==='retriggers' ? 'a repeat' :
           fact.charge.stat==='chips' ? '+'+amount+' Chips' : '×'+amount+' Mult';
@@ -7866,7 +8752,10 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       }
     }
     if(discardBeat)await wait(200);
-    if(messages.length)$('announce').textContent=(discardCards.length ? $('announce').textContent+' ' : '')+messages.join(' ');
+    if(messages.length){
+      const live=panel?.querySelector('.cw-familiar-announcement') || $('announce');
+      live.textContent=(discardCards.length ? live.textContent+' ' : '')+messages.join(' ');
+    }
   }
   function animateCards(ids,discarding){
     const lane = $('cast-prompt').querySelector('.cw-fx-lane');
@@ -8000,6 +8889,8 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       title.textContent=result.name;
       ghosts=animateCards(ids,false);
       const scoring=new Set(result.scoring);
+      const cardNodes=new Map([...$('hand').children].map(node=>[node.dataset.card,node]));
+      for(const {id,ghost} of ghosts)cardNodes.set(id,ghost);
       for(const card of ghosts){if(!scoring.has(card.id))card.ghost.classList.add('cw-fx-quiet');}
       const steps=result.steps;
       let peak=-1, importance=0;
@@ -8028,22 +8919,48 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       call.textContent=result.blocked?steps[0]?.label:'Base hand';
       const shine=[{filter:'brightness(1)'},{filter:'brightness(1.22) drop-shadow(0 0 4px #edc174)',offset:.29},{filter:'brightness(1)'}];
       const featured=new Set();
+      const bridgedRanks=new Set();
+      const creditTimers=new WeakMap();
       function showProc(step,still){
         const fact=step.fact;
         if(!fact?.familiarId)return false;
         const first=!featured.has(fact.familiarId);
-        if(!first && still)return false;
-        const card=ghosts.find(c=>c.id===fact.cardId)?.ghost ||
-          [...$('hand').children].find(el=>el.dataset.card===String(fact.cardId));
+        const id=CWMarket.splitVariant(fact.familiarId).id;
+        const matchingRank=id==='moss_badger' && fact.contributors?.[0]?.rank;
+        const groupKey=matchingRank && fact.familiarId+'-'+matchingRank;
+        const newGroup=Boolean(groupKey && !bridgedRanks.has(groupKey));
+        if(!first && still && !newGroup)return false;
+        const card=cardNodes.get(fact.cardId);
+        const cards=fact.contributors?.map(entry=>cardNodes.get(entry.cardId));
         const face=fact.retriggers && currentHand.find(c=>c.id===fact.cardId);
+        let holdMs=260;
         const triggered=familiarCue(fact,{
-          source:familiarSlot(fact.familiarId), card,
+          source:familiarSlot(fact.familiarId), card,cards,newGroup,
+          // Let the last scoop or wave reach the counter before showing its new total.
+          onTiming:duration=>{
+            if((cards && !fact.copiedFrom) || id==='alabaster_finch')holdMs=Math.max(260,Math.min(750,duration-120));
+          },
           cardFace:face && {rank:face.rank,suit:face.suit,stone:face.enhancement==='stone'},
           neighbor:fact.copiedFrom && familiarSlot(fact.copiedFrom),
           chips:chipText,mult:multText,money:$('table-purse')
         },prefs.speed*(first?1:2),still);
-        if(triggered)featured.add(fact.familiarId);
-        return triggered;
+        if(triggered){
+          featured.add(fact.familiarId);
+          if(newGroup)bridgedRanks.add(groupKey);
+          if(cards && !fact.copiedFrom){
+            // Brighten the actual cards supplying this reward during its cue.
+            const credited=new Set(cards);
+            if(matchingRank)credited.add(card);
+            for(const node of credited){
+              if(!node)continue;
+              clearTimeout(creditTimers.get(node));
+              node.setAttribute('data-proc-credit',fact.mult?'mult':'chips');
+              const hold=first?Math.max(520,holdMs):300;
+              creditTimers.set(node,setTimeout(()=>node.removeAttribute('data-proc-credit'),fxTime(hold)));
+            }
+          }
+        }
+        return triggered && {id,first,holdMs};
       }
       if(moving){
         await wait(180);
@@ -8051,11 +8968,10 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
         let wallet=walletBefore;
         for(let i=1;i<steps.length;i++){
           const step=steps[i],last=steps[i-1],strongest=i===peak;
-          const first=!featured.has(step.familiarId);
           const signature=showProc(step,false);
-          if(signature && first){
-            audio.event('proc-'+CWMarket.splitVariant(step.familiarId).id);
-            await wait(260);
+          if(signature && signature.first){
+            audio.event('proc-'+signature.id,Number(signature.id==='alabaster_finch' && Boolean(step.fact.mult)));
+            await wait(signature.holdMs);
           }
           count(step.chips??0,step.mult??0);
           if(step.fact?.money){wallet+=step.fact.money;$('money').textContent='$'+num(wallet);}

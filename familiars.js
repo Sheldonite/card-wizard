@@ -41,6 +41,11 @@
   const size = c => c.cards?.length || 0;
   const held = c => c.held?.length || 0;
   const scored = c => c.scoring?.length || 0;
+  const sameCard = (a,b) => a === b || (a.id != null && a.id === b.id);
+  function extraPlayedCards(c) {
+    return (c.cards || []).filter(card => !c.scoring?.some(scorer => sameCard(scorer,card)))
+      .map(card => ({cardId:card.id}));
+  }
   const opposite = cards => (cards || []).some(red) && (cards || []).some(black);
   const growth = (event, test, step, limit, key, baseline = 0) => ({
     trackedStat: key,
@@ -72,8 +77,19 @@
     ["Mantle Rabbit", "owl", "+12 Chips per card played, including cards outside the scoring hand.", "hand", c => ({ chips: 12 * size(c) })],
     ["Tin Echo", "grimoire", "Retrigger the last scoring card of every hand.", "scoredCard", when(c => c.cardIndex === scored(c) - 1, { retriggers: 1 })],
     ["Mist Hare", "moth", "+2 Mult per card played. Fill all five spots for +20 Chips too.", "hand", c => ({ mult: 2 * size(c), chips: size(c) === 5 ? 20 : 0 })],
-    ["Dustfin", "moth", "+15 Chips. Each extra card played outside the scoring hand adds +15 more.", "hand", c => ({ chips: 15 * (1 + size(c) - scored(c)) })],
-    ["Lattice Toad", "potion", "+3 Mult for each different rank you keep in hand, up to +12.", "hand", c => ({ mult: 3 * Math.min(4, new Set(c.held.map(card => card.rank).filter(Number.isInteger)).size) })],
+    ["Dustfin", "moth", "+15 Chips. Each extra card played outside the scoring hand adds +15 more.", "hand", c => {
+      const contributors = extraPlayedCards(c);
+      return { chips:15 * (1 + contributors.length), contributors };
+    }],
+    ["Lattice Toad", "potion", "+3 Mult for each different rank you keep in hand, up to +12.", "hand", c => {
+      const contributors = [];
+      for (const card of c.held) {
+        if (!Number.isInteger(card.rank) || contributors.some(other => other.rank === card.rank)) continue;
+        contributors.push({cardId:card.id,rank:card.rank});
+        if (contributors.length === 4) break;
+      }
+      return { mult:3 * contributors.length, contributors };
+    }],
     ["Marrow Lark", "owl", "Your first held card gives +4 Mult. Each other held card gives +1.", "heldCard", c => ({ mult: c.cardIndex === 0 ? 4 : 1 })],
     ["Crooked Tern", "owl", "Start each blind at +70 Chips. Lose 15 Chips with each hand played, down to +10.", "hand", c => ({ chips: Math.max(10, 70 - 15 * (c.playedCount - 1)) })],
     ["Wicker Lamp", "orb", "Start each blind at +3 Mult. Each hand played adds +3 more for the next hand.", "hand", c => ({ mult: 3 * c.playedCount })],
@@ -89,7 +105,14 @@
       hand(c, memory) { const mult = memory.charge || 0; memory.charge = 0; return { mult }; },
       blindStart(c, memory) { memory.charge = 0; }
     }],
-    ["Moss Badger", "owl", "+25 Chips per scoring card that shares its rank with another scoring card.", "scoredCard", onCard("chips", 25, (card, c) => card.rank && count(c.scoring, other => other.rank === card.rank) >= 2)],
+    ["Moss Badger", "owl", "+25 Chips per scoring card that shares its rank with another scoring card.", "scoredCard", c => {
+      if (!Number.isInteger(c.card?.rank)) return {};
+      const matches = (c.scoring || []).filter(card => card.rank === c.card.rank);
+      if (matches.length < 2) return {};
+      const contributors = matches.filter(card => !sameCard(card,c.card))
+        .map(card => ({cardId:card.id,rank:card.rank}));
+      return contributors.length ? { chips:25, contributors } : {};
+    }],
     ["Juniper Kite", "owl", "+2 Mult for each different rank you play. Extra cards count too.", "hand", c => ({ mult: 2 * new Set(c.cards.map(card => card.rank).filter(Number.isInteger)).size })],
     ["Basalt Sprite", "orb", "+20 Chips for each different rank that scores.", "hand", c => ({ chips: 20 * new Set(c.scoring.map(card => card.rank).filter(Number.isInteger)).size })],
     ["Willow Cricket", "moth", "After your first scoring card, every scoring card adds +3 Mult.", "scoredCard", when(c => c.cardIndex > 0, { mult: 3 })],
@@ -98,7 +121,16 @@
     ["Swamp Lantern", "orb", "+15 Chips for each different hand type you've played this blind, including this one.", "hand", c => ({ chips: 15 * Object.keys(c.handCounts).filter(name => c.handCounts[name] > 0).length })],
     ["Ochre Scribe", "merlin", "Each scoring card gives +8 Chips, plus +15 per enhancement, seal, or edition on it.", "scoredCard", c => ({ chips: 8 + 15 * [c.card.enhancement, c.card.seal, c.card.edition].filter(Boolean).length })],
     ["Milkglass Fawn", "owl", "Each scoring card without an enhancement gives +2 Mult. Unenhanced faces give +5 instead.", "scoredCard", c => ({ mult: c.card.enhancement ? 0 : face(c.card) ? 5 : 2 })],
-    ["Veil Firefly", "moth", "+20 Chips. Each different suit you hold adds +10 more. Wild cards count as every suit.", "hand", c => ({ chips: 20 + 10 * ["S", "H", "C", "D"].filter(suit => includes(c.held, suited(suit))).length })],
+    ["Veil Firefly", "moth", "+20 Chips. Each different suit you hold adds +10 more. Wild cards count as every suit.", "hand", c => {
+      const contributors = [];
+      const heldCards = c.held || [];
+      const wild = heldCards.find(card => card.enhancement === "wild");
+      for (const suit of ["S","H","C","D"]) {
+        const card = heldCards.find(candidate => candidate.suit === suit && candidate.enhancement !== "wild") || wild;
+        if (card) contributors.push({cardId:card.id,suit});
+      }
+      return { chips:20 + 10 * contributors.length, contributors };
+    }],
     ["Rookery Gecko", "dragon", "Held face cards give +3 Mult each. If any face card scores, gain +25 Chips too.", {
       heldCard: onCard("mult", 3, face),
       hand: when(c => includes(c.scoring, face), { chips: 25 })
@@ -116,7 +148,10 @@
     ["Mantled Viper", "dragon", "Gain x1.2 Mult for each card that scores, up to five cards.", "hand",
       c => ({ xmult: 1.2 ** Math.min(5, scored(c)) })],
     ["Glimmer Orca", "potion", "+4 Mult. Each played card that doesn't score adds another +4 Mult.", "hand",
-      c => ({ mult: 4 + 4 * (size(c) - scored(c)) })],
+      c => {
+        const contributors = extraPlayedCards(c);
+        return { mult:4 * (1 + contributors.length), contributors };
+      }],
     ["Cinder Coil", "dragon", "The first scoring card gives +6 Mult each time it triggers.", "scoredCard",
       onCard("mult", 6, (_, c) => c.cardIndex === 0)],
     ["Pale Axolotl", "potion", "x1.25 Mult. Raise it to x1.75 if an enhanced card scores or stays in hand.", "hand",
@@ -189,8 +224,8 @@
     ["Pearl Pigeon", "owl", "Win a blind to earn $2, plus $1 per consumable you carry.", "roundEnd",
       c => ({ money: 2 + c.consumableCount })],
     ["Shopbell Sprite", "orb", "Entering a shop pays $1. Your first reroll there pays another $2.", {
-      shop(c, memory) { memory.paid = false; return { money: 1 }; },
-      reroll(c, memory) { if (!memory.paid) { memory.paid = true; return { money: 2 }; } }
+      shop: () => ({ money:1 }),
+      reroll: when(c => c.firstShopReroll, { money:2 })
     }],
     ["Silken Broker", "key", "Opening any booster earns $2. Casting any consumable earns $1.", {
       packOpen: () => ({ money: 2 }),

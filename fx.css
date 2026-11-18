@@ -408,7 +408,7 @@ body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
 .stat-money::before {content:"";display:inline-block;width:1.15em;height:.9em;vertical-align:-.08em;margin-right:.14em;background:url("assets/coin-pile.svg") center/contain no-repeat}
 
 /* Keep the boss mark legible on light cards and dark familiar portraits. */
-:where(.item-card,.cw-owned-emblem,.cw-item-image,.cw-target,.cw-deck-tile,.cw-mod-list > span,#deck-suits > span):has(> .boss-cross) { position:relative }
+:where(.item-card,.cw-owned-emblem,.cw-item-image,.cw-target,#deck-suits > span):has(> .boss-cross) { position:relative }
 .boss-cross {
   pointer-events:none; position:absolute; z-index:8; left:50%; top:48%;
   transform:translate(-50%,-50%) rotate(-8deg); display:grid; place-items:center;
@@ -417,7 +417,7 @@ body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
   box-shadow:0 2px 5px #230917b3;
 }
 .playing-card[data-debuffed=true]::after {content:none}
-.cw-deck-tile > .boss-cross,#deck-suits > span > .boss-cross,.cw-mod-list .boss-cross {
+#deck-suits > span > .boss-cross {
   left:auto; right:-2px; top:-3px; transform:none; font-size:12px; border-width:1px;
 }
 .boss-partial {

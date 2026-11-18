@@ -316,48 +316,121 @@
         }
         clearTimeout(frameTimers.get(frame));
         frame.setAttribute('data-proc-active','');
-        frameTimers.set(frame,setTimeout(()=>frame.removeAttribute('data-proc-active'),480/speed));
+        frame.setAttribute('data-proc-event',fact.event);
+        if(id==='alabaster_finch' && fact.mult)frame.setAttribute('data-proc-solo','');
+        if(id==='lattice_toad')frame.setAttribute('data-proc-ranks',fact.contributors.map((_,i)=>i+1).join(' '));
+        if(id==='veil_firefly')frame.setAttribute('data-proc-suits',fact.contributors.map(entry=>entry.suit).join(' '));
+        frameTimers.set(frame,setTimeout(()=>{
+          for(const attr of ['data-proc-active','data-proc-event','data-proc-solo','data-proc-ranks','data-proc-suits'])frame.removeAttribute(attr);
+        },480/speed));
       }
     }
     return drew;
+  }
+  const marketProcEvents={
+    brass_lantern:['shop'], mire_printer:['sell'], silken_broker:['packOpen','cast'],
+    granite_tinker:['packOpen'], shopbell_sprite:['shop','reroll'], vault_maggot:['reroll']
+  };
+  function visibleProcTarget(node){
+    if(!node)return null;
+    const rect=node.getBoundingClientRect();
+    if(!rect.width || !rect.height)return null;
+    const body=node.closest?.('.cw-body')?.getBoundingClientRect();
+    const x=rect.left+rect.width/2, y=rect.top+rect.height/2;
+    return x>=Math.max(0,body?.left ?? 0) && x<=Math.min(window.innerWidth ?? Infinity,body?.right ?? Infinity)
+      && y>=Math.max(0,body?.top ?? 0) && y<=Math.min(window.innerHeight ?? Infinity,body?.bottom ?? Infinity) ? node : null;
+  }
+  function growthText(growth){
+    const value=Number(growth.after.toFixed(2));
+    if(growth.stat==='xmult')return '×'+value+' Mult';
+    return '+'+value+(growth.stat==='chips'?' Chips':' Mult');
+  }
+  function procWitness(rack, item, label, value, stat){
+    const tile=document.createElement('div');
+    tile.className='familiar-proc-witness';
+    const icon=document.createElement('span');
+    if(item){
+      icon.className='proc-witness-portrait';
+      const portrait=document.createElement('img');
+      portrait.src=CWContent.portrait(item.art);
+      portrait.alt='';
+      icon.append(portrait);
+      if(item.kind==='familiar'){
+        icon.setAttribute('data-familiar-frame',CWMarket.splitVariant(item.id).id);
+        if(item.edition)icon.setAttribute('data-familiar-edition',item.edition);
+        icon.insertAdjacentHTML('beforeend',CWFamiliarFrames.ornament(item));
+      }
+    }else icon.className='proc-witness-purse';
+    const caption=document.createElement('span');
+    caption.textContent=label;
+    if(value){
+      const amount=document.createElement('strong');
+      amount.setAttribute('data-stat',stat);
+      amount.textContent=value;
+      caption.append(amount);
+    }
+    tile.append(icon,caption);
+    rack.append(tile);
+    return tile;
   }
   async function playFamiliarEvents(card, discardCards=[]) {
     const events=CW.drainFamiliarEvents(run);
     if(!events.length)return;
     const panel=document.querySelector('.cw-backdrop:not([hidden]) .cw-dialog');
     const messages=[];
-    let discardBeat=false;
+    let discardBeat=false, marketBeat=0, rack, wallet;
+    function witness(...args){
+      if(!rack){
+        rack=document.createElement('div');
+        rack.className='familiar-proc-witnesses';
+        rack.setAttribute('aria-hidden','true');
+        panel.querySelector('.familiar-proc-witnesses')?.remove();
+        panel.append(rack);
+        setTimeout(()=>rack.remove(),Math.max(1100,1500/prefs.speed));
+      }
+      return procWitness(rack,...args);
+    }
     for(const fact of events){
       const id=CWMarket.splitVariant(fact.familiarId).id;
       const foxCast=id==='fox_in_ink' && fact.event==='cast' && fact.growth;
-      if(!foxCast && !(fact.event==='discard' && discardCards.length))continue;
+      const market=marketProcEvents[id]?.includes(fact.event);
+      if(!market && !foxCast && !(fact.event==='discard' && discardCards.length))continue;
       let source=familiarSlot(fact.familiarId,panel);
       const spell=fact.created?.find(entry=>entry.category==='consumables');
-      const consumable=spell && (panel ? panel.querySelector('[data-owned-category="consumables"][data-slot="'+spell.index+'"]') : $('spells').children[spell.index]);
-      // A pack can stay open after a cast and hide the entire familiar rail.
-      const bounds=source?.getBoundingClientRect();
-      const railVisible=bounds?.width && bounds.bottom>0 && bounds.top<window.innerHeight;
-      if(!railVisible && foxCast && panel){
+      let consumable=spell && (panel ? panel.querySelector('[data-owned-category="consumables"][data-slot="'+spell.index+'"]') : $('spells').children[spell.index]);
+      let money=panel ? null : $('table-purse');
+      if(panel && !visibleProcTarget(source)){
         const item=CW.ownedItem(run,'familiars',run.familiars.indexOf(fact.familiarId));
         if(!item)continue;
-        document.querySelector('.familiar-proc-witness')?.remove();
-        source=document.createElement('div');
-        source.className='familiar-proc-witness';
-        source.setAttribute('aria-hidden','true');
-        const portrait=document.createElement('img');
-        portrait.src=CWContent.portrait(item.art);
-        portrait.alt='';
-        source.append(portrait,item.name+'  +'+fact.growth.after+' Mult');
-        document.body.append(source);
-        setTimeout(()=>source.remove(),Math.max(700,1200/prefs.speed));
+        const value=fact.growth ? growthText(fact.growth) : fact.money ? '+$'+fact.money : '';
+        source=witness(item,item.name,value,fact.growth ? (fact.growth.stat==='chips'?'chips':'mult') : 'money');
       }
-      if(!familiarCue(fact,{source,card,cards:discardCards,consumable,money:$('table-purse')}))continue;
-      audio.event((fact.charge?'charge-':'proc-')+id);
+      if(panel && fact.money){
+        wallet ||= visibleProcTarget(panel.querySelector('.pack-purse')) || visibleProcTarget(panel.querySelector('.cw-purse'))
+          || witness(null,'Coin purse','$'+run.money.toLocaleString(),'money');
+        money=wallet;
+      }
+      if(panel && spell && !visibleProcTarget(consumable)){
+        const created=CW.item(spell.id);
+        consumable=witness(created,created.name);
+      }
+      const startDelay=market && !prefs.reducedMotion ? Math.min(240,marketBeat*110) : 0;
+      if(!familiarCue(fact,{source,card,cards:discardCards,consumable,money,startDelay}))continue;
+      if(market)marketBeat++;
+      let soundStep=0;
+      if(market){
+        const double=(id==='brass_lantern' && spell) || (id==='silken_broker' && fact.event==='packOpen')
+          || (id==='shopbell_sprite' && fact.event==='reroll');
+        soundStep=double ? 2 : 1;
+      }
+      const sound=(fact.charge?'charge-':'proc-')+id;
+      if(startDelay)setTimeout(()=>{if(source?.isConnected)audio.event(sound,soundStep);},startDelay/prefs.speed);
+      else audio.event(sound,soundStep);
       const name=CW.item(fact.familiarId).name;
+      if(fact.money)messages.push(name+' earned $'+fact.money+'.');
       if(spell)messages.push(name+' created '+CW.item(spell.id).name+'.');
-      else if(foxCast)messages.push(name+' grew to +'+fact.growth.after+' Mult.');
-      else if(fact.money)messages.push(name+' earned $'+fact.money+'.');
-      else if(fact.charge){
+      if(fact.growth)messages.push(name+' grew to '+growthText(fact.growth)+'.');
+      if(fact.charge){
         const amount=Number(fact.charge.after.toFixed(2));
         const next=fact.charge.stat==='retriggers' ? 'a repeat' :
           fact.charge.stat==='chips' ? '+'+amount+' Chips' : '×'+amount+' Mult';
@@ -369,7 +442,10 @@
       }
     }
     if(discardBeat)await wait(200);
-    if(messages.length)$('announce').textContent=(discardCards.length ? $('announce').textContent+' ' : '')+messages.join(' ');
+    if(messages.length){
+      const live=panel?.querySelector('.cw-familiar-announcement') || $('announce');
+      live.textContent=(discardCards.length ? live.textContent+' ' : '')+messages.join(' ');
+    }
   }
   function animateCards(ids,discarding){
     const lane = $('cast-prompt').querySelector('.cw-fx-lane');
@@ -503,6 +579,8 @@
       title.textContent=result.name;
       ghosts=animateCards(ids,false);
       const scoring=new Set(result.scoring);
+      const cardNodes=new Map([...$('hand').children].map(node=>[node.dataset.card,node]));
+      for(const {id,ghost} of ghosts)cardNodes.set(id,ghost);
       for(const card of ghosts){if(!scoring.has(card.id))card.ghost.classList.add('cw-fx-quiet');}
       const steps=result.steps;
       let peak=-1, importance=0;
@@ -531,22 +609,48 @@
       call.textContent=result.blocked?steps[0]?.label:'Base hand';
       const shine=[{filter:'brightness(1)'},{filter:'brightness(1.22) drop-shadow(0 0 4px #edc174)',offset:.29},{filter:'brightness(1)'}];
       const featured=new Set();
+      const bridgedRanks=new Set();
+      const creditTimers=new WeakMap();
       function showProc(step,still){
         const fact=step.fact;
         if(!fact?.familiarId)return false;
         const first=!featured.has(fact.familiarId);
-        if(!first && still)return false;
-        const card=ghosts.find(c=>c.id===fact.cardId)?.ghost ||
-          [...$('hand').children].find(el=>el.dataset.card===String(fact.cardId));
+        const id=CWMarket.splitVariant(fact.familiarId).id;
+        const matchingRank=id==='moss_badger' && fact.contributors?.[0]?.rank;
+        const groupKey=matchingRank && fact.familiarId+'-'+matchingRank;
+        const newGroup=Boolean(groupKey && !bridgedRanks.has(groupKey));
+        if(!first && still && !newGroup)return false;
+        const card=cardNodes.get(fact.cardId);
+        const cards=fact.contributors?.map(entry=>cardNodes.get(entry.cardId));
         const face=fact.retriggers && currentHand.find(c=>c.id===fact.cardId);
+        let holdMs=260;
         const triggered=familiarCue(fact,{
-          source:familiarSlot(fact.familiarId), card,
+          source:familiarSlot(fact.familiarId), card,cards,newGroup,
+          // Let the last scoop or wave reach the counter before showing its new total.
+          onTiming:duration=>{
+            if((cards && !fact.copiedFrom) || id==='alabaster_finch')holdMs=Math.max(260,Math.min(750,duration-120));
+          },
           cardFace:face && {rank:face.rank,suit:face.suit,stone:face.enhancement==='stone'},
           neighbor:fact.copiedFrom && familiarSlot(fact.copiedFrom),
           chips:chipText,mult:multText,money:$('table-purse')
         },prefs.speed*(first?1:2),still);
-        if(triggered)featured.add(fact.familiarId);
-        return triggered;
+        if(triggered){
+          featured.add(fact.familiarId);
+          if(newGroup)bridgedRanks.add(groupKey);
+          if(cards && !fact.copiedFrom){
+            // Brighten the actual cards supplying this reward during its cue.
+            const credited=new Set(cards);
+            if(matchingRank)credited.add(card);
+            for(const node of credited){
+              if(!node)continue;
+              clearTimeout(creditTimers.get(node));
+              node.setAttribute('data-proc-credit',fact.mult?'mult':'chips');
+              const hold=first?Math.max(520,holdMs):300;
+              creditTimers.set(node,setTimeout(()=>node.removeAttribute('data-proc-credit'),fxTime(hold)));
+            }
+          }
+        }
+        return triggered && {id,first,holdMs};
       }
       if(moving){
         await wait(180);
@@ -554,11 +658,10 @@
         let wallet=walletBefore;
         for(let i=1;i<steps.length;i++){
           const step=steps[i],last=steps[i-1],strongest=i===peak;
-          const first=!featured.has(step.familiarId);
           const signature=showProc(step,false);
-          if(signature && first){
-            audio.event('proc-'+CWMarket.splitVariant(step.familiarId).id);
-            await wait(260);
+          if(signature && signature.first){
+            audio.event('proc-'+signature.id,Number(signature.id==='alabaster_finch' && Boolean(step.fact.mult)));
+            await wait(signature.holdMs);
           }
           count(step.chips??0,step.mult??0);
           if(step.fact?.money){wallet+=step.fact.money;$('money').textContent='$'+num(wallet);}
