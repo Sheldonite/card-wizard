@@ -215,7 +215,10 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 #deck-suits [data-suit="H"] svg,#deck-suits [data-suit="D"] svg {color:#ff919b}
 #hand [data-card],#familiars [data-item],.companion-card {touch-action:none;user-select:none;cursor:grab}
 #hand .lifted,#familiars .lifted,.companion-slots .lifted {position:relative;z-index:30;cursor:grabbing;transition:none;filter:drop-shadow(0 8px 5px #120b1b88)}
-.drop-target {outline:3px dashed #ffdc8b!important;outline-offset:2px}
+#hand .reorder-preview,#familiars .reorder-preview,.companion-slots .reorder-preview {transition:translate .16s ease-out,transform .16s ease-out;pointer-events:none}
+@media (prefers-reduced-motion:reduce) {
+  #hand .reorder-preview,#familiars .reorder-preview,.companion-slots .reorder-preview {transition:none}
+}
 .cw-dialog[data-page="pack"] .companion-rail {position:sticky;top:0;z-index:3}
 .pack-odds {display:inline-flex;align-items:center;gap:.3em;flex-wrap:wrap}
 .pack-odds i {color:#e9bd78}
@@ -228,10 +231,23 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 }
 .playing-card[data-enhancement=bonus] {--edge:#177cb6;--paper:#a8e4ff;--engraving:repeating-radial-gradient(circle at 110% 110%,transparent 0 7px,#147ea540 8px 10px)}
 .playing-card[data-enhancement=mult] {--edge:#a42d52;--paper:#ffc0c2;--engraving:repeating-linear-gradient(118deg,transparent 0 9px,#cb3a623c 9px 12px,transparent 13px 17px)}
-.playing-card[data-enhancement=glass] {--edge:#09839a;--paper:#ddffff;--engraving:conic-gradient(from 16deg at 62% 59%,#71c7df 0 14%,#eaffff 14% 30%,#99dded 30% 51%,#efffff 51% 67%,#a7dae8 67% 83%,#d6faff 83%)}
-.playing-card[data-enhancement=steel] {--edge:#405469;--paper:#cbd8e2;--engraving:linear-gradient(135deg,#8195a6,#f5faff 28%,#a5b7c5 30%,#eff8ff 59%,#8da1b2 61%,#d5e3ed)}
+.playing-card[data-enhancement=glass] {
+  --edge:#167b78; --paper:#b5f3e9;
+  background-image:url("assets/glass-pane.svg"); background-size:100% 100%;
+}
+.playing-card[data-enhancement=steel] {
+  --edge:#41494d; --paper:#b6babb;
+  background-image:url("assets/steel-plate.svg"); background-size:100% 100%;
+}
 .playing-card[data-enhancement=stone] {--edge:#645166;--paper:#c6b6c7;--engraving:conic-gradient(from 40deg at 40% 58%,#c2adbc 0 23%,#a18fa4 23% 43%,#d8ccd6 43% 62%,#b6a6ba 62% 80%,#e9dce6 80%)}
-.playing-card[data-enhancement=wild] {--edge:#8239a4;--paper:#f0c7ff;--engraving:conic-gradient(at 60% 55%,#e8abff,#ffdc96,#b9f0dc,#a8dfff,#e8abff)}
+.playing-card[data-enhancement=wild] {
+  --edge:#365b39;
+  --paper:#eee9c8;
+  background-image:url("assets/wild-vines.svg"),
+    radial-gradient(ellipse at 46% 41%,#fff8de 15%,#f3f0cf 57%,#c8d7a8 87%,#91b288);
+  background-size:100% 100%;
+  background-repeat:no-repeat;
+}
 .playing-card[data-enhancement=gold] {--edge:#956115;--paper:#ffdf84;--engraving:repeating-linear-gradient(135deg,#efbf57 0 12%,#fff0aa 18%,#ffe398 25%,#efbf57 29%)}
 .playing-card[data-enhancement=lucky] {--edge:#23694f;--paper:#abe8b6;--engraving:repeating-conic-gradient(from 45deg,#36885e28 0 25%,transparent 0 50%);background-size:auto,16px 16px}
 .playing-card .card-enhance {display:flex;align-items:center;gap:2px;position:absolute;bottom:4%;left:3%;max-width:75%;padding:2px 3px;border-radius:3px;color:white;background:var(--edge);font:bold clamp(7px,.58vw,10px)/1 var(--mono);text-transform:uppercase;box-shadow:0 1px 2px #24122a70;pointer-events:none}
@@ -240,7 +256,21 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .playing-card .wax-seal svg {stroke-width:2.3}
 .playing-card[data-debuffed=true]::after {top:36%;right:4%;z-index:2}
 .edition-frame {position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--finish);padding:4px;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;background-size:200% 200%;box-sizing:border-box}
-[data-edition=foil] {--finish:repeating-linear-gradient(120deg,#385874,#c8f3ff 12%,white 17%,#507692 24%)}
+[data-edition=foil] {
+  --finish:repeating-linear-gradient(118deg,#743d19 0 5%,#f8c461 9%,#fff5b7 12%,#b56b34 16%,#edada7 19%,#ffe6a3 23%);
+}
+.playing-card[data-edition=foil][data-enhanced=false] {
+  background-image:repeating-linear-gradient(122deg,#fff0cd 0 15%,#f6d39a 19%,#fff6e4 24%,#f4dcc7 32%);
+}
+.playing-card[data-edition=foil] .edition-frame {padding:3px}
+.playing-card .foil-stamp {
+  position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:24%; height:15%; display:grid; place-items:center; pointer-events:none;
+  clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%);
+  color:#6c3717; background:linear-gradient(110deg,#bf813f,#ffe9a0 48%,#df9e46);
+}
+.foil-stamp svg {width:56%; height:72%; align-self:start; fill:#fff1b7}
+
 [data-edition=holographic] {--finish:repeating-linear-gradient(45deg,#8a3eb5,#ff9df2 8%,#a9ffff 13%,#7663bc 18%)}
 [data-edition=polychrome] {--finish:linear-gradient(120deg,#eb4c7a,#ffc44e,#64e69d,#51d4ff,#8b72ff,#ff6cc1,#eb4c7a)}
 .playing-card:is(:hover,[aria-pressed=true]) .edition-frame {animation:card-iridescence 2.6s ease-in-out infinite alternate}
@@ -397,3 +427,7 @@ body.still .familiar-burst {display:none}
 @keyframes score-sparks {0%{transform:translateY(10%) scale(.7);opacity:.15}40%{opacity:1}100%{transform:translateY(-20%) scale(1.12);opacity:0}}
 body.still .blind-overdrive ::before,body.still .blind-overdrive ::after {animation:none}
 @media(prefers-reduced-motion:reduce){.blind-overdrive ::before,.blind-overdrive ::after{animation:none}}
+
+.victory-fireworks {position:fixed;inset:0;width:100%;height:100%;z-index:140;pointer-events:none;}
+body:not(.still) .blind-overdrive :is(.cw-fx-chips,.cw-fx-mult,.chip-comp,.mult-comp)::before {opacity:.24;animation:none}
+@media(prefers-reduced-motion:reduce){.victory-fireworks{display:none}}

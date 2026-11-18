@@ -157,3 +157,25 @@
   .victory-sky .astrolabe, .victory-sky .astrolabe > i { animation: none; }
 }
 .still .victory-sky .astrolabe, .still .victory-sky .astrolabe > i { animation: none; }
+/* The score opens a brass-rimmed aperture that closes on the rewards dial. */
+.victory-portal {
+  position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:100000;
+}
+.portal-disc {
+  position:absolute; top:0; left:0; width:156vmax; aspect-ratio:1; border-radius:50%;
+  background:radial-gradient(circle,#f8d596 0 .45%,#98668c 1%,#593c68 7%,#2a1d40 27%,#191325 59%,#442746 65%,#bd8856 69%,#ffe6aa 70%,#805137 71%);
+  box-shadow:0 0 1vmax #f3c18399; will-change:transform,opacity;
+}
+.portal-orbit {
+  position:absolute; inset:2%; border-radius:50%;
+  background:repeating-conic-gradient(from 4deg,#ffe7ab 0 1deg,transparent 1deg 9deg);
+  mask-image:radial-gradient(circle closest-side,transparent 92%,black 92.3% 96%,transparent 96.3%);
+}
+.portal-disc::before,.portal-disc::after {
+  content:""; position:absolute; inset:8%; border-radius:50%; border:.26vmax double #dab485;
+}
+.portal-disc::after {inset:19%; border:.11vmax dashed #ae8d9c; opacity:.68}
+.portal-star {
+  position:absolute; inset:31%; background:linear-gradient(115deg,#fff5bc,#bc8752 44%,#fff2be 50%,#dba8a5);
+  clip-path:polygon(50% 0,55% 38%,76% 24%,62% 45%,100% 50%,62% 55%,76% 76%,55% 62%,50% 100%,45% 62%,24% 76%,38% 55%,0 50%,38% 45%,24% 24%,45% 38%);
+}
