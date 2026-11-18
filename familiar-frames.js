@@ -2,6 +2,38 @@
 (() => {
   'use strict';
   const frames = {
+    kettle_hag: `
+      <path d="M4 137V23Q4 5 27 5H71Q96 6 96 26V136Z" fill="none" stroke="#383438" stroke-width="6"/><path d="M6 129V23Q6 7 29 7H71Q93 8 93 26" fill="none" stroke="#948b78" stroke-width="1.8"/>
+      <path d="M72 5v7q0 8 5 7 4-1 3-5M63 28q5-8 12-10 10 1 16 10" fill="none" stroke="#b9a386" stroke-width="2"/>
+      <path d="M61 27h31l-2 11q-3 7-12 7-12 0-15-6Z" fill="#b96842" stroke="#56392f" stroke-width="2"/><path d="M65 31q2 10 8 10" fill="none" stroke="#f3bb79" stroke-width="2"/>
+      <g class="frame-kettle-lid"><path d="M59 27q3-4 12-5v-2h8v2q11 1 15 5Z" fill="#d59060" stroke="#56392f" stroke-width="1.5"/><path d="M72 20q3-4 7 0" fill="none" stroke="#e2ab7b" stroke-width="2"/></g>
+      <path d="m4 108 6-4M94 81l-5 4M92 94l5-4" fill="none" stroke="#b68e61" stroke-width="2.5"/>`,
+    needle_crow: `
+      <rect x="3" y="4" width="94" height="132" rx="8" fill="none" stroke="#3e394c" stroke-width="5"/>
+      <path d="M3 99Q1 66 2 47q3-21 12-31-2 16-4 24l-2 9 3-2-5 29Z" fill="#9292a2" stroke="#454051"/><path d="M4 90q0-29 8-69" fill="none" stroke="#dbd9d7"/>
+      <path d="M67 7q13-10 27 4l-2 10q-15 4-29-9Z" fill="#3b2d40" stroke="#b7a8b8"/><path d="m67 9 4-4m1 7 5-6m2 9 4-7m2 7 4-5" stroke="#855375"/>
+      <g fill="none" stroke="#dcd6ce" stroke-width="1.6"><path d="m79 12 11-11m-6 14 12 9M6 129l16 5M90 129l3-24"/><ellipse cx="92" cy="109" rx="1" ry="2.4"/></g>
+      <path class="frame-needle-thread" d="M90 110q-10-7-5-13t7 2q6 11-2 20t-10 15q-4 3-13 1" fill="none" stroke="#e56a7b" stroke-width="2"/>`,
+    amber_magpie: `
+      <path d="M3 135V19L14 5H80L96 16V132L88 137H11Z" fill="none" stroke="#76502d" stroke-width="6"/><path d="M6 129V20L16 7H78L93 18V127" fill="none" stroke="#f1c575" stroke-width="2"/>
+      <g class="frame-magpie-clasp"><path d="M39 4q13-3 22 0l8 9q-10-2-20 6l5-9q-8 1-15-6Z" fill="#e8b862" stroke="#765536" stroke-width="1.7"/><path d="M55 9 67 11l-10-5" fill="#ffe6a5"/></g>
+      <path d="M10 123q5-7 13-4l4 8-7 7-10-3Z" fill="#e5a346" stroke="#944f2b" stroke-width="2"/><path d="m13 124 8-3 3 6-5 4Z" fill="#ffcb71"/>
+      <path d="M37 131h32l-6 5H40Z" fill="#3b2728" stroke="#d5a360" stroke-width="1.5"/>`,
+    marmalade_bat: `
+      <rect x="3" y="4" width="94" height="132" rx="10" fill="none" stroke="#774736" stroke-width="5"/>
+      <path d="M4 97q4-36 0-69 7 14 14 13-6 11-4 18-7 4-10 38Zm92 0q-4-36 0-69-7 14-14 13 6 11 4 18 7 4 10 38Z" fill="#bb753b" stroke="#724638" stroke-width="1.4"/>
+      <path d="M4 33q3 22 4 33m88-33q-3 22-4 33" stroke="#ebad5d" fill="none"/>
+      <g class="frame-jam-jar"><path d="M73 5h17v6l3 3v16q-2 4-12 4t-10-4V14l3-3Z" fill="#f7d7a0" stroke="#845338" stroke-width="1.5"/><path d="M73 19q5 2 9 0t8-1v11q-7 4-17 0Z" fill="#dd8a2f"/><path d="M72 4h19v5H72Z" fill="#ba7750" stroke="#694335"/><path d="M75 15v11" stroke="#fff2c9" stroke-width="2"/></g>`,
+    kiln_crawler: `
+      <path d="M3 136V13Q6 5 14 4H87L97 15V136Z" fill="none" stroke="#794333" stroke-width="7"/>
+      <path d="M4 16 13 7h70l10 10M7 15v114M94 17v112" fill="none" stroke="#d69a6e" stroke-width="3"/>
+      <path d="M2 22h9m-9 13h9m-9 13h9m-9 13h9m-9 13h9m-9 13h9m-9 13h9" stroke="#643b32" stroke-width="2"/>
+      <path class="frame-kiln-mouth" d="M66 20V14Q68 2 80 2q13 0 15 14v5Z" fill="#9d5639" stroke="#613b32" stroke-width="1.5"/><path d="M71 17q0-11 9-11 10 0 10 11Z" fill="#452a2b" stroke="#e0a675"/>
+      <path d="m75 4 2 4m8-5-2 5m9 3-4 2" stroke="#593b34"/>`,
+    dusk_undertaker: `
+      <path d="M3 137V22L21 4h58l18 20v112Z" fill="none" stroke="#4b4659" stroke-width="6"/><path d="M6 120V24L24 7h53l17 18v95" fill="none" stroke="#aaa0ab" stroke-width="2"/>
+      <path d="M2 128q26-7 48 0t47-1v13H2Z" fill="#533b40" stroke="#7a6064"/><path d="M3 135q21-6 44-2t49 0" fill="none" stroke="#302830" stroke-width="2"/>
+      <g class="frame-dusk-spade" transform="rotate(27 79 11)"><path d="M78 0v16" stroke="#c89e79" stroke-width="3"/><path d="M72 14h13l-1 7-6 6-5-7Z" fill="#96909b" stroke="#4b4659"/><path d="m77 16 1 8" stroke="#d2c4bd"/></g>`,
     daybreak_minnow: `
       <g fill="none" stroke="#1b5265" stroke-width="8"><path d="M48 8Q5-4 6 24T5 82Q0 111 10 129Q23 140 50 135Q95 144 95 115L92 77Q99 46 94 20Q91 4 52 8Z"/></g>
       <path d="M48 8Q5-4 6 24T5 82Q0 111 10 129Q23 140 50 135Q95 144 95 115L92 77Q99 46 94 20Q91 4 52 8Z" fill="none" stroke="#71cbc9" stroke-width="4"/>
@@ -51,7 +83,8 @@
   }
   function attribute(item) {
     const id = baseId(item);
-    return id ? ' data-familiar-frame="' + id + '"' : '';
+    const frame = id ? ' data-familiar-frame="' + id + '"' : '';
+    return frame + (item?.kind === 'familiar' && item.edition === 'negative' ? ' data-familiar-edition="negative"' : '');
   }
   function inkGauge(item) {
     const filled = Math.min(12, Math.max(0, (Number(item.stackAmount) || 4) - 4));
@@ -59,9 +92,32 @@
       '<rect class="frame-ink-mark' + (i < filled ? ' charged' : '') + '" x="2.3" y="' + (89 - i * 4) + '" width="5.4" height="2.6" rx=".6"/>'
     ).join('');
   }
+  function chargeMarks(id, item) {
+    if (id === 'fox_in_ink') return inkGauge(item);
+    if (id === 'kettle_hag') return item.charge?.value === 1 ? '<path d="M63 30h26l-2 8q-4 4-10 4t-11-4Z" fill="#8de5c1" stroke="#dffff1" stroke-width="1.1"/><path class="frame-steam" d="M65 24q-5-4-1-8t-1-8m6 12q-3-3 0-6" fill="none" stroke="#d7f5cd" stroke-width="2"/><circle cx="83" cy="35" r="2.3" fill="#effff1"/>' : '';
+    if (id === 'dusk_undertaker') {
+      const charge = Math.round(((item.charge?.value ?? 1) - 1) / .15);
+      // The lower edge sits behind card names in the table row. Set the niches into both side rails.
+      return Array.from({length:10}, (_, i) =>
+        '<ellipse cx="' + (i < 5 ? 4.6 : 95.4) + '" cy="' + (93 - (i % 5)*9) + '" rx="3.3" ry="3" fill="' + (i < charge ? '#ffb66c' : '#30282c') + '" stroke="' + (i < charge ? '#ffdaa0' : '#847079') + '" stroke-width="1"/>'
+      ).join('');
+    }
+    if (id === 'kiln_crawler') {
+      const fuel = Math.max(0, Math.round(((item.charge?.value ?? 20) - 20) / 10));
+      const pellets = Array.from({length:Math.min(6, fuel)}, (_, i) =>
+        '<circle cx="' + (75 + 4*(i%3)) + '" cy="' + (15 - 3.7*Math.floor(i/3)) + '" r="2.2" fill="#ff9b55"/>').join('');
+      return fuel > 6 ? pellets + '<text x="80" y="30" text-anchor="middle" fill="#ffe29f" stroke="#673b30" stroke-width="1" paint-order="stroke" font-size="10" font-weight="bold">' + fuel + '</text>' : pellets;
+    }
+    return '';
+  }
   function ornament(item) {
     const id = baseId(item);
-    return id ? '<svg class="cw-familiar-trim" aria-hidden="true" focusable="false" viewBox="0 0 100 140" preserveAspectRatio="none">' + frames[id] + (id === 'fox_in_ink' ? inkGauge(item) : '') + '</svg>' : '';
+    const trim = id ? '<svg class="cw-familiar-trim" aria-hidden="true" focusable="false" viewBox="0 0 100 140" preserveAspectRatio="none">' + frames[id] + chargeMarks(id, item) + '</svg>' : '';
+    if (item?.kind !== 'familiar' || item.edition !== 'negative') return trim;
+    return trim + '<svg class="familiar-eclipse-seal" viewBox="0 0 40 20" aria-hidden="true" focusable="false">' +
+      '<path d="M1 5 5 1h30l4 4v10l-4 4H5l-4-4Z" fill="#17182e" stroke="#c4f8fb" stroke-width="1.5"/>' +
+      '<path d="M12.8 3.9a6.1 6.1 0 1 0 3.1 9.6 5.2 5.2 0 0 1-3.1-9.6Z" fill="#b3f9ff"/><path d="m15 4 .8 1.8 1.9.7-1.9.7L15 9l-.7-1.8-1.8-.7 1.8-.7Z" fill="#e8ccff"/>' +
+      '<path d="M20 10h7m-3.5-3.5v7m5-5.5 3.5-2v9m-3 0h6" fill="none" stroke="#fff0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
   window.CWFamiliarFrames = {attribute, ornament};
 })();

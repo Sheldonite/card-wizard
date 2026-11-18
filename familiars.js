@@ -333,11 +333,8 @@
       ...growth("cast", () => true, 0.2, 3, "xmult", 1.5),
       blindStart: () => ({ generate: "spell" })
     }],
-    ["Ravel the Weaver", "moth", "Copy your left neighbor's scoring and held-card abilities, then your right neighbor's end-of-hand scoring ability.", {
-      scoredCard: () => ({ copy: "previous" }),
-      heldCard: () => ({ copy: "previous" }),
-      hand: () => ({ copy: "next" })
-    }],
+    ["Ravel the Weaver", "moth", "Every scoring card scores twice.", "scoredCard",
+      when(c => !c.retrigger, { retriggers: 1 })],
     ["Nacre, Sea of Stars", "dragon", "Each scoring card adds its hand level to Mult, then gives x1.15 Mult. Win a blind to conjure a Constellation if there is room.", {
       scoredCard: c => ({ mult: c.level, xmult: 1.15 }),
       roundEnd: () => ({ generate: "star" })

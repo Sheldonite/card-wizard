@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="fx.css">
   <link rel="stylesheet" href="score-vessels.css">
   <link rel="stylesheet" href="shop.css">
+  <link rel="stylesheet" href="shop-cat.css">
   <link rel="stylesheet" href="victory-sky.css">
   <link rel="stylesheet" href="victory.css">
   <link rel="stylesheet" href="parlor.css">
@@ -29,6 +30,9 @@
   <script defer src="familiar-frames.js"></script>
   <script defer src="familiar-score-fx.js"></script>
   <script defer src="familiar-magic-fx.js"></script>
+  <script defer src="familiar-retrigger-fx.js"></script>
+  <script defer src="familiar-discard-fx.js"></script>
+  <script defer src="shop-cat.js"></script>
   <script defer src="panels.js"></script>
   <script defer src="table.js"></script>
 </head>
@@ -63,7 +67,7 @@
         <section class="resource-box slab" aria-label="Round resources">
           <div><span><i data-icon="hand"></i>Hands</span><strong id="hands">4</strong></div>
           <div><span><i data-icon="discard"></i>Discards</span><strong id="discards">3</strong></div>
-          <div><span><i data-icon="coin"></i>Money</span><strong id="money">$4</strong></div>
+          <div><span><img id="table-purse" src="assets/moneybag.svg" alt="">Money</span><strong id="money">$4</strong></div>
         </section>
         <div class="run-box slab"><div><span class="micro">Ante</span><strong><b id="ante">1</b><small id="ante-limit"> / 8</small></strong></div><i></i><div><span class="micro">Round</span><strong id="round">1</strong></div></div>
         <button class="run-info" data-action="run"><i data-icon="scroll"></i>Run Info<i data-icon="chevron"></i></button>

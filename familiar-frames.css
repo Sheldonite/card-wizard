@@ -54,3 +54,58 @@
 @keyframes frame-spool {from {stroke-dashoffset:32;}to {stroke-dashoffset:0;}}
 @keyframes frame-dip {45% {transform:translateY(3px) rotate(-8deg);}}
 @keyframes frame-shadow-slip {40% {transform:translateX(4px);fill:#ded5ff;}}
+[data-familiar-frame=kettle_hag] {--frame-edge:#d9a376;--frame-dark:#514237;}
+[data-familiar-frame=needle_crow] {--frame-edge:#c2b4c9;--frame-dark:#3f3447;}
+[data-familiar-frame=amber_magpie] {--frame-edge:#f6cd7d;--frame-dark:#6c4830;}
+[data-familiar-frame=marmalade_bat] {--frame-edge:#eaa55e;--frame-dark:#714535;}
+[data-familiar-frame=kiln_crawler] {--frame-edge:#dfa378;--frame-dark:#643c33;}
+[data-familiar-frame=dusk_undertaker] {--frame-edge:#b6a6ad;--frame-dark:#443b49;}
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) [data-proc-active] .frame-kettle-lid {animation:frame-lid-bounce .34s ease-out;}
+  body:not(.still) [data-proc-active] .frame-needle-thread {stroke-dasharray:7 3;animation:frame-spool .4s linear;}
+  body:not(.still) [data-proc-active] .frame-magpie-clasp {transform-box:fill-box;transform-origin:top right;animation:frame-peck .32s ease-out;}
+  body:not(.still) [data-proc-active] .frame-jam-jar {transform-box:fill-box;transform-origin:top;animation:frame-jam-tip .38s ease-out;}
+  body:not(.still) [data-proc-active] .frame-kiln-mouth {animation:frame-fireglow .35s ease-out;}
+  body:not(.still) [data-proc-active] .frame-dusk-spade {animation:frame-dig .4s ease-out;}
+}
+@keyframes frame-lid-bounce {40% {transform:translateY(-4px);}}
+@keyframes frame-peck {45% {transform:rotate(-12deg) translateY(2px);}}
+@keyframes frame-jam-tip {40% {transform:rotate(12deg);}75% {transform:rotate(-6deg);}}
+@keyframes frame-fireglow {45% {fill:#ffab56;stroke:#ffe099;}}
+@keyframes frame-dig {45% {transform:rotate(37deg) translate(1px,2px);transform-origin:79px 11px;}}
+
+/* Negative familiars use an inverted moon-print portrait. The original frame
+   ornaments, charge marks and text sit above the print. */
+.cw-edition-negative[data-family=familiar] { filter:none; }
+:is(.cw-item-image,.cw-owned-emblem,.item-card)[data-family=familiar]:is(.cw-edition-negative,[data-familiar-edition=negative]) {
+  --ink:#a2faff;
+  --finish-ink:#99eaf4;
+  border-color:#a2faff;
+  background:radial-gradient(ellipse at 33% 24%,#5b5488,#172944 55%,#100d25);
+}
+:is(.cw-item-image,.cw-owned-emblem,.item-card)[data-family=familiar]:is(.cw-edition-negative,[data-familiar-edition=negative]) > img {
+  filter:grayscale(1) invert(1) sepia(.82) saturate(2.4) hue-rotate(143deg) contrast(1.18);
+}
+.familiar-finish.finish-negative {
+  --rim:#b7edff;
+  --glaze:linear-gradient(146deg,#ab8bfa63,transparent 35%,transparent 58%,#7ee9ff52),radial-gradient(ellipse,transparent 46%,#34265265 85%);
+  box-shadow:inset 0 0 0 1px #c3faffaa,inset 0 0 9px #393063;
+}
+.grimoire-card[data-familiar-edition=negative] {
+  --frame-edge:#b0e9f5;
+  --frame-dark:#292740;
+  border-color:#9edee8;
+  background:linear-gradient(132deg,#e9dcff,#3d335c 15%,#232640 46%,#89d4e7 67%,#43325b 75%,#c2e9ff);
+}
+.grimoire-card[data-familiar-edition=negative] .grimoire-name,
+.item-card[data-familiar-edition=negative] > b {
+  z-index:2;color:#effaff;border-color:#a9d5e9;background:linear-gradient(#404062,#20203d);
+}
+.familiar-eclipse-seal {
+  position:absolute;z-index:3;top:3%;left:3%;display:block;
+  width:clamp(23px,40%,46px);height:auto;max-width:65%;
+  filter:drop-shadow(0 1px 2px #100e22);pointer-events:none;
+}
+.item-card[data-familiar-edition=negative] > :is(.item-mark,.type-badge),
+.cw-owned-emblem[data-familiar-edition=negative] > .type-badge { display:none; }
+.pack-negative-label { color:#b0f3fa;font-weight:700;white-space:nowrap; }

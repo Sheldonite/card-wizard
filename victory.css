@@ -108,6 +108,10 @@
 .cw-dialog[data-page="payout"] .cw-primary::after {content:"\2192"; margin-left:12px}
 .cw-dialog[data-page="payout"] .cw-primary:hover:enabled {background:#ffdfa0}
 .cw-dialog[data-page="payout"] .cw-primary {width:100%}
+.market-gift-note {
+  margin:0; text-align:center; color:#b7ebd9;
+  font:600 14px/1.35 var(--ui,system-ui);
+}
 @media(max-width:680px) {
   .cw-dialog[data-page="payout"] {
     --ledger-width:min(100% - 40px,435px);

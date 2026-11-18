@@ -20,3 +20,4 @@
 @media (prefers-reduced-motion:reduce) {
   .familiar-proc-mark > svg {filter:none}
 }
+#table-purse {width:clamp(21px,1.85vw,31px);height:auto;flex:none;}

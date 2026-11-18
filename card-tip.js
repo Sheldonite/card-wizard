@@ -6,10 +6,16 @@
     const playing = Boolean(card.suit && card.rank);
     const name = playing ? (card.enhancement === 'stone' ? 'Stone Card' : (ranks[card.rank] || card.rank)+' of '+suits[card.suit]) : card.name;
     const lines = [name];
+    if (playing && card.tallyChips) lines.push('Witch’s Tally · +'+card.tallyChips+' Chips banked on this card.');
     if (!descriptionVisible && !playing && card.description) lines.push(card.description);
     for (const [field, catalog] of [['enhancement','enhancements'],['edition','editions'],['seal','seals'],['sticker','stickers']]) {
       const effect = root.CWMarket[catalog][card[field]];
-      if (effect) lines.push(effect.name+' — '+effect.description);
+      if (effect) {
+        const description = field === 'edition' && card.edition === 'negative' && card.kind === 'familiar'
+          ? '+1 Familiar slot while equipped. Fits even when your roost is full.'
+          : effect.description;
+        lines.push(effect.name+' - '+description);
+      }
     }
     if (!descriptionVisible && card.perishRounds != null) lines.push(card.perishRounds+' winning blinds remaining.');
     if (debuffed || card.debuffed) lines.push('Debuffed — Effects are inactive.');

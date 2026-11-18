@@ -405,6 +405,45 @@
         tone(fx, 62, now, .13, .044, 'sine', -2, .024);
         tone(fx, 62, now + .12, .145, .024, 'sine', -2, .028);
         break;
+      case 'charge-kettle_hag':
+        tone(fx, 47, now, .073, .049, 'sine', 10, .006);
+        tone(fx, 52, now + .069, .085, .04, 'sine', 12, .006);
+        break;
+      case 'proc-kettle_hag':
+        bell(fx, 75, now, .115, .052);
+        brush(fx, now + .023, .15, .05, 2150, .85);
+        bell(fx, 75, now + .108, .105, .034);
+        break;
+      case 'charge-kiln_crawler':
+        tone(fx, 48, now, .052, .055, 'triangle', -4, .004);
+        brush(fx, now + .033, .11, .042, 1200, 1.1);
+        break;
+      case 'proc-kiln_crawler':
+        tone(fx, 41, now, .155, .074, 'triangle', -5, .006);
+        [66, 71, 69].forEach((note, i) => bell(fx, note, now + .036 + i * .037, .075, .031));
+        break;
+      case 'charge-dusk_undertaker':
+        brush(fx, now, .105, .049, 720, .65);
+        tone(fx, 52, now + .032, .17, .048, 'sine', -8, .022);
+        break;
+      case 'proc-dusk_undertaker':
+        tone(fx, 41, now, .245, .069, 'sine', 7, .031);
+        tone(fx, 53, now + .036, .185, .041, 'triangle', 7, .032);
+        bell(fx, 67, now + .141, .143, .031);
+        break;
+      case 'proc-needle_crow':
+        brush(fx, now, .065, .049, 2630, 1.3);
+        tone(fx, 81, now + .031, .085, .04, 'triangle', -9, .005);
+        break;
+      case 'proc-amber_magpie':
+        tone(fx, 79, now, .062, .045, 'sine', 5, .005);
+        bell(fx, 83, now + .054, .15, .048);
+        break;
+      case 'proc-marmalade_bat':
+        brush(fx, now, .064, .047, 1450, .7);
+        tone(fx, 68, now + .03, .095, .051, 'sine', -12, .012);
+        bell(fx, 76, now + .102, .095, .036);
+        break;
       case 'coin':
         bell(fx, 82+step*2, now, .16, .11);
         bell(fx, 94+step*2, now+.028, .12, .055);

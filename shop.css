@@ -114,24 +114,33 @@
 .moon-shelf h3 { margin:0;color:var(--accent);font:600 clamp(16px,1.5vw,23px)/1.18 Georgia,serif; }
 .cw-dialog[data-page="shop"] .moon-reroll { min-height:27px;padding:3px 9px;border-radius:14px;border-color:#9b79a7;background:#4a3558;font-size:12px;color:#fae9ff; }
 .moon-goods {
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));align-content:start;
-  gap:8px; padding:8px;flex:1;
+  --face-height:clamp(124px,19vh,205px);
+  --face-width:min(100%,calc(var(--face-height) * .75));
+  --step:min(calc(var(--face-width) + 6px),calc((100% - var(--face-width)) / max(1,var(--intervals))));
+  display:grid;grid-template-columns:minmax(0,1fr);align-content:start;
+  padding:15px 12px 19px;flex:1;isolation:isolate;
 }
 .moon-sold {
   min-width:0;border:1px solid #544456;border-radius:6px;background:#241e2d;
 }
 .moon-item {
-  min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:6px 0 8px;
+  grid-area:1/1;position:relative;min-width:0;width:var(--face-width);height:var(--face-height);
+  left:calc((100% - var(--face-width) - var(--intervals) * var(--step)) / 2 + var(--slot) * var(--step));
+}
+.moon-display {position:relative;height:100%;transform:translateY(var(--drop)) rotate(var(--tilt));transform-origin:50% 86%}
+.moon-item:has(:focus-visible) {z-index:1}
+.moon-item:has(:focus-visible) .moon-display {transform:translateY(-4px)}
+@media(hover:hover) {
+  .moon-item:hover {z-index:2}
+  .moon-item:hover .moon-display {transform:translateY(-4px)}
+}
+@media(prefers-reduced-motion:no-preference) {
+  .moon-display {transition:transform .16s ease-out}
 }
 .moon-art {
   display:grid;place-items:center;position:relative;isolation:isolate;
-  width:100%;height:clamp(124px,19vh,205px);padding:6px;
+  width:100%;height:100%;padding:2px;
   color:inherit;background:transparent;border:0;border-radius:6px;
-}
-.moon-art:focus-visible {outline:2px solid #ecc985;outline-offset:-2px;}
-.moon-art:is(:hover,:focus-visible)>* {scale:1.035;}
-@media(prefers-reduced-motion:no-preference) {
-  .moon-art>* {transition:scale .14s ease-out;}
 }
 .moon-art>.cw-item-image[data-family], .moon-art .card-display { 
   width:auto;height:100%;max-width:95%;min-height:0;aspect-ratio:3/4;padding:0;border:0;border-radius:4px;background:none;
@@ -139,16 +148,16 @@
 }
 .moon-art .cw-item-image img { width:100%; height:100%;object-fit:contain;image-rendering:pixelated;display:block; }
 .moon-art .type-badge { display:none; }
-.cw-dialog[data-page="shop"] .moon-buy {
-  display:flex;align-items:center;justify-content:center;gap:5px;max-width:100%;width:auto;padding:5px 13px;
-  min-height:32px;border:1px solid #a28764;border-radius:5px;color:#fff1d4;background:#504033;
-  box-shadow:inset 0 1px #eee0b616,0 2px #120e19;font-size:13px;
-}
-.cw-dialog[data-page="shop"] .moon-buy:hover:enabled { color:#33211c;background:#f1cf89; border-color:#ffe3a4; }
-.cw-dialog[data-page="shop"] .moon-buy:disabled { opacity:1;color:#c9bdcb;border-color:#514452;background:#332b37; font-size:12px; }
-.moon-price { display:inline-flex;align-items:center;gap:3px;font-weight:800;white-space:nowrap;}
-.moon-sold {display:grid;align-content:center;justify-items:center;min-height:158px;gap:8px;color:#c3acc4;border-style:dashed;font-family:Georgia,serif;}
-.moon-sold span {font-size:35px;color:#8b728d;}
+.moon-purchase {position:absolute;inset:0;width:100%;height:100%;background:transparent;border:0;border-radius:8px;padding:0}
+.moon-purchase[aria-disabled="true"] {cursor:default}
+.moon-display:has(.moon-purchase[aria-disabled="true"]) .moon-art {filter:saturate(.72)}
+.moon-price,.moon-cast {position:absolute;line-height:1.15;border-radius:5px;white-space:nowrap;box-shadow:0 2px 4px #140d20ad}
+.moon-price {top:4%;left:1%;padding:4px 7px;border:1px solid #c5a266;background:#392a2b;font:800 13px var(--sans)}
+.moon-purchase[aria-disabled="true"] .moon-price {background:#302a34;border-color:#756876}
+.moon-purchase:is(:hover,:focus-visible):not([aria-disabled]) .moon-price {background:#563b29;border-color:#ffe2a4}
+.moon-cast {bottom:3%;left:50%;transform:translateX(-50%);min-height:26px;padding:2px 7px;border:1px solid #bca4ca;background:#352540;color:#f4e4ff;font:700 12px var(--sans)}
+.moon-vouchers .moon-price {top:24%}
+.moon-sold {display:grid;place-items:center;min-height:var(--face-height);color:#c3acc4;border-style:dashed;font-family:Georgia,serif;}
 /* Crimped foil booster wrappers and the merchant's stamped voucher. */
 .moon-parcel {
   --foil:#4a627b;--flash:#aacabf;
@@ -184,14 +193,9 @@
 }
 .cw-dialog[data-page="shop"] .cw-footer .cw-btn {border-color:#705969;background:#3b3043;color:#e9dce7;min-height:34px;padding:6px 12px;}
 .cw-dialog[data-page="shop"] .cw-footer .moon-next {margin-left:auto;padding-inline:20px;background:#efd099;color:#372620;border-color:#f4deb2;}
-@media (min-width:1081px) {
-  .moon-stock .moon-goods,.moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
-}
 @media(max-width:1080px) {
   .moon-shelves {grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
   .moon-stock {grid-column:1/-1;}
-  .moon-stock .moon-goods {grid-template-columns:repeat(auto-fit,minmax(min(100%,195px),1fr));}
-  .moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
   .moon-roost {margin-bottom:10px;}
 }
 @media(max-width:650px) {
@@ -211,10 +215,10 @@
   .moon-roost .companion-effect b {font-size:14px;}
   .moon-shelves {grid-template-columns:1fr;gap:9px;}
   .moon-stock {grid-column:auto;}
-  .moon-stock .moon-goods,.moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
-  .moon-goods {gap:5px;padding:5px;}
+  .moon-goods {padding:12px 9px 15px;}
   .moon-shelf>header {min-height:34px;}
   .moon-vouchers .moon-warrant {height:45px;}
+  .moon-vouchers .moon-goods {--face-height:70px;--face-width:min(100%,125px)}
   .moon-vouchers .moon-warrant i {font-size:10px;}
   .cw-backdrop .cw-dialog[data-page="shop"] .cw-footer {padding:7px;gap:4px;}
   .cw-dialog[data-page="shop"] .cw-footer .cw-btn {padding:5px 7px;font-size:12px;}
@@ -250,16 +254,21 @@
 }
 .moon-roost .moon-roost-title,.moon-spell-title {display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 9px;align-self:end}
 .moon-roost .moon-roost-title {grid-area:familiar-title}
+.moon-roost-title .moon-capacity {
+  padding:3px 9px;border:1px solid #947d99;border-radius:20px;
+  background:#261e30;color:#fae7cc;font:700 15px/1.1 var(--sans,Arial,sans-serif);
+  letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap;
+}
 .moon-roost .companion-slots {
   grid-area:familiars;align-self:start;display:grid;grid-template-columns:minmax(0,1fr);
   justify-content:stretch;justify-items:start;gap:0;min-width:0;padding:12px 8px 14px;
   isolation:isolate;--card-width:min(100%,clamp(78px,9.5vw,134px));
 }
-.moon-roost .moon-companion,.moon-roost .moon-empty-slot {grid-area:1 / 1;}
-.moon-roost .moon-companion {
-  position:relative;left:calc(var(--slot) * min(var(--card-width) * var(--spread), (100% - var(--card-width)) / var(--intervals)));
-  transform:none;
+.moon-roost .moon-companion,.moon-roost .moon-empty-slot {
+  grid-area:1 / 1;position:relative;
+  left:calc(var(--slot) * min(var(--card-width) + 7px, (100% - var(--card-width)) / var(--intervals)));
 }
+.moon-roost .moon-companion {transform:none;}
 .moon-companion>.grimoire-card {
   transform:translateY(var(--drop)) rotate(var(--tilt));transform-origin:50% 84%;
 }
@@ -294,7 +303,46 @@
   width:var(--card-width);height:auto;aspect-ratio: .72;border-radius:10px;
 }
 .moon-roost .moon-companion {display:block;background:none;border:0;}
-.moon-roost .moon-empty-slot {color:#846a87;background:radial-gradient(ellipse,#392b40,#241d2e);font-size:26px;}
+.moon-roost .moon-empty-slot {
+  z-index:-1;pointer-events:none;border:1.5px dashed #9a819b;
+  background:linear-gradient(155deg,#3a2c41,#2c2336);color:#a88dae;font-size:26px;
+}
+@media (min-width:851px) and (max-height:850px) {
+  .cw-backdrop:has(.cw-dialog[data-page="shop"]) {padding-block:8px}
+  .cw-backdrop .cw-dialog[data-page="shop"] .cw-head {
+    min-height:96px;padding:8px 24px;
+  }
+  .cw-backdrop .cw-dialog[data-page="shop"] .cw-head h2 {font-size:clamp(34px,5.7vh,47px)}
+  .cw-backdrop .cw-dialog[data-page="shop"] .cw-body {padding:12px 18px}
+  .moon-roost.companion-rail {gap:4px 18px;padding:8px 15px}
+  .moon-roost .companion-slots {--card-width:clamp(78px,13vh,110px);padding:6px 6px 8px}
+  .moon-goods {padding-block:10px 14px}
+}
+.moon-empty-slot>span {display:grid;place-items:center;width:1.15em;aspect-ratio:1;border:1px solid #a88dae45;border-radius:50%;}
+@media (max-width:650px) {
+  .moon-roost .companion-slots:has(.moon-empty-slot) {
+    display:flex;flex-wrap:nowrap;align-items:center;gap:4px;padding-inline:2px;
+  }
+  .moon-roost .companion-slots:has(.moon-empty-slot)>* {left:auto;min-width:0}
+  .moon-roost .companion-slots:has(.moon-empty-slot)>.moon-companion {flex:0 1 75px}
+  .moon-roost .companion-slots>.moon-empty-slot {flex:0 1 44px;height:66px;z-index:auto;font-size:17px}
+}
+.moon-reward-ticket {
+  display:flex;align-items:center;justify-content:space-between;gap:7px 14px;flex-wrap:wrap;
+  margin-bottom:12px;padding:8px 14px;border:1px solid #beae76;border-left:4px solid #e9c66f;border-radius:7px;
+  background:linear-gradient(110deg,#3b3042,#302b37 70%);color:#f4dfad;
+}
+.moon-reward-ticket h3 {display:flex;align-items:center;gap:8px;margin:0;color:#ffe6a7;font:700 16px/1.15 Georgia,serif;}
+.moon-reward-ticket h3 span {font-size:19px;color:#edc978;}
+.moon-reward-ticket>div {display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;}
+.moon-reward-ticket .cw-btn.moon-claim {
+  min-height:32px;padding:4px 10px;border:1px solid #edcc86;border-radius:5px;
+  background:#efd399;color:#36283a;font:800 13px/1.2 var(--sans,Arial,sans-serif);
+}
+.moon-reward-ticket .moon-claim:is(:hover,:focus-visible) {background:#ffe6ae;}
+.moon-reward-ticket .moon-claim [data-colored-term] {color:inherit;}
+.cw-dialog[data-page="shop"] .moon-reroll.moon-free-roll {border-color:#e7c981;color:#ffe4a0;}
+.cw-dialog[data-page="leave-rewards"] {max-width:560px;}
 .grimoire-card {
   --gem:#ba86ff;position:relative;display:block;width:100%;height:100%;box-sizing:border-box;
   isolation:isolate;border:2px solid #d0a067;border-radius:10px;

@@ -111,6 +111,7 @@
     s.bossDisablesUsed = 0;
     const pool = shuffle(s,Object.keys(TAGS));
     s.tags = [pool[0],differentReward(pool[0],pool)];
+    s.skipReceipts = [];
     s.anteVoucher = null;
     s.voucherSold = false;
   }
@@ -118,13 +119,22 @@
     const guard = BOSSES[s.bossId];
     const base = s.ante <= 8 ? BASE_TARGETS[s.ante - 1] : Math.round(50000 * Math.pow(1.9, s.ante - 8));
     const kind = ["Small Blind","Big Blind","Boss Blind"][index];
+    const reward = index < 2 ? TAGS[s.tags[index]] : null;
+    let tag = reward?.description || reward;
+    if (reward?.effect === "edition") {
+      const edition = market.editions[reward.value].name;
+      const candidates = editionCandidates(s,{kind:"familiar",edition:reward.value});
+      if (candidates.length === 1) tag = item(candidates[0].id).name + " becomes " + edition + ".";
+      else if (candidates.length) tag = "A random Familiar without an edition becomes " + edition + ".";
+      else tag = "The next Familiar you gain without an edition becomes " + edition + ".";
+    }
     return {
       name: index === 2 ? guard.name : kind, kind,
       description: index === 2 ? (s.bossDisabled ? "Boss rule dispelled." : guard.description) : "Beat the target before you run out of hands.",
       target: Math.floor(base * (stake(s).targetScale || 1) * (s.rules.targetScale || 1) *
         [1, 1.5, !s.bossDisabled && guard.scale || 2][index]),
       reward: Math.max(0,[3,4,5][index] - (index === 0 ? stake(s).rewardReduction || 0 : 0)),
-      tag: index < 2 ? (TAGS[s.tags[index]]?.description || TAGS[s.tags[index]]) : null
+      tag
     };
   }
   function handSize(s) {
@@ -156,7 +166,7 @@
       deck:[], hand:[], draw:[], discardPile:[], nextId:1, familiars:[...rules.starter],
       consumables:[...(rules.startingConsumables || [])], vouchers:[...(rules.startingVouchers || [])],
       levels:{...Object.fromEntries(Object.keys(HANDS).map(name=>[name,1])),...rules.handLevels},
-      seenHands:{}, offers:[], pack:null, lastScore:null, payout:null,
+      seenHands:{}, offers:[], pack:null, lastScore:null, payout:null, tallyPerPlay:0,
       familiarMemory:{}, nextBlind:{}, blindMods:{hands:0,discards:0,handSize:0},
       discovered:["deck_" + deckId,"stake_" + stakeId,...rules.starter,...(rules.startingConsumables || []),...(rules.startingVouchers || [])],
       stats:{handsPlayed:0,discardsUsed:0,bestHand:"",bestScore:0,roundsWon:0,skipped:0,
@@ -188,6 +198,7 @@
     s.blindMods ??= {hands:0,discards:0,handSize:0};
     s.nextBlind ??= {};
     s.familiarMemory ??= {};
+    s.tallyPerPlay ??= 0;
     s.discovered ??= [s.deckId,...s.familiars,...s.consumables,...s.vouchers];
     s.runId ??= "legacy-" + s.seed;
     s.seeded ??= false;
@@ -241,6 +252,7 @@
   function skipBlind(s) {
     if (s.phase !== "select" || s.blind === 2 || s.rules.noSkip) return false;
     const tag = s.tags[s.blind];
+    const balance = s.money;
     discover(s,"tag_" + tag);
     if (tag === "coins") earn(s,7);
     if (tag === "fortune") earn(s,4 + s.discards);
@@ -259,8 +271,21 @@
     if (effect === "nextHandSize") s.nextBlind.handSize = (s.nextBlind.handSize || 0) + value;
     if (effect === "bossReroll") s.freeBossRerolls = (s.freeBossRerolls || 0) + 1;
     if (effect === "pack") (s.rewardPacks ??= []).push(value);
-    if (effect === "edition" && !inventoryEdition(s,{kind:"familiar",edition:value})) s.nextEdition = value;
+    let upgraded;
+    if (effect === "edition") {
+      upgraded = inventoryEdition(s,{kind:"familiar",edition:value});
+      if (!upgraded) s.nextEdition = value;
+    }
     if (effect === "shopDiscount") s.nextShopDiscount = Math.min(s.nextShopDiscount || 1,value);
+    const receipt = (s.skipReceipts ??= []);
+    if (upgraded) receipt[s.blind] = item(upgraded).name + " gained " + market.editions[value].name + ".";
+    else if (effect === "edition") receipt[s.blind] = market.editions[value].name + " promised to the next Familiar without an edition.";
+    else if (effect === "pack") receipt[s.blind] = "Earned a free " + item(value).name + ".";
+    else if (tag === "reroll" || effect === "freeReroll") receipt[s.blind] = "Earned a free shop reroll.";
+    else if (s.money > balance) receipt[s.blind] = "Collected $" + (s.money - balance) + ".";
+    else if (tag === "stars") receipt[s.blind] = mostPlayed(s) + " reached level " + s.levels[mostPlayed(s)] + ".";
+    else if (tag === "doubled") receipt[s.blind] = "Earned an extra $8 at the next payout.";
+    else receipt[s.blind] = TAGS[tag]?.name || "Bonus claimed.";
     s.stats.skipped++;
     advance(s);
     return true;
@@ -373,6 +398,24 @@
   }
   // Action feedback belongs to the current client, never to a saved run.
   const familiarEvents = new WeakMap();
+  function enqueueFamiliarEvent(s,fact) {
+    if (!familiarEvents.has(s)) familiarEvents.set(s,[]);
+    familiarEvents.get(s).push(fact);
+  }
+  // These are next-hand reserves. Read their real payout from cloned counters
+  // so inspection never consumes a charge or duplicates the balance formula.
+  const chargeStats = {kettle_hag:"retriggers",kiln_crawler:"chips",dusk_undertaker:"xmult"};
+  function familiarCharge(key,memory) {
+    const stat = chargeStats[key];
+    if (!stat) return;
+    if (stat === "retriggers") return {stat,base:0,value:Number(Boolean(memory?.brewed))};
+    const base = content.trigger(key,"hand",{},{})[stat];
+    const value = content.trigger(key,"hand",{},{...memory})[stat];
+    return {stat,base,value};
+  }
+  function chargeChange(before,after) {
+    if (before && before.value !== after.value) return {stat:before.stat,before:before.value,after:after.value};
+  }
   function drainFamiliarEvents(s) {
     const events = familiarEvents.get(s) || [];
     familiarEvents.delete(s);
@@ -384,6 +427,7 @@
       const id = s.familiars[i];
       const key = baseId(id);
       const oldBonus = s.familiarMemory[key]?.bonus || 0;
+      const previousCharge = event === "discard" || event === "blindStart" ? familiarCharge(key,s.familiarMemory[key]) : null;
       const effect = familiarEffect(s,i,event,ctx,s.familiarMemory);
       const created = [];
       if (effect.money) earn(s,effect.money);
@@ -398,15 +442,16 @@
         const after = content.trigger(key,"hand",snapshot,{...memory})[stat];
         if (Number.isFinite(before) && Number.isFinite(after) && after > before) growth = {stat,before,after};
       }
-      if (growth || effect.money || created.length) {
+      const charge = previousCharge && chargeChange(previousCharge,familiarCharge(key,memory));
+      if (growth || charge || effect.money || created.length) {
         const fact = {event,familiarId:id};
         if (extra?.item) fact.itemId = extra.item.id;
         if (extra?.cards) fact.cardIds = extra.cards.map(c=>c.id);
         if (growth) fact.growth = growth;
+        if (charge) fact.charge = charge;
         if (effect.money) fact.money = effect.money;
         if (created.length) fact.created = created;
-        if (!familiarEvents.has(s)) familiarEvents.set(s,[]);
-        familiarEvents.get(s).push(fact);
+        enqueueFamiliarEvent(s,fact);
       }
       ctx.money = s.money;
       ctx.consumableCount = s.consumables.length;
@@ -435,6 +480,7 @@
     const memory = JSON.parse(JSON.stringify(s.familiarMemory));
     const roll = {rng:s.rng};
     const generated = [];
+    const spentCharges = [];
     const used = new Set();
     const active = scoring.filter(c=>!debuffed(s,c));
     const held = s.hand.filter(c=>!ids.includes(c.id) && !debuffed(s,c));
@@ -461,12 +507,22 @@
     }
     function familiarAt(i,event,extra,resolved,repeatCapacity = 8) {
       const id = s.familiars[i];
+      const key = baseId(id);
+      const before = event === "hand" ? familiarCharge(key,memory[key]) : null;
       const raw = familiarEffect(s,i,event,{...ctx,...extra},memory,resolved);
-      const effect = extra.retrigger && raw.retriggers ? {...raw,retriggers:0} : raw;
+      const available = extra.retrigger ? 0 : repeatCapacity;
+      const effect = raw.retriggers > available ? {...raw,retriggers:available} : raw;
       const origin = {event,pass:extra.pass || 0};
-      if (effect.retriggers) origin.retriggers = Math.min(effect.retriggers,repeatCapacity);
       if (resolved[i]?.copy) origin.copiedFrom = s.familiars[i + (resolved[i].copy === "previous" ? -1 : 1)];
       apply(effect,content.familiars[baseId(id)].name,{familiarId:id,...(extra.card && {cardId:extra.card.id})},origin);
+      const charge = before && chargeChange(before,familiarCharge(key,memory[key]));
+      if (charge) {
+        // Kettle spends its charge at hand end, after it grants a card repeat.
+        const owner = steps.find(step=>step.familiarId === id &&
+          (charge.stat === "retriggers" ? step.fact?.retriggers > 0 : step.fact?.event === "hand"));
+        if (owner) owner.fact.charge = charge;
+        else spentCharges.push({event:"hand",familiarId:id,charge});
+      }
       return effect.retriggers || 0;
     }
     const suppressed = {};
@@ -489,6 +545,9 @@
             mult:enhancement === "mult" ? 4 : luckyMult ? 12 : 0,
             xmult:enhancement === "glass" ? 2 : 1,money:Number(card.seal === "gold") * 3 + Number(luckyMoney) * 8},
           pass ? "Retrigger · " + label : label,{cardId:card.id},{event,pass});
+          // A card banks once per play. Each scoring trigger pays that same total.
+          const tally = (card.tallyChips || 0) + s.tallyPerPlay;
+          if (tally) apply({chips:tally},"Witch’s Tally",{cardId:card.id},{event:"tally",pass});
           const edition = market.editions[card.edition];
           if (edition) apply(edition,edition.name,{cardId:card.id},{event:"edition",pass});
         }
@@ -526,7 +585,7 @@
       if (chips !== before[0] || mult !== before[1]) steps.push({label:guard.name,text:guard.description,chips,mult});
     }
     const score = {name,level,chips,mult,total:Math.floor(chips * mult),money,scoring:active.map(c=>c.id),suppressed,steps};
-    Object.defineProperty(score,"commit",{value:{memory,rng:roll.rng,generated,used}});
+    Object.defineProperty(score,"commit",{value:{memory,rng:roll.rng,generated,used,spentCharges}});
     return score;
   }
 
@@ -566,6 +625,7 @@
       s.rng = commit.rng;
       commit.used.forEach(id=>countUse(s,id));
       commit.generated.forEach(effect=>generate(s,effect));
+      commit.spentCharges.forEach(fact=>enqueueFamiliarEvent(s,fact));
     }
     s.hands--;
     s.score += result.total;
@@ -577,6 +637,9 @@
     s.stats.handsPlayed++;
     if (result.total > s.stats.bestScore) { s.stats.bestScore = result.total; s.stats.bestHand = result.name; }
     const used = s.hand.filter(c=>ids.includes(c.id));
+    if (s.tallyPerPlay) {
+      for (const c of used) updateCard(s,c,{tallyChips:(c.tallyChips || 0) + s.tallyPerPlay});
+    }
     const enchantedScorers = result.scoring.slice(bossValue(s,"noEnhancements"));
     result.broken = used.filter(c=>c.enhancement === "glass" && enchantedScorers.includes(c.id) && random(s) < 0.25).map(c=>c.id);
     s.deck = s.deck.filter(c=>!result.broken.includes(c.id));
@@ -589,7 +652,7 @@
       if (s.hands === 0 || !s.hand.length) s.phase = "lost";
     }
     if (s.phase === "lost" || (s.phase === "payout" && s.blind === 2 && s.ante === s.rules.anteLimit)) {
-      result.finalCards = used.map(({rank,suit,enhancement}) => ({rank,suit,enhancement}));
+      result.finalCards = used.map(({rank,suit,enhancement,edition,seal,tallyChips}) => ({rank,suit,enhancement,edition,seal,tallyChips}));
     }
     return result;
   }
@@ -642,6 +705,8 @@
     let def = item(s[category]?.[index]);
     if (category === "familiars" && def) {
       const id = baseId(def.id);
+      const charge = familiarCharge(id,s.familiarMemory?.[id]);
+      if (charge) def = {...def,charge};
       const stat = def.trackedStat || runScalingStats[id];
       if (stat) {
         // Next-hand effects may consume charges. Inspect a copy of the saved counters.
@@ -662,13 +727,15 @@
     const remaining = Math.max(0,5 - (s.familiarMemory[baseId(def.id)]?.age || 0));
     return {...def,perishRounds:remaining,debuffed:!remaining};
   }
-  function price(s,id) {
+  const catSalePrice = (s,cost) => s.catSale ? Math.max(1,Math.floor(cost / 2)) : cost;
+  function price(s,id,includeCatSale = true) {
     const def = item(id);
     const discount = (1 - power(s,"discount")) * (s.shopDiscount || 1);
-    return Math.max(1,Math.floor((def?.cost || 0) * discount) - (def?.kind === "pack" ? power(s,"packDiscount") : 0));
+    const cost = Math.max(1,Math.floor((def?.cost || 0) * discount) - (def?.kind === "pack" ? power(s,"packDiscount") : 0));
+    return includeCatSale ? catSalePrice(s,cost) : cost;
   }
   const sellPrice = (s,id) => Math.max(1,Math.floor((item(id)?.cost || 0)/2));
-  const rerollPrice = s => s.freeReroll ? 0 : Math.max(1,5 - power(s,"rerollDiscount")) + s.rerolls;
+  const rerollPrice = s => s.freeReroll ? 0 : catSalePrice(s,Math.max(1,5 - power(s,"rerollDiscount")) + s.rerolls);
   const unlocked = (s,group,id,def) => !def.unlock || !s.unlocks?.[group] || s.unlocks[group].includes(id);
   function randomFamiliar(s,excluded = [],legendary = false) {
     if (s.rules.noFamiliars) return null;
@@ -704,6 +771,8 @@
     s.pack = null;
     s.shopDiscount = s.nextShopDiscount || 1;
     s.nextShopDiscount = 1;
+    // Give the shopkeeper her own roll so seeded stock and draws keep their sequence.
+    s.catSale = random({rng:hash(s.seed + ":cat-favor:" + s.shopsVisited)}) < 1 / 40;
     s.shopOfferCount = Math.max(1,2 + power(s,"shopSlots") + (s.rules.shopSlots || 0));
     if (!s.anteVoucher) s.anteVoucher = market.voucherOffer(s,{...marketApi,
       isUnlocked:(_,run,id)=>!run.unlocks?.vouchers || run.unlocks.vouchers.includes(id)});
@@ -729,6 +798,7 @@
     if (s.phase !== "shop" || s.pack) return false;
     s.freeReroll = false;
     s.round++;
+    s.catSale = false;
     advance(s);
     s.offers = [];
     s.phase = "select";
@@ -759,7 +829,7 @@
   }
   function addCard(s,card) {
     const copy = {rank:card.rank,suit:card.suit,id:"c" + s.nextId++};
-    for (const key of ["enhancement","edition","seal"]) if (card[key]) copy[key] = card[key];
+    for (const key of ["enhancement","edition","seal","tallyChips"]) if (card[key]) copy[key] = card[key];
     s.deck.push(copy);
     if (s.phase === "play") {
       if (s.hand.length < handSize(s)) s.hand.push(copy);
@@ -860,7 +930,7 @@
     if (!def) return false;
     if (def.kind !== "spell") return space(s,def);
     const hand = s.pack.hand || [];
-    if (ids === undefined && def.minTargets) return hand.length >= def.minTargets &&
+    if (ids === undefined && def.minTargets) return hand.filter(card=>canTarget(def,card)).length >= def.minTargets &&
       (def.effect !== "remove" || s.deck.length > def.minTargets);
     return canCast(s,def,ids || [],hand);
   }
@@ -912,10 +982,16 @@
     const refs = value.kind === "familiar" ? s.familiars : s.consumables;
     refs[target.index] = market.withVariant(target.id,value.edition,target.sticker);
     discover(s,"edition_" + value.edition);
-    return true;
+    return refs[target.index];
+  }
+  function canTarget(def,card) {
+    return card.enhancement !== "stone" || !["rankCopy","suitCopy","rank","suit"].includes(def.effect);
   }
   function canCast(s,def,ids,source,excluded) {
-    if (def.minTargets && !matching(ids,def.minTargets,def.maxTargets,source)) return false;
+    if (def.minTargets) {
+      const targets = matching(ids,def.minTargets,def.maxTargets,source);
+      if (!targets || !targets.every(card=>canTarget(def,card))) return false;
+    }
     if (def.effect === "inventoryEdition") return Boolean(editionCandidates(s,def.value,excluded).length);
     if (def.effect === "remove") return ids.length < (s.phase === "play" ? s.hand.length + s.draw.length : s.deck.length);
     if (def.effect === "generate" && def.value.pool === "legendary") {
@@ -945,6 +1021,7 @@
     switch (def.effect) {
       case "money": earn(s,Math.min(s.money,value)); break;
       case "cash": earn(s,value); break;
+      case "tally": s.tallyPerPlay += value; break;
       case "level": s.levels[value]++; break;
       case "levelMost": s.levels[mostPlayed(s)] += value; break;
       case "levelMany": value.hands.forEach(hand=>{ s.levels[hand] += value.amount; }); break;
@@ -961,7 +1038,12 @@
         if (s.phase === "play") refill(s);
         break;
       case "copy": for (let i=0;i<value;i++) addCard(s,targets[0]); break;
-      case "rankCopy": updateCard(s,targets[1],{rank:targets[0].rank}); break;
+      case "rankCopy":
+      case "suitCopy": {
+        const key = def.effect === "rankCopy" ? "rank" : "suit";
+        for (const card of targets.slice(1)) updateCard(s,card,{[key]:targets[0][key]});
+        break;
+      }
       case "swapModifiers": {
         const [a,b] = targets.map(card=>({enhancement:card.enhancement,edition:card.edition,seal:card.seal}));
         updateCard(s,targets[0],b); updateCard(s,targets[1],a);
@@ -975,10 +1057,6 @@
           if (def.effect === "seal") updateCard(s,c,{seal:value});
           if (def.effect === "edition") updateCard(s,c,{edition:value});
           if (def.effect === "modify") updateCard(s,c,value);
-          if (def.effect === "suitRotate") {
-            const suits = Object.keys(SUITS);
-            updateCard(s,c,{suit:suits[(suits.indexOf(c.suit) + value) % suits.length]});
-          }
         }
     }
     dispatch(s,"cast",{item:def});
@@ -989,7 +1067,7 @@
     const def = item(s.consumables[index]);
     if (!def) return false;
     const source = useHand(s);
-    if (ids === undefined && def.minTargets) return source.length >= def.minTargets &&
+    if (ids === undefined && def.minTargets) return source.filter(card=>canTarget(def,card)).length >= def.minTargets &&
       (def.effect !== "remove" || s.deck.length > def.minTargets);
     return canCast(s,def,ids || [],source,def.effect === "inventoryEdition" && def.value.kind === "spell" ? index : undefined);
   }
@@ -1004,7 +1082,7 @@
   const api = {HANDS,DECKS,STAKES,CHALLENGES,SUITS,BOSSES,TAGS,newRun,restore,blindInfo,handSize,startBlind,skipBlind,debuffed,
     evaluate,preview,play,discard,cashOut,endless,leaveShop,item,ownedItem,price,sellPrice,rerollPrice,reroll,drainFamiliarEvents,
     capacity,canBuy,buy,canBuyAndUse,buyAndUse,canPick,pick,closePack,claimRewardPack,canSell,sell,sellConsumable,reorder,
-    canUse,use,canRerollBoss,rerollBoss,bossRerollPrice,canDisableBoss,disableBoss};
+    canTarget,canUse,use,canRerollBoss,rerollBoss,bossRerollPrice,canDisableBoss,disableBoss};
   root.CW = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);

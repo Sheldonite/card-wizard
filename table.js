@@ -33,12 +33,15 @@
   document.querySelectorAll('.score-components .score-vessel').forEach(vessel=>vessel.insertAdjacentHTML('afterbegin',vesselArt));
   document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});
   const suits = {
-    S:{name:'Spades',color:'#363346',path:'M10 1C7.9 4.4 1.7 7.9 1.7 12.1c0 4.2 4.8 5.4 7.6 2.1-.4 2.3-1.2 3.7-3.1 5h7.6c-1.9-1.3-2.7-2.7-3.1-5 2.8 3.3 7.6 2.1 7.6-2.1C18.3 7.9 12.1 4.4 10 1Z'},
-    H:{name:'Hearts',color:'#b44457',path:'M10 18.8C8.3 16.8 1 11.6 1 6.5 1 1.1 7.2 0 10 4.8 12.8 0 19 1.1 19 6.5c0 5.1-7.3 10.3-9 12.3Z'},
-    C:{name:'Clubs',color:'#38403e',path:'M10 1.2a4.5 4.5 0 0 1 3.5 7.2c3.3-2 6.6.7 5.2 4.5-1.2 3.7-5.4 4.4-8 1.2.5 2.4 1.4 4 3.4 5.1H5.9c2-1.1 2.9-2.7 3.4-5.1-2.6 3.2-6.8 2.5-8-1.2-1.4-3.8 1.9-6.5 5.2-4.5A4.5 4.5 0 0 1 10 1.2Z'},
-    D:{name:'Diamonds',color:'#b64953',path:'M10 0 18.4 10 10 20 1.6 10Z'}
+    S:{name:'Spades',color:'#382b48',path:'M10 1C7.9 4.4 1.7 7.9 1.7 12.1c0 4.2 4.8 5.4 7.6 2.1-.4 2.3-1.2 3.7-3.1 5h7.6c-1.9-1.3-2.7-2.7-3.1-5 2.8 3.3 7.6 2.1 7.6-2.1C18.3 7.9 12.1 4.4 10 1Z',etch:'M4.8 12.2c-.6-2.1 1.4-4.2 3-5.6'},
+    H:{name:'Hearts',color:'#a03253',path:'M10 18.8C8.3 16.8 1 11.6 1 6.5 1 1.1 7.2 0 10 4.8 12.8 0 19 1.1 19 6.5c0 5.1-7.3 10.3-9 12.3Z',etch:'M3.3 7c-.2-2.5 1.6-3.7 3.4-3.1'},
+    C:{name:'Clubs',color:'#27483e',path:'M10 1.2a4.5 4.5 0 0 1 3.5 7.2c3.3-2 6.6.7 5.2 4.5-1.2 3.7-5.4 4.4-8 1.2.5 2.4 1.4 4 3.4 5.1H5.9c2-1.1 2.9-2.7 3.4-5.1-2.6 3.2-6.8 2.5-8-1.2-1.4-3.8 1.9-6.5 5.2-4.5A4.5 4.5 0 0 1 10 1.2Z',etch:'M7.5 5.4c0-1.3 1.3-2.3 2.6-2.2M3.3 12c0-1.2.7-2.1 1.9-2.2'},
+    D:{name:'Diamonds',color:'#a13e30',path:'M10 0 18.4 10 10 20 1.6 10Z',etch:'m10 3 3.7 7-3.7 6.8L6.2 10z'}
   };
   function pip(suit,attr='') {return '<svg viewBox="0 0 20 20" aria-hidden="true" '+attr+'><path fill="currentColor" d="'+suits[suit].path+'"/></svg>';}
+  function stampedPip(suit,x,y,style='') {
+    return '<svg viewBox="0 0 20 20" aria-hidden="true" class="pip '+style+'" style="left:'+x+'%;top:'+y+'%"><path fill="currentColor" d="'+suits[suit].path+'"/><path class="pip-etch" d="'+suits[suit].etch+'"/></svg>';
+  }
   const left=25, right=75, center=50, top=15, bottom=85;
   const pairRows=ys=>ys.flatMap(y=>[[left,y],[right,y]]);
   const spots={
@@ -109,17 +112,19 @@
     });
   }
   function art(card){
-    if(card.rank===14) return '<div class="pips">'+pip(card.suit,'class="pip ace" style="left:50%;top:50%"')+'<svg class="ace-spark" viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="m5 0 1.2 3.7L10 5 6.2 6.3 5 10 3.8 6.3 0 5l3.8-1.3z"/></svg></div>';
-    if(card.rank>10) return '<img alt="" class="court" src="'+window.CWContent.portrait(faceNames[card.rank].toLowerCase())+'">';
-    return '<div class="pips">'+spots[card.rank].map(([x,y])=>pip(card.suit,'class="pip'+(y>50?' invert':'')+'" style="left:'+x+'%;top:'+y+'%"')).join('')+'</div>';
+    if(card.enhancement==='wild') return '<span class="wild-ink" aria-hidden="true"></span>';
+    if(card.rank===14) return '<div class="pips ace-orbit">'+stampedPip(card.suit,50,50,'ace')+'<svg class="ace-spark" viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="m5 0 1.2 3.7L10 5 6.2 6.3 5 10 3.8 6.3 0 5l3.8-1.3z"/></svg></div>';
+    if(card.rank>10) return '<span class="court-window" aria-hidden="true"></span><img alt="" class="court" src="'+window.CWContent.portrait(faceNames[card.rank].toLowerCase())+'">';
+    return '<div class="pips">'+spots[card.rank].map(([x,y])=>stampedPip(card.suit,x,y,y>50?'invert':'')).join('')+'</div>';
   }
-  const enhancementIcons={bonus:'chip',mult:'mult',wild:'leaf',glass:'diamond',steel:'steel',stone:'diamond',gold:'coin',lucky:'lucky'};
+  const enhancementIcons={bonus:'chip',mult:'mult',wild:'stars',glass:'diamond',steel:'steel',stone:'diamond',gold:'coin',lucky:'lucky'};
   const sealIcons={red:'repeat',gold:'coin',blue:'stars',purple:'scroll'};
   function cardMarkup(c,i,n,preview=false,packTarget=null){
     const offset=i-(n-1)/2, rot=offset*Math.min(1.7,11/(n-1 || 1));
     const rank=rankText(c.rank)+pip(c.suit), debuffed=run.phase==='play' && CW.debuffed(run,c);
     const bonus=Object.hasOwn(enhancementIcons,c.enhancement)?c.enhancement:'';
-    const label=[bonus==='stone'?'Stone card':cardName(c),bonus==='stone'?'':bonus,c.edition,c.seal && (c.seal+' seal'),debuffed && 'debuffed'].filter(Boolean).join(', ');
+    const tally=c.tallyChips>0?'<span class="card-tally" aria-hidden="true">'+icon('chip')+'+'+esc(num(c.tallyChips))+'</span>':'';
+    const label=[bonus==='stone'?'Stone card':cardName(c),bonus==='stone'?'':bonus,c.edition,c.seal && (c.seal+' seal'),tally && ('+'+num(c.tallyChips)+' permanent Chips'),debuffed && 'debuffed'].filter(Boolean).join(', ');
     const seal=c.seal?'<span class="wax-seal '+esc(c.seal)+'" aria-hidden="true">'+icon(sealIcons[c.seal])+'</span>':'';
     const face=bonus==='stone'?'<span class="stone-face" aria-hidden="true">'+icon('diamond')+'</span>':
       '<span class="corner-rank">'+rank+'</span>'+art(c)+'<span class="corner-rank flipped">'+rank+'</span>';
@@ -128,9 +133,9 @@
     const foilStamp=c.edition==='foil'?'<span class="foil-stamp" aria-hidden="true">'+icon('spark')+'</span>':'';
     const element=preview && !packTarget?'div':'button';
     const controls=packTarget
-      ? 'type="button" data-cw="pack-target" data-value="'+esc(c.id)+'" aria-pressed="'+packTarget.selected+'"'+(packTarget.disabled?' disabled':'')
+      ? 'type="button" data-cw="'+(packTarget.action==='target'?'target':'pack-target')+'" data-value="'+esc(c.id)+'" aria-pressed="'+packTarget.selected+'"'+(packTarget.disabled?' disabled':'')
       : preview?'role="img" tabindex="0"':'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
-    return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" '+CWCardTip.attribute(CWCardTip.details(c,debuffed))+' style="--suit:'+suits[c.suit].color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+foilStamp+seal+badge+(debuffed?CWCardTip.cross:'')+'</'+element+'>';
+    return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" '+CWCardTip.attribute(CWCardTip.details(c,debuffed))+' style="--suit:'+suits[c.suit].color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+foilStamp+seal+badge+tally+(debuffed?CWCardTip.cross:'')+'</'+element+'>';
   }
   function describeFamiliar(id){
     const i=run.familiars.indexOf(id);
@@ -300,6 +305,15 @@
     if(drew){
       const frame=anchors.source.matches?.('[data-familiar-frame]') ? anchors.source : anchors.source.querySelector?.('[data-familiar-frame]');
       if(frame){
+        if(fact.charge){
+          const item=CW.ownedItem(run,'familiars',run.familiars.indexOf(fact.familiarId));
+          if(item?.charge){
+            const trim=frame.querySelector('.cw-familiar-trim');
+            if(trim)trim.outerHTML=CWFamiliarFrames.ornament({...item,charge:{...item.charge,value:fact.charge.after}});
+            const badge=frame.querySelector('.familiar-stack');
+            if(badge && item.stackAmount)badge.textContent=item.stackAmount;
+          }
+        }
         clearTimeout(frameTimers.get(frame));
         frame.setAttribute('data-proc-active','');
         frameTimers.set(frame,setTimeout(()=>frame.removeAttribute('data-proc-active'),480/speed));
@@ -307,21 +321,23 @@
     }
     return drew;
   }
-  function playFamiliarEvents(card) {
+  async function playFamiliarEvents(card, discardCards=[]) {
     const events=CW.drainFamiliarEvents(run);
     if(!events.length)return;
     const panel=document.querySelector('.cw-backdrop:not([hidden]) .cw-dialog');
+    const messages=[];
+    let discardBeat=false;
     for(const fact of events){
       const id=CWMarket.splitVariant(fact.familiarId).id;
-      if(!(id==='fox_in_ink' && fact.event==='cast' && fact.growth) &&
-         !(id==='linen_sprite' && fact.event==='discard' && fact.created?.length))continue;
+      const foxCast=id==='fox_in_ink' && fact.event==='cast' && fact.growth;
+      if(!foxCast && !(fact.event==='discard' && discardCards.length))continue;
       let source=familiarSlot(fact.familiarId,panel);
       const spell=fact.created?.find(entry=>entry.category==='consumables');
       const consumable=spell && (panel ? panel.querySelector('[data-owned-category="consumables"][data-slot="'+spell.index+'"]') : $('spells').children[spell.index]);
       // A pack can stay open after a cast and hide the entire familiar rail.
       const bounds=source?.getBoundingClientRect();
       const railVisible=bounds?.width && bounds.bottom>0 && bounds.top<window.innerHeight;
-      if(!railVisible && id==='fox_in_ink' && panel){
+      if(!railVisible && foxCast && panel){
         const item=CW.ownedItem(run,'familiars',run.familiars.indexOf(fact.familiarId));
         if(!item)continue;
         document.querySelector('.familiar-proc-witness')?.remove();
@@ -335,18 +351,31 @@
         document.body.append(source);
         setTimeout(()=>source.remove(),Math.max(700,1200/prefs.speed));
       }
-      if(familiarCue(fact,{source,card,consumable})){
-        audio.event('proc-'+id);
-        const name=CW.item(fact.familiarId).name;
-        const message=spell ? name+' created '+CW.item(spell.id).name+'.' : name+' grew to +'+fact.growth.after+' Mult.';
-        $('announce').textContent+= ' '+message;
+      if(!familiarCue(fact,{source,card,cards:discardCards,consumable,money:$('table-purse')}))continue;
+      audio.event((fact.charge?'charge-':'proc-')+id);
+      const name=CW.item(fact.familiarId).name;
+      if(spell)messages.push(name+' created '+CW.item(spell.id).name+'.');
+      else if(foxCast)messages.push(name+' grew to +'+fact.growth.after+' Mult.');
+      else if(fact.money)messages.push(name+' earned $'+fact.money+'.');
+      else if(fact.charge){
+        const amount=Number(fact.charge.after.toFixed(2));
+        const next=fact.charge.stat==='retriggers' ? 'a repeat' :
+          fact.charge.stat==='chips' ? '+'+amount+' Chips' : '×'+amount+' Mult';
+        messages.push(name+' has '+next+' ready for the next hand.');
+      }
+      if(discardCards.length && !prefs.reducedMotion){
+        discardBeat=true;
+        await wait(120);
       }
     }
+    if(discardBeat)await wait(200);
+    if(messages.length)$('announce').textContent=(discardCards.length ? $('announce').textContent+' ' : '')+messages.join(' ');
   }
   function animateCards(ids,discarding){
     const lane = $('cast-prompt').querySelector('.cw-fx-lane');
     const nodes = [...$('hand').children];
     const moving = !prefs.reducedMotion && typeof Element.prototype.animate === 'function';
+    if(discarding && !moving)return [];
     const count = ids.length;
     const laneWidth = lane?.clientWidth || 0;
     const width = lane ? Math.max(15, Math.min(74, lane.clientHeight * .55, laneWidth / (1 + (count - 1) * .53))) : 0;
@@ -439,7 +468,7 @@
     };
     const blindTarget=run.target;
     const walletBefore=run.money;
-    const discardOrigin=discarding ? [...$('hand').children].find(el=>el.dataset.card===String(ids[0]))?.getBoundingClientRect() : null;
+    const discardCards=discarding ? [...$('hand').children].filter(el=>selected.has(el.dataset.card)).map(el=>el.getBoundingClientRect()) : [];
     const counters=$('chips').closest('.score-components');
     let revealRewards,fireworks;
     let ghosts=[];
@@ -458,6 +487,9 @@
         $('discards').textContent=run.discards;
         if(moving)await wait(285+30*(ids.length-1));
         $('announce').textContent=ids.length+' discarded. '+run.discards+' discards left.';
+        // A newly woven spell needs its actual destination before its thread flies.
+        $('spells').innerHTML=itemSlots('consumables',CW.capacity(run).consumables);
+        await playFamiliarEvents(discardCards[0],discardCards);
         return;
       }
       area.classList.add('scoring','cw-fx-cast');
@@ -506,10 +538,12 @@
         if(!first && still)return false;
         const card=ghosts.find(c=>c.id===fact.cardId)?.ghost ||
           [...$('hand').children].find(el=>el.dataset.card===String(fact.cardId));
+        const face=fact.retriggers && currentHand.find(c=>c.id===fact.cardId);
         const triggered=familiarCue(fact,{
           source:familiarSlot(fact.familiarId), card,
+          cardFace:face && {rank:face.rank,suit:face.suit,stone:face.enhancement==='stone'},
           neighbor:fact.copiedFrom && familiarSlot(fact.copiedFrom),
-          chips:chipText,mult:multText,money:$('money')
+          chips:chipText,mult:multText,money:$('table-purse')
         },prefs.speed*(first?1:2),still);
         if(triggered)featured.add(fact.familiarId);
         return triggered;
@@ -528,7 +562,7 @@
           }
           count(step.chips??0,step.mult??0);
           if(step.fact?.money){wallet+=step.fact.money;$('money').textContent='$'+num(wallet);}
-          call.textContent=signature ? step.label+' · '+step.text : step.text;
+          call.textContent=signature || step.fact?.event==='tally' ? step.label+' · '+step.text : step.text;
           window.CWContent.colorStats(call);
           call.classList.toggle('cw-fx-peak',strongest);
           let source=ghosts.find(c=>c.id===step.cardId)?.ghost;
@@ -592,7 +626,8 @@
         pulse(cleared?call:equation,[{scale:'.94'},{scale:'1.04',offset:.4},{scale:'1'}],260);
       }
       const activated=[...featured].map(ref=>CW.item(ref).name).join(', ');
-      $('announce').textContent=result.name+', '+num(result.total)+' chips. Round score '+num(run.score)+'.'+(activated?' Activated '+activated+'.':'')+(cleared?' Blind cleared.':'');
+      const tallyNotice=run.tallyPerPlay?' Each played card banked '+num(run.tallyPerPlay)+' Chips.':'';
+      $('announce').textContent=result.name+', '+num(result.total)+' chips. Round score '+num(run.score)+'.'+tallyNotice+(activated?' Activated '+activated+'.':'')+(cleared?' Blind cleared.':'');
       if(cleared)audio.event('win');
       if(run.phase==='lost')audio.event('lose');
       const toRewards=moving && run.phase==='payout';
@@ -607,7 +642,6 @@
       $('round-score').classList.remove('score-pop');
       busy=false;
       render(false);
-      if(discarding)playFamiliarEvents(discardOrigin);
       revealRewards?.();
       if(run.phase==='play'){
         audio.event('deal');

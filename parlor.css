@@ -15,19 +15,50 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .in-parlor .cw-dialog:not([data-page="lobby"]) .cw-head h2 {color:#ffe6b4}
 .in-parlor .cw-head:has(.parlor-emblem) {grid-template-columns:auto minmax(0,1fr) auto;gap:14px}
 .parlor-emblem {width:44px;height:46px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 3px 2px #170e23)}
-.deck-preview,.grimoire-lesson {display:flex;align-items:center;gap:22px;min-height:92px;margin:0 0 20px;padding:14px 20px;border:1px solid #82614e;border-radius:7px;background:radial-gradient(ellipse at 4% 50%,#694362,transparent 70%),#271c30}
-.deck-preview>i {flex:0 0 41px;height:58px;transform:rotate(-9deg);border-radius:3px;background:url("assets/cardback.svg") center/contain no-repeat;box-shadow:2px 2px #d6bd95,4px 4px #4e394c,6px 6px #ac917c}
-.deck-preview strong,.grimoire-lesson b {font:700 22px/1.2 var(--pixel);color:#ffdf9d}
-.deck-companions {display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;color:#e2d2e7}
-.deck-companions span {display:inline-flex;align-items:center;gap:5px}
-.deck-companions img {width:24px;height:24px;object-fit:contain;image-rendering:pixelated}
+.grimoire-lesson {display:flex;align-items:center;gap:22px;min-height:92px;margin:0 0 20px;padding:14px 20px;border:1px solid #82614e;border-radius:7px;background:radial-gradient(ellipse at 4% 50%,#694362,transparent 70%),#271c30}
+.grimoire-lesson b {font:700 22px/1.2 var(--pixel);color:#ffdf9d}
+.cw-dialog[data-page="restart"] {width:min(100%,530px)}
+.cw-dialog[data-page="restart"] .cw-head h2 {font-size:clamp(25px,5vw,34px)}
+.cw-dialog[data-page="restart"] .cw-body {padding-block:12px 16px}
+.cw-dialog[data-page="restart"] .cw-footer button {min-height:42px}
+.cw-dialog[data-page="restart"] .cw-footer .cw-primary {min-width:134px}
+.deck-preview {display:grid;grid-template-columns:106px minmax(0,1fr);align-items:center;gap:22px;padding:14px 0 18px}
+.run-deck-art {display:grid;place-items:center;width:100%;aspect-ratio:.87;overflow:clip}
+.run-deck-art i {grid-area:1/1;display:grid;place-items:center;width:64%;aspect-ratio:94/132;border-radius:6%;background:url("assets/cardback.svg") center/100% 100% no-repeat;box-shadow:0 3px 5px #120b20a3;transform-origin:50% 82%}
+.run-deck-art i:first-child {transform:rotate(-10deg);filter:brightness(.8)}
+.run-deck-art i:nth-child(2) {transform:rotate(-4deg);filter:brightness(.88)}
+.run-deck-art i:last-child {transform:rotate(5deg)}
+.run-deck-art img {width:59%;height:46%;padding:4%;border-radius:44%;object-fit:contain;image-rendering:pixelated;background:radial-gradient(ellipse closest-side,#493355 65%,#382745e6 93%,transparent);filter:drop-shadow(0 2px 1px #261b35)}
+.deck-choice {min-width:0}
+.deck-choice p {margin:9px 0 0;color:#e5d8df;font-size:14px;line-height:1.5}
+.deck-selector {display:block;position:relative}
+.deck-selector:not(.fixed)::after {content:"";position:absolute;right:9px;top:46%;width:8px;height:8px;border:solid #d2b98d;border-width:0 2px 2px 0;transform:translateY(-50%) rotate(45deg);pointer-events:none}
+.deck-selector select {appearance:none;cursor:pointer;width:100%;min-width:0;min-height:40px;padding:3px 27px 4px 0;border:0;border-bottom:1px solid #a4896966;border-radius:0;background:transparent;color:#ffe5b1;font:700 clamp(18px,3.4vw,25px)/1.2 var(--pixel);color-scheme:dark}
+.deck-selector select:hover:enabled {border-color:#ffe1a0}
+.deck-selector select:disabled {opacity:1;cursor:default}
+.deck-selector option {background:#302336;color:#ffe8c5;font:500 16px var(--sans)}
+.deck-companions {display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px;padding:10px 0 13px;border-top:1px solid #a4896938;color:#ede1e9}
+.deck-companions small {margin-right:auto;color:#d0bdce;font-size:13px}
+.deck-companions span {display:inline-flex;align-items:center;gap:5px;font-weight:650}
+.deck-companions img {width:25px;height:25px;object-fit:contain;image-rendering:pixelated}
+.run-options {border-block:1px solid #a4896945}
+.run-options > summary,.deck-unlocks > summary {cursor:pointer;padding:11px 0;color:#e9d7bc}
+.run-options > summary small {float:right;max-width:64%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#cbbccc;font-size:12px;line-height:20px}
+.run-settings {display:grid;gap:13px;padding:4px 0 14px}
+.run-settings .cw-run-field {grid-template-columns:minmax(70px,.6fr) minmax(0,1.6fr);align-items:center}
+.run-settings .cw-run-field small {grid-column:2;margin:0}
+.run-settings .cw-seed-form {margin:0}
+.deck-unlocks {border-top:1px solid #a489692b}
+.deck-unlocks dl {margin:0;color:#d5c8d6}
+.deck-unlocks dl div {display:flex;justify-content:space-between;gap:8px;padding:4px 0}
+.deck-unlocks dd {margin:0;text-align:right}
+@media(max-width:430px) {
+  .deck-preview {grid-template-columns:68px minmax(0,1fr);gap:11px;padding-block:10px 14px}
+  .deck-choice p {font-size:13px}
+}
 .available-deck {border-color:#967a56;background:linear-gradient(115deg,#473344,#2a2130)}
 .available-deck>img {width:38px;height:44px;object-fit:contain;image-rendering:pixelated}
 .available-deck small {color:#ead19e}
-.practice-seed {margin-top:14px;color:#d6c6d6}
-.practice-seed summary {width:fit-content;cursor:pointer;padding:6px 0;font-size:13px}
-.practice-seed summary:focus-visible {outline:2px solid #ffe6aa;outline-offset:3px}
-.practice-seed .cw-seed-form {margin-top:4px}
 .lesson-hand {position:relative;flex:0 0 52px;height:60px}
 .lesson-hand .parlor-card {font-size:22px}
 .grimoire-lesson p {margin:4px 0 0;color:#eadfea}
@@ -42,7 +73,7 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 }
 .cw-dialog[data-page="lobby"] .cw-body {
   position:relative;isolation:isolate;width:100%;height:100%;padding:0;overflow:auto;
-  display:grid;grid-template-rows:minmax(min-content,1fr) auto;
+  display:grid;grid-template-rows:1fr;
 }
 .parlor-scene {position:absolute;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
 .parlor-painting {
@@ -51,7 +82,7 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 }
 .parlor-scene::after {
   content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,#0e081a88,transparent 59%),linear-gradient(0deg,#100a1efa,transparent 24%);
+  background:linear-gradient(90deg,#130c20ed 0%,#1a1024b8 26%,#160d2140 52%,transparent 72%),linear-gradient(0deg,#130d20b5,transparent 32%);
 }
 .dealer-window {position:absolute;left:59.5%;top:39%;width:20%;height:24%;overflow:hidden;filter:drop-shadow(0 2px 2px #160d22)}
 .dealer-window {border:0;padding:0;background:transparent;pointer-events:auto;cursor:pointer;border-radius:12%}
@@ -67,15 +98,7 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
   transform-origin:45% 88%;animation:dealer-peek 16s ease-in-out infinite;
 }
 .parlor-lantern {position:absolute;left:52.5%;top:12%;width:12%;aspect-ratio:1;background:radial-gradient(closest-side,#ffbc555c,transparent);mix-blend-mode:screen;animation:lamp-breathe 4s ease-in-out infinite alternate}
-.parlor-dust i {position:absolute;left:var(--x);top:var(--y);width:4px;height:4px;background:#ffdfae;box-shadow:0 0 6px #ffc055;animation:parlor-mote 6.5s var(--delay) ease-in-out infinite}
-.dealer-hand {position:absolute;left:58%;top:49%;width:7%;aspect-ratio:5/6;filter:drop-shadow(0 6px 6px #170e2b99);animation:levitate 4.8s ease-in-out infinite}
-.dealer-hand .amethyst {animation:dealer-toss 16s ease-in-out infinite}
-@keyframes dealer-toss {
-  0%,20%,62%,100% {transform:rotate(-5deg)}
-  35% {transform:translate(22%,-38%) rotate(12deg)}
-  46% {transform:translate(11%,-65%) rotate(-14deg)}
-  54% {transform:translate(-5%,-18%) rotate(-9deg)}
-}
+.dealer-hand {position:absolute;left:58%;top:49%;width:7%;aspect-ratio:5/6;filter:drop-shadow(0 6px 6px #170e2b99)}
 .parlor-card {
   --angle:0deg;position:absolute;left:15%;top:0;width:67%;height:84%;display:grid;place-items:center;
   background:linear-gradient(130deg,#fff3d3,#eacfa1);border:2px solid #b89868;
@@ -87,20 +110,10 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .parlor-card.ruby {--angle:-32deg;color:#a13753}
 .parlor-card.jade {--angle:23deg;color:#275857}
 .parlor-card.amethyst {--angle:-5deg;translate:0 -9%}
-.dealer-spell {position:absolute;left:57%;top:45%;width:8%;height:18%;color:#ffe7a4}
-.dealer-spell i {position:absolute;left:10%;top:16%;font:20px Georgia;animation:twinkle 2.8s ease-in-out infinite alternate}
-.dealer-spell i::after {content:"✦"}
-.dealer-spell i:nth-child(2){left:95%;top:48%;animation-delay:-1.6s;font-size:12px}
-.dealer-spell i:nth-child(3){left:18%;top:83%;animation-delay:-.8s;font-size:13px}
-.parlor-hero {align-self:center;justify-self:start;padding:5vh 0 1.5vh;margin-left:clamp(28px,8vw,180px);width:min(47vw,680px);text-align:left}
-.parlor-suits {display:flex;align-items:center;gap:.65em;color:#ebcc91;font:clamp(14px,1.3vw,23px) Georgia}
-.parlor-suits::before,.parlor-suits::after {content:"";width:42px;height:1px;background:linear-gradient(90deg,#c6a772,transparent)}
-.parlor-suits::before {transform:rotate(180deg)}
-.parlor-suits b {color:#e99a9f;font-weight:400}
-.parlor-logo {margin:clamp(10px,2.1vh,24px) 0 12px;color:#ffe8b2;line-height:.8;text-shadow:0 3px #8e5160,0 6px #4c2a44,0 9px 17px #0d0819}
+.parlor-hero {align-self:center;justify-self:start;padding:16px 0;margin-left:clamp(28px,9vw,180px);width:min(47vw,680px);text-align:left}
+.parlor-logo {margin:0 0 clamp(25px,4vh,40px);color:#ffe8b2;line-height:.8;text-shadow:0 3px #8e5160,0 6px #4c2a44,0 9px 17px #0d0819}
 .parlor-logo em {display:block;margin-left:.07em;font:italic bold clamp(50px,5.5vw,105px)/.94 Georgia,serif;letter-spacing:-.075em;color:#ffedc8}
 .parlor-logo strong {display:block;margin-left:-.025em;font:700 clamp(68px,8.7vw,170px)/.98 var(--pixel);letter-spacing:-.035em;color:#ffd383}
-.parlor-hero p {color:#f1dfe8;font:500 clamp(14px,1.14vw,21px)/1.5 var(--sans);text-shadow:0 2px 8px #170b1a;margin:14px 0 24px}
 .parlor-actions {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .parlor-actions .parlor-play,.at-verdict .verdict-play {
   color:#322038;border:1px solid #fff0b2;border-radius:5px;
@@ -111,28 +124,28 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .parlor-actions .parlor-play::after {content:"➜";font:21px Georgia}
 .parlor-actions .parlor-play:hover,.at-verdict .verdict-play:hover {background:#ffe6a8;transform:translateY(-2px)}
 .parlor-actions .parlor-secondary {min-height:48px;background:#241a32df;border-color:#987695;color:#f7e6cf}
-.parlor-nav {
-  position:relative;display:flex;align-items:center;justify-content:center;align-self:end;
-  margin:0 clamp(16px,5vw,108px) max(18px,4vh);border-block:1px solid #a5836282;
-  background:linear-gradient(90deg,transparent,#211328e8 15%,#23162ce8 85%,transparent);
-}
-.parlor-nav button,.parlor-profile {
-  display:flex;align-items:center;justify-content:center;gap:10px;border:0;background:transparent;color:#efe0c8;
-}
-.parlor-nav button {min-height:64px;padding:8px clamp(12px,2.9vw,60px);font:700 clamp(14px,1.2vw,19px) var(--sans);position:relative}
-.parlor-nav button+button::before {content:"";position:absolute;left:0;top:28%;height:44%;width:1px;background:#a17a6559}
-.parlor-nav img {width:32px;height:36px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 2px 1px #120a19)}
-.parlor-nav button:hover,.parlor-profile:hover {color:#ffe6a8;background:#62415a70}
-.parlor-profile {position:absolute;right:clamp(16px,3vw,80px);top:clamp(14px,3vh,38px);background:#211429e6;border:1px solid #9d795e;border-radius:5px;padding:7px 13px;text-align:left}
-.parlor-profile i {font:27px/1 Georgia;color:#e7bd82}
-.parlor-profile span {font:10px/1.4 var(--mono);color:#dbbb9b;text-transform:uppercase;letter-spacing:.09em}
-.parlor-profile b {display:block;font:700 13px/1.2 var(--sans);color:#fff0d7;text-transform:none;letter-spacing:0;max-width:18ch;overflow:hidden;text-overflow:ellipsis}
+.parlor-links {display:flex;align-items:center;gap:0;margin-top:13px}
+.parlor-links .cw-btn {min-height:44px;border:0;background:transparent;box-shadow:none;border-radius:2px;font:600 15px var(--sans);color:#ebd7bd;padding:6px 10px}
+.parlor-links .cw-btn:first-child {margin-left:-10px}
+.parlor-links .cw-btn+.cw-btn {position:relative;margin-left:5px}
+.parlor-links .cw-btn+.cw-btn::before {content:"";position:absolute;left:-3px;top:34%;height:32%;border-left:1px solid #bd9b797d}
+.parlor-links .cw-btn:hover:enabled {background:#412b3bb0;color:#fff0d3}
+.cw-dialog[data-page="menu"] {width:min(100%,370px)}
+.cw-dialog[data-page="menu"] .cw-body {padding:4px 22px 11px}
+.parlor-directory {display:grid}
+.parlor-directory button {display:flex;align-items:center;gap:12px;min-height:56px;width:100%;padding:9px 4px;border:0;border-bottom:1px solid #a4896938;border-radius:0;background:none;color:#f4e6d4;text-align:left}
+.parlor-directory button:last-child {border-bottom:0}
+.parlor-directory button:hover {color:#ffdd99;background:#58405155}
+.parlor-directory img {width:27px;height:29px;object-fit:contain;image-rendering:pixelated}
+.parlor-directory b {font:650 16px var(--sans)}
+.parlor-directory small {max-width:45%;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#cbbccc}
+.parlor-directory button::after {content:"";width:7px;height:7px;border:solid #c6ab8b;border-width:1px 1px 0 0;transform:rotate(45deg);margin-left:auto}
+.parlor-directory button:has(small)::after {margin-left:0}
 .in-parlor button:focus-visible,.at-verdict button:focus-visible {outline:3px solid #fff0ab;outline-offset:3px}
 @keyframes lamp-breathe {to{opacity:.45;scale:.9}}
 @keyframes dealer-peek {0%,30%,100%{transform:translateY(0) rotate(-2deg)} 42%,52%{transform:translate(4%,8%) rotate(4deg)} 69%,76%{transform:translate(3%,82%) rotate(6deg)} 82%,86%{transform:translate(-3%,45%) rotate(-6deg)} 92%{transform:translateY(-2%) rotate(-3deg)}}
 @keyframes levitate {0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-10%) rotate(3deg)}}
 @keyframes twinkle {from{opacity:.25;scale:.65}to{opacity:1;scale:1.12}}
-@keyframes parlor-mote {0%,100%{opacity:0;transform:translate(0,12px)}40%{opacity:.82}85%{opacity:0;transform:translate(12px,-23px)}}
 
 .cw-backdrop.at-verdict {background:radial-gradient(ellipse at 50% 37%,#3f294764,#120d20df);backdrop-filter:blur(3px)}
 .at-verdict:has([data-page="won"]) {background:linear-gradient(#1d0a3460,#170d29bc),url("assets/midnight-parlor.webp") center/cover}
@@ -200,27 +213,22 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
   .parlor-scene {bottom:auto;height:57%;width:100%;z-index:-1}
   .parlor-painting {width:max(130%,101.4dvh);left:auto;right:-12%;top:43%;transform:translateY(-50%)}
   .parlor-scene::after {background:linear-gradient(0deg,#24152d 0%,transparent 28%)}
-  .parlor-hero {margin:auto 0 0;padding:0 18px;text-align:center;align-self:center;width:100%}
-  .parlor-suits,.parlor-actions {justify-content:center}
-  .parlor-logo {margin:7px 0}
+  .parlor-hero {margin:auto 0 max(7dvh,env(safe-area-inset-bottom));padding:16px;text-align:center;align-self:center;width:100%}
+  .parlor-actions,.parlor-links {justify-content:center}
+  .parlor-links .cw-btn:first-child {margin-left:0}
+  .parlor-logo {margin:7px 0 24px}
   .parlor-logo em {font-size:clamp(37px,9vw,60px);line-height:.9}
   .parlor-logo strong {font-size:clamp(64px,15vw,96px)}
-  .parlor-hero p {font-size:14px;margin:10px 0 17px}
+
   .parlor-actions .parlor-play {min-height:48px}
-  .parlor-nav {flex:none;align-self:stretch;display:grid;grid-template-columns:repeat(4,1fr);margin:clamp(17px,4vh,40px) 12px max(12px,env(safe-area-inset-bottom))}
-  .parlor-nav button {flex-direction:column;gap:3px;font-size:12px;min-height:64px;padding:6px 1px}
-  .parlor-nav img {width:24px;height:26px}
 }
 @media(max-height:520px) and (min-aspect-ratio:4/5) {
   .parlor-hero {padding:10px 0;margin-left:6vw}
-  .parlor-logo {margin:4px 0}
+  .parlor-logo {margin:4px 0 18px}
   .parlor-logo em {font-size:35px}
   .parlor-logo strong {font-size:clamp(50px,8vw,80px)}
-  .parlor-hero p {margin:5px 0 10px}
+
   .parlor-actions .parlor-play {min-height:42px}
-  .parlor-nav {margin-bottom:8px}
-  .parlor-nav button {min-height:42px}
-  .parlor-nav img {height:25px}
   .verdict-art {height:72px}
   .at-verdict .cw-head {padding-top:12px}
   .at-verdict .cw-head h2 {font-size:38px}

@@ -55,10 +55,11 @@
     layer.append(group);
     const speed = Math.min(4, Math.max(.35, Number(options.speed) || 1));
     const still = options.reducedMotion || root.matchMedia?.("(prefers-reduced-motion: reduce)").matches || !group.animate;
-    const fx = {source, point, still};
+    const fx = {source, point, still, cardFace:options.cardFace};
+    if (Array.isArray(options.cards)) fx.cards = options.cards.map(anchor).filter(Boolean);
     // Extra anchor names allow shop and consumable effects to share this layer.
     for (const [name, value] of Object.entries(options)) {
-      if (name === "facts" || name === "source" || !value || typeof value !== "object") continue;
+      if (name === "facts" || name === "source" || name === "cards" || name === "cardFace" || !value || typeof value !== "object") continue;
       const location = anchor(value);
       if (location) fx[name] = location;
     }

@@ -40,7 +40,8 @@
   function rank(n) { return ({11:'J',12:'Q',13:'K',14:'A'})[n] || String(n); }
   function cardModifiers(c) {
     const title = word => word.charAt(0).toUpperCase()+word.slice(1);
-    return [c.enhancement && title(c.enhancement), c.edition && title(c.edition), c.seal && title(c.seal)+' Seal'].filter(Boolean);
+    return [c.enhancement && title(c.enhancement), c.edition && title(c.edition), c.seal && title(c.seal)+' Seal',
+      c.tallyChips && '+'+num(c.tallyChips)+' Chips banked'].filter(Boolean);
   }
   function red(suit) { return suit === 'H' || suit === 'D' ? ' cw-red-suit' : ''; }
   function api() { return global.CW; }
@@ -192,7 +193,10 @@
     observer.observe(layer);
     observer.observe(dialog());
     layer.addEventListener('input', event => {
-      if (event.target.id === 'cw-run-seed') restartSeed = event.target.value;
+      if (event.target.id === 'cw-run-seed') {
+        restartSeed = event.target.value;
+        layer.querySelector('.seed-indicator').hidden = !restartSeed.trim();
+      }
       if (event.target.type === 'range') {
         const value = layer.querySelector('output[for="'+event.target.id+'"]');
         if (value) value.value = Math.round(Number(event.target.value)*100)+'%';
@@ -265,8 +269,8 @@
     const s = state();
     const names = {codex:'guide',info:'run',options:'settings'};
     next = names[next] || next;
-    if (!['guide','deck','run','settings','restart','spell','shop-spell','lobby','career','collection','profiles'].includes(next)) return;
-    if (!s && !['lobby','settings','restart','career','collection','profiles'].includes(next)) return;
+    if (!['menu','guide','deck','run','settings','restart','spell','shop-spell','leave-rewards','lobby','career','collection','profiles'].includes(next)) return;
+    if (!s && !['menu','lobby','settings','restart','career','collection','profiles'].includes(next)) return;
     if (page === next && value === detail) return;
     if (page !== next && page) backStack.push([page,detail]);
     if (next === 'restart') {
@@ -277,7 +281,7 @@
     }
     if (next === 'spell') {
       const d = ownedItem(s,'consumables',Number(value));
-      const selected = (options.getSelection?.() || []).filter(id=>usableCards(s).some(c=>c.id===id));
+      const selected = (options.getSelection?.() || []).filter(id=>usableCards(s).some(c=>c.id===id && api().canTarget(d,c)));
       targets = selected.length <= d.maxTargets ? selected : [];
     }
     if (next === 'shop-spell') targets = [];
@@ -289,7 +293,7 @@
     const leaving = page;
     const previous = backStack.pop() || [readPhase(state()), ''];
     route(previous[0], previous[1]);
-    if (previous[0] === 'lobby') {
+    if (previous[0] === 'lobby' || previous[0] === 'menu') {
       const trigger = leaving === 'guide' ? '[data-cw="learn"]' : '[data-value="'+leaving+'"]';
       layer.querySelector(trigger)?.focus({preventScroll:true});
     }
@@ -315,9 +319,9 @@
     const priorScroll = reset ? 0 : body.scrollTop;
     const focused = !reset && layer.contains(document.activeElement) && document.activeElement.dataset.cw ? {action:document.activeElement.dataset.cw,value:document.activeElement.dataset.value} : null;
     const focusedId = !reset && layer.contains(document.activeElement) && document.activeElement.id;
-    const practiceOpen = !reset && page==='restart' && body.querySelector('.practice-seed')?.open;
+    const openSections = !reset && page === 'restart' ? [...body.querySelectorAll('details[open]')].map(section=>section.id) : [];
     const selection = !reset && document.activeElement?.tagName === 'INPUT' ? [document.activeElement.selectionStart,document.activeElement.selectionEnd] : null;
-    const views = {guide:guideView,deck:deckView,run:runView,settings:settingsView,restart:restartView,spell:spellView,'shop-spell':spellView,shop:shopView,pack:packView,payout:payoutView,select:selectView,won:endView,lost:endView,lobby:lobbyView,career:careerView,collection:collectionView,profiles:profilesView};
+    const views = {menu:menuView,guide:guideView,deck:deckView,run:runView,settings:settingsView,restart:restartView,spell:spellView,'shop-spell':spellView,'leave-rewards':leaveRewardsView,shop:shopView,pack:packView,payout:payoutView,select:selectView,won:endView,lost:endView,lobby:lobbyView,career:careerView,collection:collectionView,profiles:profilesView};
     const view = views[page]?.(s);
     if (!view) return;
     dialog().dataset.page = page;
@@ -325,6 +329,7 @@
     layer.classList.toggle('at-verdict',page==='won' || page==='lost');
     layer.querySelector('.cw-head').innerHTML = '<div><p class="cw-kicker">' + esc(view.kicker) + '</p><h2 id="cw-panel-title">' + esc(view.title) + '</h2></div>' + (view.headerEnd || '') + (isDismissible() ? '<button type="button" class="cw-x" data-cw="close" aria-label="Close panel">×</button>' : '');
     const emblem = {restart:'logo',guide:'grimoire',collection:'orb',career:'blind',settings:'key',profiles:'owl'}[page];
+    if (page === 'shop') global.CWShopCat.mount(layer.querySelector('.cw-head'),s);
     if (emblem && options.wantsLobby?.()) {
       layer.querySelector('.cw-head').insertAdjacentHTML('afterbegin','<img class="parlor-emblem" alt="" src="'+global.CWContent.portrait(emblem)+'">');
     }
@@ -336,7 +341,10 @@
     layer.querySelector('.cw-message').textContent = message;
     global.CWContent.colorStats(layer.querySelector('.cw-head'));
     body.innerHTML = view.body;
-    if (practiceOpen) body.querySelector('.practice-seed').open = true;
+    for (const id of openSections) {
+      const section = document.getElementById(id);
+      if (section) section.open = true;
+    }
     global.CWContent?.colorStats?.(body);
     if(page==='payout' && reset && !options.getSettings?.()?.reducedMotion && body.animate) tallySpoils(body);
     layer.querySelector('.cw-footer').innerHTML = view.footer;
@@ -439,7 +447,7 @@
         grid += '<span class="cw-deck-tile'+red(suit)+(n?'':' cw-spent')+'"'+(n?' tabindex="0"'+tip:'')+' aria-label="'+esc(label)+'">'+(n>1?'×'+n:n?rank(r):'–')+(crossed?global.CWCardTip.cross:'')+'</span>';
       }
     }
-    const modified = source.filter(c=>c.enhancement || c.edition || c.seal);
+    const modified = source.filter(c=>c.enhancement || c.edition || c.seal || c.tallyChips);
     const mods = modified.length ? heading('Modified cards')+'<div class="cw-mod-list">'+modified.map(c=>'<span tabindex="0"'+cardTip(c)+'>'+esc(rank(c.rank)+suits[c.suit]+' · '+cardModifiers(c).join(' · '))+(s.phase==='play' && api().debuffed(s,c)?global.CWCardTip.cross:'')+'</span>').join('')+'</div>' : '';
     return result('Deck inspection','Your deck',tabs+grid+'</div>'+mods);
   }
@@ -455,7 +463,8 @@
     const st = s.stats;
     const modes = [api().DECKS?.[s.deckId]?.name,api().STAKES?.[s.stakeId]?.name,api().CHALLENGES?.[s.challengeId]?.name].filter(Boolean).join(' · ');
     const stopBoss = api().canDisableBoss?.(s) ? button('disable-boss','Disable boss rule'+bossCost('bossDisablePrice',s),'cw-danger') : '';
-    return result('Run record','Run info','<div class="cw-stats">'+stat('Ante',s.ante)+stat('Round',s.round)+stat('Blinds won',st.roundsWon)+stat('Best hand score',num(st.bestScore))+'</div>'+heading('This ante')+road(s)+heading('Run details')+'<div class="cw-box">'+esc(modes)+'<br><small>'+num(st.handsPlayed)+' hands played · '+num(st.discardsUsed)+' discards used'+(s.seed != null?' · Seed '+esc(s.seed):'')+'</small></div>',
+    const tally = s.tallyPerPlay ? '<p>Witch’s Tally · Played cards bank +'+num(s.tallyPerPlay)+' Chips each.</p>' : '';
+    return result('Run record','Run info','<div class="cw-stats">'+stat('Ante',s.ante)+stat('Round',s.round)+stat('Blinds won',st.roundsWon)+stat('Best hand score',num(st.bestScore))+'</div>'+heading('This ante')+road(s)+heading('Run details')+'<div class="cw-box">'+esc(modes)+'<br><small>'+num(st.handsPlayed)+' hands played · '+num(st.discardsUsed)+' discards used'+(s.seed != null?' · Seed '+esc(s.seed):'')+'</small>'+tally+'</div>',
         stopBoss+button('open','Hand guide','','guide')+button('open','Career','','career')+button('open','Settings','','settings'));
   }
   function settingsView() {
@@ -475,12 +484,13 @@
     const decks = api().DECKS || {};
     const stakes = api().STAKES || {};
     const challenges = api().CHALLENGES || {};
-    const unlocked = progress().unlocked || {};
+    const profile = progress();
+    const unlocked = profile.unlocked || {};
     const available = (options,category,id) => Object.hasOwn(options,id) && (!unlocked[category] || unlocked[category].includes(id));
     const current = (options,category,id) => available(options,category,id) ? id : Object.keys(options).find(key=>available(options,category,key));
     const challengeId = available(challenges,'challenges',restartChallenge) ? restartChallenge : '';
     const challenge = challenges[challengeId];
-    return {decks,stakes,challenges,unlocked,challengeId,challenge,
+    return {decks,stakes,challenges,unlocked,unlockHints:profile.unlockHints || {},challengeId,challenge,
       deckId:challenge?.deck ?? challenge?.deckId ?? current(decks,'decks',restartDeck) ?? 'arcane',
       stakeId:challenge?.stake ?? challenge?.stakeId ?? current(stakes,'stakes',restartStake)};
   }
@@ -492,40 +502,47 @@
     }).join('');
     const standard=key==='challenge'?'<option value=""'+(selected?'':' selected')+'>Standard run</option>':'';
     const choice=values[selected];
-    return '<div class="cw-run-field"><label for="'+id+'">'+label+'</label><select id="'+id+'" class="cw-select" data-select="'+key+'"'+(forced?' disabled':'')+'>'+standard+list+'</select>'+(choice?'<small>'+esc(choice.description)+'</small>':'')+'</div>';
+    return '<div class="cw-run-field"><label for="'+id+'">'+label+'</label><select id="'+id+'" class="cw-select" data-select="'+key+'"'+(forced?' disabled':'')+'>'+standard+list+'</select>'+(choice && key!=='challenge'?'<small>'+esc(choice.description)+'</small>':'')+'</div>';
   }
   function startForm(s) {
-    const {decks,stakes,challenges,unlocked,deckId,stakeId,challengeId,challenge}=runChoices();
-    const seed = '<div class="cw-seed-form"><label for="cw-run-seed">Run seed <small>Optional · practice</small></label><div><input id="cw-run-seed" type="text" maxlength="'+seedLimit+'" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(restartSeed)+'" placeholder="Random seed">'+(resumable() && s.seed?button('repeat-seed','Reuse seed'):'')+'</div></div>';
-    const hints=progress().unlockHints || {};
-    const nextDeck=Object.keys(decks).find(id=>unlocked.decks && !unlocked.decks.includes(id) && hints[id]);
-    const hint=nextDeck && !challenge && resumable()?'<p class="cw-unlock-hint"><b>'+esc(decks[nextDeck].name)+'</b> '+esc(hints[nextDeck])+'</p>':'';
-    const starters=challenge?.rules?.starter ?? decks[deckId].starter ?? ['merlin'];
+    const {decks,stakes,challenges,unlocked,unlockHints,deckId,stakeId,challengeId,challenge}=runChoices();
+    const deck=decks[deckId];
+    const forcedDeck=!!(challenge?.deck || challenge?.deckId);
+    const available=Object.entries(decks).filter(([id])=>id===deckId || !unlocked.decks || unlocked.decks.includes(id));
+    const deckOptions=available.map(([id,d])=>'<option value="'+esc(id)+'"'+(id===deckId?' selected':'')+'>'+esc(d.name)+'</option>').join('');
+    const deckSelect='<select id="cw-run-deck" data-select="deck" aria-label="Starting deck"'+(forcedDeck?' disabled':'')+'>'+deckOptions+'</select>';
+    const seed = '<div class="cw-seed-form"><label for="cw-run-seed">Practice seed <small>Optional</small></label><div><input id="cw-run-seed" type="text" maxlength="'+seedLimit+'" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(restartSeed)+'" placeholder="Random seed">'+(resumable() && s.seed?button('repeat-seed','Reuse seed'):'')+'</div></div>';
+    const locked=Object.entries(decks).filter(([id])=>unlocked.decks && !unlocked.decks.includes(id));
+    const deckHints=locked.length?'<details class="deck-unlocks" id="deck-unlocks"><summary>Locked decks ('+locked.length+')</summary><dl>'+
+      locked.map(([id,d])=>'<div><dt>'+esc(d.name)+'</dt><dd>'+esc(unlockHints[id] || d.unlockText || 'Locked')+'</dd></div>').join('')+'</dl></details>':'';
+    const starters=challenge?.rules?.starter ?? deck.starter ?? ['merlin'];
     const companions=starters.map(id=>{
       const d=item(id);
       return '<span><img alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
     }).join('');
-    const preview='<div class="deck-preview"><i aria-hidden="true"></i><div><strong>'+esc(decks[deckId].name)+'</strong><div class="deck-companions">'+(companions || 'No starting familiar')+'</div></div></div>';
-    return '<form id="cw-new-run">'+preview+'<div class="cw-run-grid">'+runSelect('Starting deck','deck',decks,deckId,unlocked.decks,!!(challenge?.deck || challenge?.deckId))+
-      (Object.keys(stakes).length?runSelect('Difficulty','stake',stakes,stakeId,unlocked.stakes,!!(challenge?.stake || challenge?.stakeId)):'')+'</div>'+
-      (Object.keys(challenges).length?runSelect('Mode','challenge',challenges,challengeId,unlocked.challenges):'')+hint+
-      '<details class="practice-seed"><summary>Practice with a seed</summary>'+seed+'</details></form>';
+    const emblem=({arcane:'grimoire',alchemist:'potion',oracle:'orb'})[deckId] || (deck.starter?.length ? item(deck.starter[0]).art : 'owl');
+    const selector='<div class="deck-selector'+(forcedDeck?' fixed':'')+'">'+deckSelect+'</div>';
+    const preview='<div class="deck-preview"><div class="run-deck-art" aria-hidden="true"><i></i><i></i><i><img src="'+esc(global.CWContent.portrait(emblem))+'" alt=""></i></div>'+
+      '<div class="deck-choice">'+selector+'<p>'+esc(challenge?.description || deck.description)+'</p></div></div>'+
+      '<div class="deck-companions"><small>Starting familiar'+(starters.length>1?'s':'')+'</small>'+(companions || '<span>None</span>')+'</div>';
+    const settings=[stakes[stakeId]?.name,challenge?.name].filter(Boolean).map(esc).join(' · ');
+    return '<form id="cw-new-run">'+preview+'<details class="run-options" id="run-options"><summary>Run options <small>'+settings+
+      '<span class="seed-indicator"'+(restartSeed.trim()?'':' hidden')+'> · Seeded</span></small></summary><div class="run-settings">'+
+      (Object.keys(stakes).length?runSelect('Difficulty','stake',stakes,stakeId,unlocked.stakes,!!(challenge?.stake || challenge?.stakeId)):'')+
+      (Object.keys(challenges).length?runSelect('Challenge','challenge',challenges,challengeId,unlocked.challenges):'')+seed+deckHints+'</div></details></form>';
   }
   function startButton() { return '<button class="cw-btn cw-primary" type="submit" form="cw-new-run">Start run</button>'; }
   function restartView(s) {
-    return result('','New run',startForm(s)+(resumable() && !['won','lost'].includes(s.phase)?'<p class="cw-explain">Starting a new run replaces the active run for this profile.</p>':''),button('close','Back')+startButton());
+    return result('','Choose your deck',startForm(s)+(resumable() && !['won','lost'].includes(s.phase)?'<p class="cw-explain">Starting a new run replaces your active run.</p>':''),button('close','Back')+startButton());
   }
   function parlorCard(rank,suit,extra='') {
     return '<i class="parlor-card '+extra+'"><b>'+rank+'</b><span>'+suit+'</span><small>'+suit+'</small></i>';
   }
   function parlorScene() {
-    const motes = Array.from({length:16},(_,i)=>
-      '<i style="--x:'+(9+(i*31)%86)+'%;--y:'+(10+(i*13)%69)+'%;--delay:-'+(i*.77)+'s"></i>').join('');
     return '<div class="parlor-scene"><div class="parlor-painting">'+
-      '<span class="parlor-lantern"></span><div class="parlor-dust">'+motes+'</div>'+
+      '<span class="parlor-lantern" aria-hidden="true"></span>'+
       '<button type="button" class="dealer-window" data-cw="deal-trick" aria-label="Ask the market cat to deal a poker hand"><span class="dealer-cat"></span></button>'+
-      '<div class="dealer-spell" aria-hidden="true"><i></i><i></i><i></i></div>'+
-      '<div class="dealer-hand" aria-hidden="true">'+parlorCard('Q','♥','ruby')+parlorCard('K','♣','jade')+parlorCard('A','♠','amethyst')+'</div>'+
+      '<div class="dealer-hand" aria-hidden="true"></div>'+
       '<output class="dealer-call" aria-live="polite"></output></div></div>';
   }
   function dealParlorTrick() {
@@ -542,22 +559,21 @@
     options.playSound?.('select');
   }
   function lobbyView(s) {
-    const profile=progress().profile;
     const saved=resumable(), live=saved && !['won','lost'].includes(s.phase);
     const main=live ? button('continue-run','Resume Run','parlor-play') : button('open','Play','parlor-play','restart');
     const secondary=live ? button('open','New Run','parlor-secondary','restart') :
       saved ? button('continue-run','Last Result','parlor-secondary') : '';
-    const navButton=(action,value,label,art)=>'<button type="button" data-cw="'+action+'" data-value="'+value+'"><img alt="" src="'+
-      global.CWContent.portrait(art)+'"><span>'+label+'</span></button>';
-    const nav='<nav class="parlor-nav" aria-label="Main menu">'+navButton('learn','','How to Play','grimoire')+
-      navButton('open','collection','Collection','orb')+navButton('open','career','Career','blind')+
-      navButton('open','settings','Settings','key')+'</nav>';
-    const account='<button type="button" class="parlor-profile" data-cw="open" data-value="profiles"><i aria-hidden="true">♙</i><span>Profile<b>'+esc(profile?.name || 'Apprentice')+'</b></span></button>';
-    const title='<div class="parlor-hero"><div class="parlor-suits" aria-hidden="true">♠ <b>♥</b> ♣ <b>♦</b></div>'+
-      '<h1 class="parlor-logo"><em>Card</em> <strong>Wizard</strong></h1>'+
-      '<p>Cast poker hands. Collect familiars. Beat the blinds.</p>'+
-      '<div class="parlor-actions">'+main+secondary+'</div></div>';
-    return result('','Card Wizard',title+nav+account+parlorScene());
+    const links='<nav class="parlor-links" aria-label="Main menu">'+button('learn','How to play')+button('open','Menu','','menu')+'</nav>';
+    const title='<div class="parlor-hero"><h1 class="parlor-logo"><em>Card</em> <strong>Wizard</strong></h1>'+
+      '<div class="parlor-actions">'+main+secondary+'</div>'+links+'</div>';
+    return result('','Card Wizard',title+parlorScene());
+  }
+  function menuView() {
+    const entries=[['collection','Collection','orb'],['career','Career','blind'],['settings','Settings','key'],['profiles','Profile','owl']];
+    const profile=progress().profile?.name || 'Apprentice';
+    const nav=entries.map(([value,label,art])=>'<button type="button" data-cw="open" data-value="'+value+'"><img alt="" src="'+
+      esc(global.CWContent.portrait(art))+'"><b>'+label+'</b>'+(value==='profiles'?'<small>'+esc(profile)+'</small>':'')+'</button>').join('');
+    return result('','Menu','<nav class="parlor-directory" aria-label="Game menu">'+nav+'</nav>');
   }
   function profilesView() {
     const profiles=options.getProfiles?.() || [];
@@ -602,13 +618,17 @@
   function targetCards(cards,d,action='target') {
     return cards.map(c=>{
       const isSelected = targets.includes(c.id);
-      const mods=cardModifiers(c);
-      const muted = state().phase==='play' && api().debuffed(state(),c);
-      const label = [rank(c.rank)+' of '+suitNames[c.suit], ...mods, ...(muted?['Boss disabled']:[])].join(', ');
-      return '<button class="cw-target'+red(c.suit)+'" type="button" aria-label="'+esc(label)+'" '+cardTip(c)+' data-cw="'+action+'" data-value="'+esc(c.id)+'" aria-pressed="'+isSelected+'"'+(!isSelected && targets.length>=d.maxTargets?' disabled':'')+'>'+esc(rank(c.rank)+suits[c.suit])+(mods.length?'<small>'+mods.map(esc).join('<br>')+'</small>':'')+(muted?global.CWCardTip.cross:'')+'</button>';
+      const disabled = !api().canTarget(d,c) || (!isSelected && targets.length>=d.maxTargets);
+      return options.cardPreview(c,{action,selected:isSelected,disabled});
     }).join('');
   }
   function targetLabel(d) {
+    if (d.effect==='rankCopy' || d.effect==='suitCopy') {
+      const key = d.effect==='rankCopy' ? 'rank' : 'suit';
+      const source = usableCards(state()).find(c=>c.id===targets[0]);
+      if (!source) return 'Choose a card to set the '+key;
+      return 'Copy '+(key==='rank' ? rank(source.rank) : suitNames[source.suit])+' to 1–'+(d.maxTargets-1)+' other cards';
+    }
     const range = d.maxTargets===d.minTargets ? String(d.minTargets) : d.minTargets+'–'+d.maxTargets;
     return 'Choose '+range+' card'+(d.maxTargets===1?'':'s');
   }
@@ -618,7 +638,7 @@
     const index=Number(detail);
     const shopping=page==='shop-spell';
     const d=shopping?item(s.offers[index]):ownedItem(s,'consumables',index);
-    const body='<p class="cw-explain">'+itemDescription(d)+'</p>'+(d.maxTargets?heading(targetLabel(d))+'<div class="cw-targets">'+targetCards(usableCards(s),d)+'</div>':'');
+    const body='<p class="cw-explain">'+itemDescription(d)+'</p>'+(d.maxTargets?heading(targetLabel(d))+'<div class="pack-playing-cards">'+targetCards(usableCards(s),d)+'</div>':'');
     const label=shopping?'Buy & use '+cash(api().price(s,s.offers[index])):'Cast spell';
     const check=shopping?api().canBuyAndUse?.(s,index,targets):api().canUse?.(s,index,targets);
     return result('',d.name,body,button('close','Back')+button(shopping?'buy-use-cast':'cast',label,'cw-primary','',!targetsReady(d) || check===false));
@@ -644,12 +664,14 @@
   }
   function marketInventory(s,cap) {
     const count=s.familiars.length;
-    const slots=s.familiars.map((_,i)=>{
+    const total=Math.max(cap.familiars,count);
+    const slots=Array.from({length:total},(_,i)=>{
+      if (i>=count) return '<span class="moon-empty-slot" style="--slot:'+i+'" aria-hidden="true"><span>✧</span></span>';
       const d=ownedItem(s,'familiars',i);
       const tilt=count>1 ? (2*i/(count-1)-1)*Math.min(8,(count-1)*2) : 0;
       const pose='--slot:'+i+';--tilt:'+tilt.toFixed(2)+'deg;--drop:'+Math.abs(tilt).toFixed(2)+'px';
       return '<button type="button" class="companion-card moon-companion" style="'+pose+'" data-companion="'+i+'"'+cardTip(d)+' aria-expanded="false" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
-    }).join('') || '<span class="moon-empty-slot" aria-hidden="true">✧</span>';
+    }).join('');
     const spellSlots=Array.from({length:Math.max(cap.consumables,s.consumables.length)},(_,i)=>{
       if (!s.consumables[i]) return '<span class="moon-spell-empty" aria-hidden="true"><svg viewBox="0 0 24 24">'+global.CWContent.cardTypes.spell[1]+'</svg></span>';
       const d=ownedItem(s,'consumables',i);
@@ -657,8 +679,8 @@
         ' aria-label="'+esc('Inspect '+d.name)+'">'+picture(d,true)+'<span class="moon-spell-name">'+esc(d.name)+'</span></button>';
     }).join('');
     return '<section class="companion-rail moon-roost" aria-label="Shop inventory">'+
-      '<div class="moon-roost-title"><h3>Your familiars</h3><small>'+s.familiars.length+' / '+cap.familiars+' equipped</small></div>'+
-      '<div class="companion-slots" style="--intervals:'+Math.max(1,count-1)+';--spread:'+Math.max(.56,.94-.045*count)+'">'+slots+'</div>'+
+      '<div class="moon-roost-title"><h3>Your familiars</h3><small class="moon-capacity" aria-label="'+count+' of '+cap.familiars+' familiar slots occupied">'+count+' / '+cap.familiars+'</small></div>'+
+      '<div class="companion-slots" style="--intervals:'+Math.max(1,total-1)+'">'+slots+'</div>'+
       '<div class="moon-spell-title"><h3>Your spells</h3><small>'+s.consumables.length+' / '+cap.consumables+' stored</small></div>'+
       '<div class="moon-spell-slots">'+spellSlots+'</div>'+marketPurse(s.money)+'</section>';
   }
@@ -679,11 +701,35 @@
     return art;
   }
 
+  function hasFreeReward(s) {
+    return Boolean(s.rewardPacks?.length || (s.freeReroll && !s.rules.noReroll));
+  }
+  function rewardTicket(s,atExit=false) {
+    const packs=s.rewardPacks || [];
+    const reroll=s.freeReroll && !s.rules.noReroll;
+    const sale=!atExit && s.shopDiscount<1;
+    if (!packs.length && !reroll && !sale) return '';
+    const pack=packs.length ? item(packs[0]) : null;
+    const openPack=pack ? button('reward-pack','Open '+pack.name+' · FREE','moon-claim') : '';
+    const rerollButton=reroll ? button('reroll','Reroll stock · FREE','moon-claim') : '';
+    const queued=packs.length>1 ? '<small>+'+(packs.length-1)+' queued</small>' : '';
+    const discount=sale ? '<strong>'+Math.round(100*(1-s.shopDiscount))+'% off all stock</strong>' : '';
+    return '<section class="moon-reward-ticket" aria-label="Blind skip rewards"><h3><span aria-hidden="true">✦</span> Blind skip reward</h3>'+
+      '<div>'+openPack+queued+rerollButton+discount+'</div></section>';
+  }
+  function leaveRewardsView(s) {
+    const packs=s.rewardPacks?.length || 0;
+    const detail=[];
+    if (s.freeReroll && !s.rules.noReroll) detail.push('Your free reroll expires when you leave.');
+    if (packs) detail.push(packs===1 ? 'Your unopened pack carries over to the next shop.' : 'Your unopened packs carry over to the next shop.');
+    const body=rewardTicket(s,true)+'<p class="cw-explain">'+esc(detail.join(' '))+'</p>';
+    return result('Moonlit Market','Leave with unused rewards?',body,
+      button('close','Back to shop','cw-primary')+button('leave-anyway','Leave shop'));
+  }
   function shopView(s) {
     const cap=api().capacity(s);
-    function stockCard(i) {
+    function stockCard(i,slot,indices) {
       const id=s.offers[i];
-      if (!id) return '<div class="moon-sold"><span aria-hidden="true">✧</span>Sold out</div>';
       const d=item(id), price=api().price(s,id), ok=api().canBuy(s,i);
       const family=global.CWContent.cardType(d);
       const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
@@ -702,24 +748,33 @@
       const details=global.CWCardTip.details({...d,description},false).split('\n');
       details.splice(1,0,type+(d.kind==='familiar' && d.rarity?' · '+d.rarity:''));
       if (reason) details.push(reason);
-      if (castable) details.push('Select the spell to buy and cast it.');
+      if (ok) details.push('Buy for '+cash(price));
       const tip=global.CWCardTip.attribute(details.join('\n'));
-      const art=castable
-        ? '<button type="button" class="moon-art" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Inspect '+d.name)+'"'+tip+'>'+marketObject(d)+'</button>'
-        : '<div class="moon-art" tabindex="0" aria-label="'+esc(d.name)+'"'+tip+'>'+marketObject(d)+'</div>';
-      const buy='<button type="button" class="cw-btn moon-buy" data-cw="buy" data-value="'+i+'" aria-label="'+esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''))+'"'+(ok?'':' disabled')+'>Buy <span class="moon-price">'+cash(price)+'</span></button>';
-      return '<article class="moon-item" data-stock-type="'+esc(family || d.kind)+'">'+art+buy+'</article>';
+      const label=esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''));
+      const before=s.catSale && api().price(s,id,false);
+      const oldPrice=before>price?'<del aria-hidden="true">'+cash(before)+'</del>':'';
+      const priceTag='<span class="moon-price">'+oldPrice+'<span class="stat-money">'+cash(price)+'</span></span>';
+      const buy='<button type="button" class="moon-purchase" '+(ok?'data-cw="buy"':'aria-disabled="true"')+' data-value="'+i+'" aria-label="'+label+'"'+tip+'>'+priceTag+'</button>';
+      const cast=castable?'<button type="button" class="moon-cast" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Buy and cast '+d.name+' for '+cash(price))+'">Buy &amp; cast</button>':'';
+      const tilt=(slot-(indices.length-1)/2)*Math.min(3,14/Math.max(1,indices.length-1));
+      const pose='--slot:'+slot+';--tilt:'+tilt.toFixed(2)+'deg;--drop:'+Math.abs(tilt).toFixed(2)+'px';
+      return '<article class="moon-item" data-stock-type="'+esc(family || d.kind)+'" style="'+pose+'"><div class="moon-display">'+
+        '<div class="moon-art" inert aria-hidden="true">'+marketObject(d)+'</div>'+buy+cast+'</div></article>';
     }
     const count=s.shopOfferCount ?? Math.max(0,s.offers.length-3);
-    const shelf=(name,cls,indices,control='')=>'<section class="moon-shelf '+cls+'"><header><h3>'+name+'</h3>'+control+'</header><div class="moon-goods">'+indices.map(stockCard).join('')+'</div></section>';
+    const shelf=(name,cls,indices,control='')=>{
+      const available=indices.filter(i=>s.offers[i]);
+      const goods=available.length?available.map(stockCard).join(''):'<div class="moon-sold">Sold out</div>';
+      return '<section class="moon-shelf '+cls+'"><header><h3>'+name+'</h3>'+control+'</header><div class="moon-goods" style="--intervals:'+Math.max(0,available.length-1)+'">'+goods+'</div></section>';
+    };
     const reroll=api().rerollPrice(s);
-    const rerollControl=!s.rules?.noReroll?button('reroll','↻  Reroll '+(reroll?cash(reroll):'free'),'moon-reroll','',s.money<reroll):'';
+    const rerollControl=!s.rules?.noReroll?button('reroll','↻  Reroll '+(reroll?cash(reroll):'FREE'),'moon-reroll'+(reroll?'':' moon-free-roll'),'',s.money<reroll):'';
     const stock=shelf('Card counter','moon-stock',Array.from({length:count},(_,i)=>i),rerollControl);
-    const packs=shelf('Booster packs','moon-packs',[count,count+1]);
-    const voucher=shelf('Voucher','moon-vouchers',[count+2]);
-    const rewards=s.rewardPacks?.length?'<div class="cw-rewards">'+button('reward-pack','Open reward pack ('+s.rewardPacks.length+')','cw-primary')+'</div>':'';
+    const packs=shelf('Booster packs','moon-packs',s.offers.slice(count,-1).map((_,i)=>count+i));
+    const voucher=shelf('Voucher','moon-vouchers',[s.offers.length-1]);
+    const rewards=rewardTicket(s);
     const footer=button('show-menu','Menu')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary moon-next');
-    return result('Shop · Ante '+s.ante,'Moonlit Market',marketInventory(s,cap)+rewards+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
+    return result('Shop · Ante '+s.ante,'Moonlit Market',rewards+marketInventory(s,cap)+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
   }
   let lastPack, dealStart;
   function packView(s) {
@@ -747,7 +802,7 @@
     const valid=d && targetsReady(d) && api().canPick?.(s,active,targets)!==false;
     const handCards=hand.map(card=>{
       const selected=targets.includes(card.id);
-      const target=d && {selected, disabled:!selected && targets.length>=d.maxTargets};
+      const target=d && {selected, disabled:!api().canTarget(d,card) || (!selected && targets.length>=d.maxTargets)};
       return options.cardPreview(card,target);
     }).join('');
     const dealt=hand.length?'<div class="cw-pack-hand">'+heading(d?targetLabel(d):'Pack hand')+
@@ -756,7 +811,8 @@
     const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
     const ownedCards=['familiars','consumables'].flatMap(category=>s[category].map((id,i)=>{
       const d=ownedItem(s,category,i);
-      return '<button type="button" data-owned-category="'+category+'" data-slot="'+i+'" aria-expanded="false"'+cardTip(d)+'>'+esc(d.name)+'</button>';
+      const mark=d.kind==='familiar' && d.edition==='negative'?' <small class="pack-negative-label">Negative +1</small>':'';
+      return '<button type="button" data-owned-category="'+category+'" data-slot="'+i+'" aria-expanded="false"'+cardTip(d)+'>'+esc(d.name)+mark+'</button>';
     })).join('');
     const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,ownedCards+button('close-pack','Skip remaining'));
     view.headerEnd='<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong>';
@@ -797,18 +853,24 @@
       '<div class="spoils-total" aria-label="'+cash(p.total)+' earned"><strong class="stat-money" aria-hidden="true">'+cash(p.total)+
       '</strong></div><ul class="spoils-lines">'+ledger+'</ul>';
     const finalBlind = s.ante === s.rules?.anteLimit && s.blind === 2;
+    const marketGifts=[];
+    if (s.rewardPacks?.length) marketGifts.push(s.rewardPacks.length===1 ? 'a free '+item(s.rewardPacks[0]).name : s.rewardPacks.length+' free packs');
+    if (s.freeReroll && !s.rules.noReroll) marketGifts.push('a free reroll');
+    const waiting=!finalBlind && marketGifts.length ? '<p class="market-gift-note">Waiting at the shop &middot; '+esc(marketGifts.join(' and '))+'</p>' : '';
     const footer = '<div class="victory-purse"><span>Purse after collection</span><b>'+cash(s.money+p.total)+'</b></div>'+
-      button('cash-out',finalBlind?'Collect & finish run':'Collect & visit shop','cw-primary');
+      waiting+button('cash-out',finalBlind?'Collect & finish run':'Collect & visit shop','cw-primary');
     return {...result('Ante '+s.ante+'  /  Round '+s.round,api().blindInfo(s).name+' defeated',body,footer),victory:true};
   }
   function selectView(s) {
     const tickets=[0,1,2].map(i=>{
       const blind=api().blindInfo(s,i), active=i===s.blind;
-      const phase=i<s.blind?'Passed':active?'Choose':'Upcoming';
+      const receipt=s.skipReceipts?.[i];
+      const phase=i<s.blind?(receipt?'Skipped':'Passed'):active?'Choose':'Upcoming';
       const seal='<img alt="" src="'+global.CWContent.portrait(['owl','grimoire','dragon'][i])+'">';
       const tagText=blind.tag?.description || blind.tag;
       const canSkip=i<2 && !s.rules?.noSkip;
-      const tag=canSkip && tagText?'<small class="tag-bonus">Skip bonus · '+esc(tagText)+'</small>':'';
+      const tag=i<s.blind ? (receipt?'<small class="tag-bonus earned">'+esc(receipt)+'</small>':'') :
+        canSkip && tagText?'<small class="tag-bonus">Skip bonus · '+esc(tagText)+'</small>':'';
       const reroll=i===2 && api().canRerollBoss?.(s)?button('reroll-boss','Reroll boss'+bossCost('bossRerollPrice',s)):'';
       const disable=i===2 && api().canDisableBoss?.(s)?button('disable-boss','Disable rule'+bossCost('bossDisablePrice',s)):'';
       const bossTools=reroll || disable?'<div class="cw-boss-tools">'+reroll+disable+'</div>':'';
@@ -825,12 +887,10 @@
     const last=s.lastScore;
     const faces=last?.finalCards || (last?.scoring || []).map(id=>s.deck.find(card=>card.id===id)).filter(Boolean);
     const fan=faces.map((c,i)=>{
-      const stone=c.enhancement==='stone';
       const angle=(i-(faces.length-1)/2)*14;
-      return '<span class="verdict-leaf" style="--fan:'+angle+'deg;--order:'+i+'">'+
-        parlorCard(stone?'':esc(rank(c.rank)),stone?'◆':suits[c.suit],stone?'stone':red(c.suit)?'ruby':'amethyst')+'</span>';
+      return '<div class="verdict-leaf" style="--fan:'+angle+'deg;--order:'+i+'">'+options.cardPreview(c)+'</div>';
     }).join('');
-    const crest='<div class="verdict-art" aria-hidden="true"><div class="verdict-halo"></div><i class="verdict-orbit"></i>'+
+    const crest='<div class="verdict-art" aria-hidden="true" inert><div class="verdict-halo"></div><i class="verdict-orbit"></i>'+
       '<div class="verdict-stars">✦ <i>✧</i> ✦</div><div class="verdict-hand">'+(fan || parlorCard('A',won?'☀':'☾','omen'))+'</div></div>';
     const blind=api().blindInfo(s).name;
     const outcome=won ? (challenge?challenge.name+' complete':blind+' defeated') : num(Math.max(0,s.target-s.score))+' chips short of '+blind;
@@ -867,7 +927,8 @@
         if (old[key]===card[key]) continue;
         changes.push(card[key]?(key==='seal'?card[key]+' seal':card[key]):old[key]+' removed');
       }
-      push(face(old),face(card),changes.join(' · ') || (d.effect==='rankCopy' && old.id===ids[0]?'Rank source':'Unchanged'),d.effect==='seal'?'stamp':'turn');
+      const sourceLabel = old.id===ids[0] && ({rankCopy:'Rank source',suitCopy:'Suit source'})[d.effect];
+      push(face(old),face(card),changes.join(' · ') || sourceLabel || 'Unchanged',d.effect==='seal'?'stamp':'turn');
     }
     if (d.effect==='generate' || d.effect==='inventoryEdition') {
       for (const ref of [...s.familiars,...s.consumables]) {
@@ -879,6 +940,7 @@
     }
     if (!results.length) {
       const gains=Object.keys(levels).filter(k=>levels[k]!==s.levels[k]).map(k=>k+' · Lv '+s.levels[k]);
+      if (d.effect==='tally') gains.push('Cards now bank +'+num(s.tallyPerPlay)+' Chips per play');
       const label=gains.join(' / ') || (['money','cash'].includes(d.effect)?'+'+cash(s.money-balance):d.effect==='bossDisable'?'Boss ward active':'No new cards');
       push('',picture(d),label,'copy');
     }
@@ -963,7 +1025,10 @@
       else announce('That spell is unavailable right now.');
       return;
     }
-    if(name==='inspect-cast') return open('shop-spell',String(index),control.getBoundingClientRect());
+    if(name==='inspect-cast') {
+      const art=control.closest('.moon-item')?.querySelector('.moon-art');
+      return open('shop-spell',String(index),(art || control).getBoundingClientRect());
+    }
     if(name==='buy-use') {
       const d=item(s.offers[index]);
       const sourceRect=(control?.closest('.moon-item')?.querySelector('.moon-art') || control)?.getBoundingClientRect();
@@ -1007,9 +1072,11 @@
       changed('buy',sourceRect);
       return;
     }
+    if (name==='leave-shop' && hasFreeReward(s)) return open('leave-rewards');
+    if (page==='leave-rewards' && (name==='reroll' || name==='reward-pack')) close();
     const commands={
       'buy':['buy',index],'close-pack':['closePack'],reroll:['reroll'],'reward-pack':['claimRewardPack'],
-      'leave-shop':['leaveShop'],'cash-out':['cashOut'],'start-blind':['startBlind'],skip:['skipBlind'],
+      'leave-shop':['leaveShop'],'leave-anyway':['leaveShop'],'cash-out':['cashOut'],'start-blind':['startBlind'],skip:['skipBlind'],
       'sell-familiar':['sell',index],'sell-consumable':['sellConsumable',index],
       'move-left':['reorder',index,index-1],'move-right':['reorder',index,index+1],endless:['endless'],
       'reroll-boss':['rerollBoss'],'disable-boss':['disableBoss']

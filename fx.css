@@ -149,6 +149,7 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .boss-brief,.blind-actions {width:100%;display:grid;gap:6px}
 .blind-actions {margin-top:auto;padding-top:12px}.blind-state {color:#c6c4b8}
 .boss-brief small,.tag-bonus {font-size:12px;line-height:1.3;color:#ddd1c2}
+.blind-ticket .tag-bonus.earned {color:#a9dfcb}
 @media(max-width:600px){
   .shop-counter {grid-template-columns:1fr}.shop-controls {display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px}
   .shop-controls .cw-btn,.blind-actions .cw-btn {min-height:32px;padding:4px 7px;font-size:12px}
@@ -234,6 +235,56 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .trial-target {font:700 1.3rem var(--sans);color:#f1ceaa}
 .reward-coin {display:inline-grid;place-content:center;border-radius:50%;width:1.25em;height:1.25em;border:2px solid #f0c05b;background:#976424;color:#fff0b6;font-size:.75em;vertical-align:middle}
 /* Material is the face, edition is the rim, and wax sits above both. */
+.playing-card[data-enhanced=false][data-edition=""] {
+  border-color:#c1a886;
+  background-color:#f7ebd7;
+  background-image:url("assets/grain.png"),radial-gradient(ellipse at 47% 42%,#fff7e6 15%,#f6ead4 60%,var(--vellum-edge,#e3cfb5));
+}
+.playing-card[data-suit=S] {--vellum-edge:#ddd0dd;--court-sky:#514062}
+.playing-card[data-suit=H] {--vellum-edge:#eacfc2;--court-sky:#753d53}
+.playing-card[data-suit=C] {--vellum-edge:#d2dbca;--court-sky:#38564e}
+.playing-card[data-suit=D] {--vellum-edge:#ecd1ac;--court-sky:#76493a}
+.playing-card:not([data-enhancement=stone])::before {
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:url("assets/witch-vellum.png") center / 100% 100% no-repeat;
+}
+.playing-card[data-enhanced=true]::before {opacity:.52}
+.playing-card[data-enhancement=wild]::before {opacity:.9}
+.playing-card .corner-rank {z-index:1;text-shadow:0 1px #fff4d4}
+.pip-etch {fill:none;stroke:#fff2d4;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;opacity:.68}
+.ace-orbit::before,.ace-orbit::after {
+  content:"";position:absolute;left:50%;top:50%;width:111%;height:77%;transform:translate(-50%,-50%);
+  border:1px solid #9e7a5480;border-radius:50%;pointer-events:none;
+}
+.ace-orbit::after {
+  width:124%;height:88%;border:0;
+  background:repeating-conic-gradient(from 5deg,#967353ad 0deg 1.8deg,transparent 2deg 10deg);
+  mask:radial-gradient(ellipse closest-side,transparent 90%,#000 92% 96%,transparent 98%);
+}
+.ace-orbit .pip.ace {width:80%;height:62%}
+.court-window {
+  position:absolute;inset:21% 21% 20%;border:1px solid #ac895e;border-radius:52% 52% 42% 42% / 34% 34% 25% 25%;
+  background:radial-gradient(circle at 24% 30%,#ffdf96 0 1%,transparent 2%),
+    radial-gradient(circle at 78% 37%,#f9d7a1 0 1%,transparent 2%),
+    radial-gradient(circle at 66% 19%,#f4ddad 0 1%,transparent 2%),
+    repeating-conic-gradient(from 14deg at 50% 75%,transparent 0deg 12deg,#f6da9e29 13deg,transparent 14deg 25deg),
+    radial-gradient(ellipse at 50% 100%,#c2a175,var(--court-sky) 76%);
+  box-shadow:0 0 0 1px #f6ddaf,inset 0 0 0 1px #e9c5896b;
+}
+.playing-card .court {inset:22% 17% auto;width:66%;height:57%;filter:drop-shadow(0 1px 1px #251a27a0)}
+.wild-ink {position:absolute;inset:0;border-radius:inherit;background:url("assets/wild-ink.png") center / 100% 100% no-repeat;pointer-events:none}
+.card-tally {
+  position:absolute;bottom:3.5%;left:50%;transform:translateX(-50%);z-index:2;
+  display:inline-flex;align-items:center;gap:1px;padding:1px 3px;border-radius:4px;
+  font:800 clamp(7px,.72vw,11px)/1.2 var(--mono);font-variant-numeric:tabular-nums;
+  background:#193e56;color:#dcf5ff;box-shadow:0 0 0 1px #8bcde1;pointer-events:none;
+}
+.card-tally svg {width:1em;height:1em;flex:none}
+.playing-card:has(.card-tally) .card-enhance b {display:none}
+.card-preview .card-tally,.cw-fx-card .card-tally {font-size:8px}
+.verdict-leaf .playing-card {position:absolute;inset:0 auto auto 19%;width:62%;height:84%;transform:none;pointer-events:none}
+.verdict-leaf .corner-rank {font-size:clamp(12px,1.4vw,21px)}
+.verdict-leaf .card-enhance b {display:none}
 .playing-card[data-enhanced=true] {
   border:2px solid var(--edge); background-color:var(--paper);
   background-image:linear-gradient(105deg,transparent 5%,#fff9 35%,transparent 72%),var(--engraving);
@@ -250,10 +301,9 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 }
 .playing-card[data-enhancement=stone] {--edge:#645166;--paper:#c6b6c7;--engraving:conic-gradient(from 40deg at 40% 58%,#c2adbc 0 23%,#a18fa4 23% 43%,#d8ccd6 43% 62%,#b6a6ba 62% 80%,#e9dce6 80%)}
 .playing-card[data-enhancement=wild] {
-  --edge:#365b39;
-  --paper:#eee9c8;
-  background-image:url("assets/wild-vines.svg"),
-    radial-gradient(ellipse at 46% 41%,#fff8de 15%,#f3f0cf 57%,#c8d7a8 87%,#91b288);
+  --edge:#6d477f;
+  --paper:#f0e1de;
+  background-image:url("assets/grain.png"),radial-gradient(ellipse at 48% 48%,#fff2da 10%,#f4e4d7 53%,#d8c2d6);
   background-size:100% 100%;
   background-repeat:no-repeat;
 }
@@ -290,8 +340,13 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .card-display .card-preview {height:100%;width:auto;max-height:none;cursor:inherit;--lift:0}
 .card-display .corner-rank {font-size:17px}
 .market-art .card-display {height:76px}
-.market-art .card-display .court {height:71%}
+.market-art .card-display .court {height:57%}
 .cw-fx-card .card-enhance b,.card-display .card-enhance b {display:none}
+@media(max-width:600px) {
+  #hand .card-tally {font-size:7px;padding:1px 2px}
+  #hand .card-tally svg {display:none}
+  #hand .card-enhance b {display:none}
+}
 /* Each family has a different silhouette and field pattern as well as an ink color. */
 [data-family=familiar] {
   --ink:#e3b4ff;--field:#412555;--shape:38% 38% 7px 7px / 22% 22% 7px 7px;

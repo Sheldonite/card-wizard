@@ -204,8 +204,8 @@
     moon_parcel: reward("Moon Parcel", "A free Star Chart in your next shop.", "pack", "star_chart"),
     green_parcel: reward("Green Parcel", "A free Scroll Case in your next shop.", "pack", "scroll_case"),
     gilded_parcel: reward("Gilded Parcel", "A free Traveler's Pack in your next shop.", "pack", "travelers_pack"),
-    foil_dust: reward("Foil Dust", "Give an eligible Familiar Foil or save it for the next eligible shop Familiar.", "edition", "foil"),
-    rainbow_dust: reward("Rainbow Dust", "Give an eligible Familiar Polychrome or save it for the next eligible shop Familiar.", "edition", "polychrome")
+    foil_dust: reward("Foil Dust", "A random Familiar without an edition becomes Foil. If none qualify, the next editionless Familiar you gain becomes Foil.", "edition", "foil"),
+    rainbow_dust: reward("Rainbow Dust", "A random Familiar without an edition becomes Polychrome. If none qualify, the next editionless Familiar you gain becomes Polychrome.", "edition", "polychrome")
   };
 
   function trial(name, description, deck, rules, stake = "ember", unlock = { bestAnte: 3 }) {

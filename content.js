@@ -161,9 +161,10 @@
     spell("star_" + id, name, "orb", 3, "Permanently raise " + hand + " by one level this run.", "level", hand);
   }
 
-  spell("blue_ink", "Sapphire Ink", "potion", 3, "Enchant up to 2 cards. Each gains +30 Chips when it scores.", "enhance", "bonus", 1, 2);
-  spell("red_ink", "Crimson Ink", "potion", 3, "Enchant up to 2 cards. Each gains +4 Mult when it scores.", "enhance", "mult", 1, 2);
-  spell("glasswork", "Glasswork", "orb", 3, "A scoring Glass card gives ×2 Mult and has a 1 in 4 chance to break.", "enhance", "glass", 1, 1);
+  spell("witch_tally", "Witch’s Tally", "grimoire", 5, "For this run, every card you play banks +5 Chips on itself. It pays its whole tally when it scores. Cast again to bank 5 more per play.", "tally", 5);
+  spell("blue_ink", "Sapphire Ink", "potion", 3, "Give up to 2 cards the Bonus enhancement (+30 Chips when scored).", "enhance", "bonus", 1, 2);
+  spell("red_ink", "Crimson Ink", "potion", 3, "Give up to 2 cards the Mult enhancement (+4 Mult when scored).", "enhance", "mult", 1, 2);
+  spell("glasswork", "Glasswork", "orb", 3, "Turn 1 card into Glass. It doubles your Mult when scored, then has a 1 in 4 chance to break after the hand.", "enhance", "glass", 1, 1);
   spell("iron_skin", "Iron Skin", "merlin", 3, "Enchant 1 card with Steel. It gives ×1.5 Mult while held in hand.", "enhance", "steel", 1, 1);
   spell("heartfire", "Heartfire", "moth", 3, "Change up to 3 cards into Hearts.", "suit", "H", 1, 3);
   spell("thorncall", "Thorncall", "moth", 3, "Change up to 3 cards into Clubs.", "suit", "C", 1, 3);
@@ -225,7 +226,7 @@
     while(walker.nextNode()) nodes.push(walker.currentNode);
     for(const node of nodes){
       if(node.parentElement?.closest('[data-colored-term], .stat-money, .stat-chips, .stat-mult, .term-familiar, .term-constellation, option, svg, [aria-hidden="true"]')) continue;
-      const matches=node.data.matchAll(/(?:[+x\u00d7-]?\d+(?:\.\d+)?\s+)?\b(chips?|mult(?:i|iplier)?s?|familiars?|constellations?|spectral(?: cards?)?|spells?|vouchers?|(?:booster )?packs?|boosters?)\b|([+\u2212-]?\$\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[-\u2013]\s*\$\d+(?:,\d{3})*(?:\.\d+)?)?|(?:\d+(?:\.\d+)?\s+)?\b(?:dollars?|cash|money|interest|coins?)\b)|(\+\d+(?:\.\d+)?|\bx\d+(?:\.\d+)?|\u00d7\d+(?:\.\d+)?)(?:\s+(?:more|total|instead)\b)?/gi);
+      const matches=node.data.matchAll(/(?:[+x\u00d7-]?\d+(?:,\d{3})*(?:\.\d+)?\s+)?\b(chips?|mult(?:i|iplier)?s?|familiars?|constellations?|spectral(?: cards?)?|spells?|vouchers?|(?:booster )?packs?|boosters?)\b|([+\u2212-]?\$\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[-\u2013]\s*\$\d+(?:,\d{3})*(?:\.\d+)?)?|(?:\d+(?:,\d{3})*(?:\.\d+)?\s+)?\b(?:dollars?|cash|money|interest|coins?)\b)|(\+\d+(?:,\d{3})*(?:\.\d+)?|\bx\d+(?:,\d{3})*(?:\.\d+)?|\u00d7\d+(?:,\d{3})*(?:\.\d+)?)(?:\s+(?:more|total|instead)\b)?/gi);
       const parts=document.createDocumentFragment();
       let end=0, scoringStat='';
       for(const match of matches){

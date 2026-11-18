@@ -22,11 +22,11 @@
   spell("prism_dye", "Prism Dye", "orb", "Make up to 2 cards Wild. Each can match any suit.", "enhance", "wild", 1, 2);
   spell("basalt_imprint", "Basalt Imprint", "grimoire", "Make 1 card Stone. It always scores +40 Chips and has no rank or suit.", "enhance", "stone", 1);
   spell("sunwash", "Sunwash", "potion", "Make 1 card Gold. Earn $2 if it stays in hand when a blind ends.", "enhance", "gold", 1);
-  spell("rabbit_chalk", "Rabbit Chalk", "moth", "Make up to 2 cards Lucky. Each can roll +12 Mult or $8 when scored.", "enhance", "lucky", 1, 2);
+  spell("rabbit_chalk", "Rabbit Chalk", "moth", "Make up to 2 cards Lucky. Each time one scores, roll separately for +12 Mult (20%) and $8 (12%).", "enhance", "lucky", 1, 2);
   spell("market_favor", "Market Favor", "key", "Gain $6.", "cash", 6);
-  spell("turnback", "Turnback", "potion", "Lower up to 2 ranks by one. A 2 becomes an Ace.", "rank", -1, 1, 2);
-  spell("rank_stencil", "Rank Stencil", "grimoire", "Set the rank of the second chosen card to match the first.", "rankCopy", null, 2);
-  spell("quarter_turn", "Quarter Turn", "moth", "Advance up to 3 suits in order: ♠ → ♥ → ♣ → ♦.", "suitRotate", 1, 1, 3);
+  spell("turnback", "Turnback", "potion", "Choose up to 2 cards. Lower each by one rank. A 2 becomes an Ace.", "rank", -1, 1, 2);
+  spell("rank_stencil", "Rank Stencil", "grimoire", "Pick a card to set the rank. Give up to 2 other cards that rank.", "rankCopy", null, 2, 3);
+  spell("quarter_turn", "Quarter Turn", "moth", "Pick a card to set the suit. Give up to 3 other cards that suit.", "suitCopy", null, 2, 4);
   spell("rehearsal", "Rehearsal", "orb", "Raise your most-played hand by one level.", "levelMost", 1);
   spell("split_scroll", "Split Scroll", "grimoire", "Conjure up to 2 random spells if you have room.", "generate", {pool:"spell", count:2});
 
@@ -43,7 +43,7 @@
   spectral("paper_swarm", "Paper Swarm", "moth", "Add 2 copies of a chosen card to your deck.", "copy", 2, 1);
   spectral("mantle_exchange", "Mantle Exchange", "grimoire", "Swap the enhancements, seals, and editions of 2 cards.", "swapModifiers", null, 2);
   spectral("buried_tithe", "Buried Tithe", "key", "Gain $12.", "cash", 12);
-  spectral("cornerstone", "Cornerstone", "potion", "Make 1 card a Stone 2 with a Red Seal.", "modify", {rank:2, enhancement:"stone", seal:"red"}, 1);
+  spectral("cornerstone", "Cornerstone", "potion", "Turn 1 card into Stone with a Red Seal. It scores 40 Chips twice and has no rank or suit.", "modify", {enhancement:"stone", seal:"red"}, 1);
   spectral("quiet_ash", "Quiet Ash", "potion", "Remove up to 3 cards from your deck.", "remove", null, 1, 3);
   spectral("threefold_moon", "Threefold Moon", "orb", "Raise Pair, Three of a Kind, and Full House by one level each.", "levelMany", {hands:["Pair", "Three of a Kind", "Full House"], amount:1});
   spectral("silence_bell", "Silence Bell", "key", "Silence the current or upcoming boss's special rule.", "bossDisable", 1);
