@@ -68,6 +68,68 @@
   function stat(label, value) { return '<div class="cw-stat"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>'; }
   function formula(chips, mult) { return '<span class="cw-formula"><b>' + num(chips) + '</b> <span>×</span> <b>' + num(mult) + '</b></span>'; }
   function cash(n) { return '$' + num(n); }
+  let sellAnchor, sellTab;
+  function dismissSell() {
+    sellAnchor?.setAttribute('aria-expanded','false');
+    sellTab?.remove();
+    sellAnchor = sellTab = null;
+  }
+  function positionSell() {
+    if (!sellTab) return;
+    if (!sellAnchor.isConnected) return dismissSell();
+    const card = sellAnchor.getBoundingClientRect();
+    const {width,height} = sellTab.getBoundingClientRect();
+    sellTab.style.left = Math.max(4, Math.min(card.right + 5, innerWidth - width - 4))+'px';
+    sellTab.style.top = Math.max(4, Math.min(card.top + (card.height-height)/2, innerHeight-height-4))+'px';
+  }
+  function toggleSell(card,index,category='familiars') {
+    const alreadyOpen = sellAnchor === card;
+    dismissSell();
+    if (alreadyOpen) return;
+    const s = state(), id = s[category][index];
+    if (!id) return;
+    const entry = ownedItem(s,category,index);
+    sellAnchor = card;
+    card.setAttribute('aria-expanded','true');
+    sellTab = document.createElement('div');
+    sellTab.className = 'owned-action-tab';
+    sellTab.popover = 'manual';
+    function addAction(label,enabled,activate) {
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='familiar-sell-tab';
+      button.disabled=!enabled;
+      button.textContent=label;
+      button.setAttribute('aria-label',label+' '+entry.name);
+      button.addEventListener('click',event=>{
+        event.stopPropagation();
+        dismissSell();
+        if (card.isConnected && state()===s && s[category][index]===id) activate();
+      });
+      sellTab.append(button);
+    }
+    const canSell=api().canSell(s,category,index);
+    addAction(canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
+      canSell,()=>perform(category==='familiars'?'sell':'sellConsumable',index));
+    if (category==='consumables') addAction('Use',api().canUse(s,index),()=>act('use-item',String(index)));
+    card.after(sellTab);
+    global.CWContent.colorStats(sellTab);
+    sellTab.showPopover?.();
+    positionSell();
+  }
+  document.addEventListener('pointerdown',event=>{
+    if (sellTab && !sellAnchor.contains(event.target) && !sellTab.contains(event.target)) dismissSell();
+  },true);
+  document.addEventListener('keydown',event=>{
+    if (sellTab && event.key==='Escape') {
+      sellAnchor.focus();
+      dismissSell();
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },true);
+  window.addEventListener('resize',positionSell);
+  document.addEventListener('scroll',positionSell,true);
   function packFamily(d) {
     const pool = d.pool || api().item(d.id)?.pool;
     return pool === 'star' ? 'constellation' : pool || 'standard';
@@ -162,6 +224,10 @@
       }
     });
     layer.addEventListener('click', e => {
+      const owned=e.target.closest('[data-owned-category]');
+      if (owned) return toggleSell(owned,Number(owned.dataset.slot),owned.dataset.ownedCategory);
+      const companion=e.target.closest('[data-companion]');
+      if (companion) return toggleSell(companion,Number(companion.dataset.companion));
       if (e.target === layer) { if (isDismissible()) close(); return; }
       const b = e.target.closest('[data-cw]');
       if (b && !b.disabled) act(b.dataset.cw, b.dataset.value ?? '');
@@ -205,9 +271,9 @@
   }
   function open(next, value = '') {
     const s = state();
-    const names = {codex:'guide',info:'run',options:'settings',familiar:'inventory',familiars:'inventory',consumables:'inventory',spells:'inventory'};
+    const names = {codex:'guide',info:'run',options:'settings'};
     next = names[next] || next;
-    if (!['guide','deck','run','settings','inventory','restart','spell','shop-spell','lobby','career','collection','profiles'].includes(next)) return;
+    if (!['guide','deck','run','settings','restart','spell','shop-spell','lobby','career','collection','profiles'].includes(next)) return;
     if (!s && !['lobby','settings','restart','career','collection','profiles'].includes(next)) return;
     if (page === next && value === detail) return;
     if (page !== next && page) backStack.push([page,detail]);
@@ -244,6 +310,7 @@
   function configure(config) { options = config; shell(); sync(); }
   function result(kicker,title,body,footer = '') { return {kicker,title,body,footer}; }
   function paint(reset) {
+    dismissSell();
     if (!page) return;
     const s = state() || {};
     const body = layer.querySelector('.cw-body');
@@ -251,10 +318,12 @@
     const focused = !reset && layer.contains(document.activeElement) && document.activeElement.dataset.cw ? {action:document.activeElement.dataset.cw,value:document.activeElement.dataset.value} : null;
     const focusedId = !reset && layer.contains(document.activeElement) && document.activeElement.id;
     const selection = !reset && document.activeElement?.tagName === 'INPUT' ? [document.activeElement.selectionStart,document.activeElement.selectionEnd] : null;
-    const views = {guide:guideView,deck:deckView,run:runView,settings:settingsView,inventory:inventoryView,restart:restartView,spell:spellView,'shop-spell':spellView,shop:shopView,pack:packView,payout:payoutView,select:selectView,won:endView,lost:endView,lobby:lobbyView,career:careerView,collection:collectionView,profiles:profilesView};
+    const views = {guide:guideView,deck:deckView,run:runView,settings:settingsView,restart:restartView,spell:spellView,'shop-spell':spellView,shop:shopView,pack:packView,payout:payoutView,select:selectView,won:endView,lost:endView,lobby:lobbyView,career:careerView,collection:collectionView,profiles:profilesView};
     const view = views[page]?.(s);
     if (!view) return;
     dialog().dataset.page = page;
+    layer.classList.toggle('in-parlor',Boolean(options.wantsLobby?.()));
+    layer.classList.toggle('at-verdict',page==='won' || page==='lost');
     layer.querySelector('.cw-head').innerHTML = '<div><p class="cw-kicker">' + esc(view.kicker) + '</p><h2 id="cw-panel-title">' + esc(view.title) + '</h2></div>' + (view.headerEnd || '') + (isDismissible() ? '<button type="button" class="cw-x" data-cw="close" aria-label="Close panel">×</button>' : '');
     dialog().querySelector(':scope > .victory-sky')?.remove();
     if (view.victory) {
@@ -270,7 +339,6 @@
     global.CWContent.colorStats(layer.querySelector('.cw-footer'));
     global.CWContent.colorStats(layer.querySelector('.cw-message'));
     body.scrollTop = priorScroll;
-    if (reset && page==='inventory' && detail) body.querySelector('.cw-highlight-item')?.scrollIntoView({block:'nearest'});
     if (focusedId) {
       const field = document.getElementById(focusedId);
       field?.focus({preventScroll:true});
@@ -290,7 +358,7 @@
     const ok = api()[action]?.(state(), ...args);
     if (ok == null || ok === false) { options.playSound?.('error'); announce('That action is unavailable right now.'); return false; }
     message = '';
-    const sounds = {buy:'buy',buyAndUse:'buy',pick:'buy',sell:'buy',sellConsumable:'buy',reroll:'buy',rerollBoss:'buy',cashOut:'shop',startBlind:'deal',endless:'deal'};
+    const sounds = {buy:'buy',buyAndUse:'buy',pick:'buy',sell:'buy',sellConsumable:'buy',reroll:'buy',rerollBoss:'buy',cashOut:state().phase==='won'?'win':'shop',startBlind:'deal',endless:'deal'};
     changed(sounds[action]);
     if(origin && amount>0){
       const purse=layer.querySelector('.cw-purse strong, .victory-stat-wallet strong') || document.getElementById('money');
@@ -327,7 +395,7 @@
         ['Beat the blind','Select one to five cards and play them to add to your round score. Reach the target before your hands run out.'],
         ['Build a scoring hand','The strongest poker combination in your selection sets its base chips and multiplier. Only the cards that form that combination add their rank chips. Aces add 11 chips and face cards add 10.'],
         ['Draw and discard','Played or discarded cards leave your hand. Draw replacements from the pile until the hand is full or the pile runs out. All deck cards return for the next blind.'],
-        ['Stack your familiars','Familiars apply from left to right. Place additive multiplier bonuses before multiplier effects to make the most of both. Change their order in your inventory.'],
+        ['Stack your familiars','Familiars apply from left to right. Place additive multiplier bonuses before multiplier effects to make the most of both. Drag your familiars to change their order.'],
         ['Spend your winnings','Visit the shop after a blind for familiars, spells, vouchers and boosters. Save cash to earn interest at the end of a round.'],
         ['Survive eight antes','Each ante contains a Small Blind, a Big Blind and a Boss Blind with its own rule. Skipping an eligible blind awards its listed bonus. Defeat the eighth boss to win.']
       ];
@@ -430,13 +498,34 @@
   function restartView(s) {
     return result('','New run',startForm(s)+(resumable() && !['won','lost'].includes(s.phase)?'<p class="cw-explain">Starting a new run replaces the active run for this profile.</p>':''),button('close','Back')+startButton());
   }
+  function parlorCard(rank,suit,extra='') {
+    return '<i class="parlor-card '+extra+'"><b>'+rank+'</b><span>'+suit+'</span><small>'+suit+'</small></i>';
+  }
+  function parlorScene() {
+    const motes = Array.from({length:16},(_,i)=>
+      '<i style="--x:'+(9+(i*31)%86)+'%;--y:'+(10+(i*13)%69)+'%;--delay:-'+(i*.77)+'s"></i>').join('');
+    return '<div class="parlor-scene" aria-hidden="true"><div class="parlor-painting">'+
+      '<span class="parlor-lantern"></span><div class="parlor-dust">'+motes+'</div>'+
+      '<div class="dealer-window"><div class="dealer-cat"></div></div><div class="dealer-spell"><i></i><i></i><i></i></div>'+
+      '<div class="dealer-hand">'+parlorCard('Q','♥','ruby')+parlorCard('K','♣','jade')+parlorCard('A','♠','amethyst')+'</div></div></div>';
+  }
   function lobbyView(s) {
     const profile=progress().profile;
-    const navigation='<div class="cw-lobby-nav">'+button('open',profile?.name || 'Profiles','','profiles')+button('open','Collection','','collection')+button('open','Career','','career')+button('open','Settings','','settings')+'</div>';
-    const hasSave=resumable();
-    const liveSave=hasSave && !['won','lost'].includes(s.phase);
-    const notice=liveSave?'<p class="cw-explain">Starting a new run replaces this profile’s active run.</p>':'';
-    return result('','Card Wizard',navigation+startForm(s)+notice,(hasSave?button('continue-run',liveSave?'Resume run':'View results'):'')+startButton());
+    const saved=resumable(), live=saved && !['won','lost'].includes(s.phase);
+    const main=live ? button('continue-run','Resume Run','parlor-play') : button('open','Play','parlor-play','restart');
+    const secondary=live ? button('open','New Run','parlor-secondary','restart') :
+      saved ? button('continue-run','Last Result','parlor-secondary') : '';
+    const navButton=(action,value,label,art)=>'<button type="button" data-cw="'+action+'" data-value="'+value+'"><img alt="" src="'+
+      global.CWContent.portrait(art)+'"><span>'+label+'</span></button>';
+    const nav='<nav class="parlor-nav" aria-label="Main menu">'+navButton('learn','','How to Play','grimoire')+
+      navButton('open','collection','Collection','orb')+navButton('open','career','Career','blind')+
+      navButton('open','settings','Settings','key')+'</nav>';
+    const account='<button type="button" class="parlor-profile" data-cw="open" data-value="profiles"><i aria-hidden="true">♙</i><span>Profile<b>'+esc(profile?.name || 'Apprentice')+'</b></span></button>';
+    const title='<div class="parlor-hero"><div class="parlor-suits" aria-hidden="true">♠ <b>♥</b> ♣ <b>♦</b></div>'+
+      '<h1 class="parlor-logo"><em>Card</em> <strong>Wizard</strong></h1>'+
+      '<p>Cast poker hands. Collect familiars. Beat the blinds.</p>'+
+      '<div class="parlor-actions">'+main+secondary+'</div></div>';
+    return result('','Card Wizard',parlorScene()+title+nav+account);
   }
   function profilesView() {
     const profiles=options.getProfiles?.() || [];
@@ -471,29 +560,6 @@
       return '<article class="cw-collection-item"'+cardTip(entry,true)+'>'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
     }).join('');
     return result(data.profile?.name || '','Collection',tabs+summary+(list?'<div class="cw-collection-items">'+list+'</div>':'<p class="cw-empty">No entries match this view.</p>'),button('close','Back'));
-  }
-  function owned(s, category, list) {
-    const entries = list.map((id,i)=>{
-      const d = ownedItem(s,category,i);
-      const price = api().sellPrice?.(s,id) ?? Math.max(1,Math.floor(d.cost/2));
-      let controls='';
-      if (category==='familiars') {
-        if (list.length>1 && ['shop','play'].includes(s.phase)) controls+='<button class="cw-line-action" type="button" aria-label="Move '+esc(d.name)+' left" data-cw="move-left" data-value="'+i+'"'+(i===0?' disabled':'')+'>←</button><button class="cw-line-action" type="button" aria-label="Move '+esc(d.name)+' right" data-cw="move-right" data-value="'+i+'"'+(i===list.length-1?' disabled':'')+'>→</button>';
-        const eternal=d.eternal || d.sticker==='eternal' || d.stickers?.includes('eternal');
-        const canSell=api().canSell?.(s,category,i) ?? (!eternal && ['shop','play'].includes(s.phase));
-        controls+=button('sell-familiar',eternal?'Eternal':'Sell '+cash(price),'',i,!canSell);
-      } else if(category==='consumables') {
-        const canUse=api().canUse?.(s,i) ?? (['shop','play'].includes(s.phase) && usableCards(s).length >= (d.minTargets || 0));
-        const canSell=api().canSell?.(s,category,i) ?? true;
-        controls+=button('use-item','Use','cw-primary',i,!canUse)+button('sell-consumable','Sell '+cash(price),'',i,!canSell);
-      }
-      return '<div class="cw-owned'+(d.id===detail?' cw-highlight-item':'')+'"'+cardTip(d,true)+'>'+picture(d,true)+'<div class="cw-owned-info"><b>'+esc(d.name)+'</b>'+badges(d)+'<small>'+itemDescription(d)+'</small></div><div class="cw-owned-controls">'+controls+'</div></div>';
-    }).join('');
-    return entries || '<p class="cw-empty">No '+esc(category)+' yet.</p>';
-  }
-  function inventoryView(s) {
-    const cap = api().capacity(s);
-    return result('','Inventory',heading('Familiars · '+s.familiars.length+' / '+cap.familiars)+owned(s,'familiars',s.familiars)+heading('Consumables · '+s.consumables.length+' / '+cap.consumables)+owned(s,'consumables',s.consumables)+(s.vouchers.length?heading('Vouchers')+owned(s,'vouchers',s.vouchers):''));
   }
   function targetCards(cards,d,action='target') {
     return cards.map(c=>{
@@ -534,19 +600,27 @@
     const slots=Array.from({length:cap},(_,i)=>{
       if (!s.familiars[i]) return '<span class="companion-empty" aria-hidden="true">✧</span>';
       const d=ownedItem(s,'familiars',i);
-      return '<button type="button" class="companion-card'+(i===0?' lit':'')+'" data-companion="'+i+'"'+cardTip(d)+' data-cw="open-inventory" data-value="'+esc(d.id)+'" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
+      return '<button type="button" class="companion-card'+(i===0?' lit':'')+'" data-companion="'+i+'"'+cardTip(d)+' aria-expanded="false" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
     }).join('');
     return '<section class="companion-rail" aria-label="Equipped familiars"><div><h3>Familiars <small>'+s.familiars.length+' / '+cap+'</small></h3><div class="companion-slots">'+slots+'</div></div>'+marketPurse(s.money)+'</section>';
   }
-  function marketFamiliars(s) {
-    const cap=api().capacity(s).familiars;
-    if (!cap) return marketPurse(s.money);
-    const slots=Array.from({length:cap},(_,i)=>{
+  function marketInventory(s,cap) {
+    const slots=Array.from({length:Math.max(cap.familiars,s.familiars.length)},(_,i)=>{
       if (!s.familiars[i]) return '<span class="moon-empty-slot" aria-hidden="true">✧</span>';
       const d=ownedItem(s,'familiars',i);
       return '<button type="button" class="companion-card moon-companion'+(i===0?' lit':'')+'" data-companion="'+i+'"'+cardTip(d)+' aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
     }).join('');
-    return '<section class="companion-rail moon-roost" aria-label="Equipped familiars"><div class="moon-roost-title"><h3>Your familiars</h3><small>'+s.familiars.length+' / '+cap+' equipped</small></div><div class="companion-slots">'+slots+'</div>'+marketPurse(s.money)+'</section>';
+    const spellSlots=Array.from({length:Math.max(cap.consumables,s.consumables.length)},(_,i)=>{
+      if (!s.consumables[i]) return '<span class="moon-spell-empty" aria-hidden="true"><svg viewBox="0 0 24 24">'+global.CWContent.cardTypes.spell[1]+'</svg></span>';
+      const d=ownedItem(s,'consumables',i);
+      return '<button type="button" class="moon-spell-card" aria-expanded="false" data-owned-category="consumables" data-slot="'+i+'"'+cardTip(d)+
+        ' aria-label="'+esc('Inspect '+d.name)+'">'+picture(d,true)+'<span class="moon-spell-name">'+esc(d.name)+'</span></button>';
+    }).join('');
+    return '<section class="companion-rail moon-roost" aria-label="Shop inventory">'+
+      '<div class="moon-roost-title"><h3>Your familiars</h3><small>'+s.familiars.length+' / '+cap.familiars+' equipped</small></div>'+
+      '<div class="companion-slots">'+slots+'</div>'+
+      '<div class="moon-spell-title"><h3>Your spells</h3><small>'+s.consumables.length+' / '+cap.consumables+' stored</small></div>'+
+      '<div class="moon-spell-slots">'+spellSlots+'</div>'+marketPurse(s.money)+'</section>';
   }
 
   function marketPurse(money) {
@@ -600,8 +674,8 @@
     const packs=shelf('Booster packs','moon-packs',[count,count+1]);
     const voucher=shelf('Voucher','moon-vouchers',[count+2]);
     const rewards=s.rewardPacks?.length?'<div class="cw-rewards">'+button('reward-pack','Open reward pack ('+s.rewardPacks.length+')','cw-primary')+'</div>':'';
-    const footer=button('show-menu','Menu')+button('open','Inventory','','inventory')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary moon-next');
-    return result('Shop · Ante '+s.ante,'Moonlit Market',marketFamiliars(s)+rewards+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
+    const footer=button('show-menu','Menu')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary moon-next');
+    return result('Shop · Ante '+s.ante,'Moonlit Market',marketInventory(s,cap)+rewards+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
   }
   let lastPack, dealStart;
   function packView(s) {
@@ -636,7 +710,11 @@
       '<div class="pack-playing-cards">'+handCards+'</div>'+
       (d?button('pick-cast','Cast '+d.name,'cw-primary',active,!valid):'')+'</div>':'';
     const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
-    const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,button('open','Inventory','','inventory')+button('close-pack','Skip remaining'));
+    const ownedCards=['familiars','consumables'].flatMap(category=>s[category].map((id,i)=>{
+      const d=ownedItem(s,category,i);
+      return '<button type="button" data-owned-category="'+category+'" data-slot="'+i+'" aria-expanded="false"'+cardTip(d)+'>'+esc(d.name)+'</button>';
+    })).join('');
+    const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,ownedCards+button('close-pack','Skip remaining'));
     view.headerEnd='<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong>';
     return view;
   }
@@ -699,18 +777,18 @@
     return cost>0?' '+cash(cost):'';
   }
   function endView(s) {
-    if(s.phase==='won') {
-      const challenge=api().CHALLENGES?.[s.challengeId];
-      const body='<h3 class="victory-label">'+esc(challenge?.name || 'Run complete')+'</h3>'+
-        '<div class="victory-achievement">'+num(s.rules?.anteLimit || 8)+' antes cleared</div>'+
-        '<div class="victory-stats">'+stat('Blinds won',num(s.stats.roundsWon))+stat('Best hand score',num(s.stats.bestScore))+
-        '<div class="cw-stat victory-stat-wallet"><span>Final purse</span><strong>'+cash(s.money)+'</strong></div></div>';
-      const footer=button('show-menu','Menu')+button('open','New run',s.challengeId?'cw-primary':'','restart')+
-        (!s.challengeId?button('endless','Continue endless','cw-primary'):'');
-      return {...result('The final blind','Run victory',body,footer),victory:true};
-    }
-    const note='Your score reached '+num(s.score)+' of the '+num(s.target)+' chips required.';
-    return result('Run complete','Run over','<div class="cw-hero"><span class="cw-hero-emblem" aria-hidden="true">♠</span><h3 class="cw-hero-title">Out of hands</h3><p class="cw-explain">'+esc(note)+'</p></div><div class="cw-stats">'+stat('Ante reached',s.ante)+stat('Blinds won',s.stats.roundsWon)+stat('Best hand score',num(s.stats.bestScore))+'</div>',button('show-menu','Menu')+button('open','New run','cw-primary','restart'));
+    const won=s.phase==='won', challenge=api().CHALLENGES?.[s.challengeId];
+    const symbol=won?'☀':'☾';
+    const crest='<div class="verdict-art" aria-hidden="true"><i class="verdict-orbit"></i><div class="verdict-hand">'+
+      parlorCard('K','♦','ruby')+parlorCard('Q','♣','jade')+parlorCard('A',symbol,'omen')+'</div><div class="verdict-stars">✦ <i>✧</i> ✦</div></div>';
+    const score=won?'<b>'+num(s.stats.roundsWon)+'</b> blinds won':'<b>'+num(s.score)+'</b> / '+num(s.target)+' chips';
+    const summary='<div class="verdict-summary"><p>'+esc(won?(challenge?.name || 'The final blind is yours.') : api().blindInfo(s).name)+'</p>'+
+      '<div>'+score+'</div></div>';
+    const stats='<div class="verdict-stats">'+stat(won?'Antes cleared':'Ante reached',num(won?s.rules.anteLimit:s.ante))+
+      stat('Best hand',num(s.stats.bestScore))+stat(won?'Final purse':'Blinds won',won?cash(s.money):num(s.stats.roundsWon))+'</div>';
+    const actions=button('replay','Play Again','verdict-play')+button('show-menu','Main Menu')+
+      (won && !s.challengeId?button('endless','Continue Endless','verdict-endless'):'');
+    return result('Ante '+s.ante+'  /  Round '+s.round,won?'You won!':'You lost',crest+summary+stats,actions);
   }
   function resolveCast(s,d,action,index,ids) {
     const before=ids.map(id=>({...usableCards(s).find(c=>c.id===id)}));
@@ -771,8 +849,12 @@
     const s=state() || {};
     const index=Number(value);
     if(name==='close') return close();
+    if(name==='learn') { guideTab='rules'; return open('guide'); }
+    if(name==='replay' && (s.phase==='won' || s.phase==='lost')) {
+      backStack.length=0;
+      return options.restart(s.deckId,undefined,s.stakeId,s.challengeId);
+    }
     if(name==='open') return open(value);
-    if(name==='open-inventory') return open('inventory',value);
     if(name==='guide-tab') { guideTab=value; return paint(false); }
     if(name==='deck-tab') { deckTab=value; return paint(false); }
     if(name==='collection-tab') { collectionTab=value; collectionFilter='all'; return paint(false); }
@@ -871,5 +953,5 @@
     };
     if(commands[name]) perform(...commands[name]);
   }
-  global.CWP={configure,open,close,sync,isOpen:()=>!!page,getPage:()=>page};
+  global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page,getPage:()=>page};
 })(window);

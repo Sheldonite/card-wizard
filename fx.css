@@ -62,6 +62,11 @@
   color: #ffe2a2; font-weight: 700; text-shadow: 0 0 7px #cf925d66, 0 1px #39233c;
 }
 .cw-fx-total { color: #ffdf99; }
+.cw-fx-call.cw-winning-total {
+  display:block; overflow:visible; min-height:0;
+  font:700 clamp(17px,2.1vw,31px)/1.12 var(--pixel); color:#ffe4a3;
+  text-shadow:0 2px #67472f,0 0 8px #f2af6836;
+}
 .cw-fx-cleared .cw-fx-name { color: #c6f7d5; }
 .cw-fx-cleared .cw-fx-total { color: #ffe4a3; text-shadow: 0 2px #885337, 0 0 12px #f2af6848; }
 .cw-fx-equation > .cw-fx-burst {
@@ -207,6 +212,10 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 }
 .term-familiar,.slot-title h2.term-familiar {color:#e5adff;font-weight:750}
 .term-constellation {color:#ffcf75;font-weight:750}
+.term-spell {color:#80f1cf}
+.term-spectral {color:#b5eeff}
+.term-voucher {color:#ffd29a}
+.term-pack {color:#ff9ba8}
 #deck-suits {display:none;position:absolute;right:100%;top:0;margin-right:12px;grid-template-columns:repeat(2,max-content);gap:6px 12px;padding:10px;border:1px solid #aa8b9f;border-radius:7px;background:#241d30;color:#fbefd7;box-shadow:0 4px 12px #17121b80;pointer-events:none}
 .deck-stack:is(:hover,:focus-visible) {z-index:8}
 .deck-stack:is(:hover,:focus-visible) #deck-suits {display:grid}
@@ -397,42 +406,67 @@ body.still .familiar-finish {animation:none}
 body.still .familiar-burst {display:none}
 @media(prefers-reduced-motion:reduce){.familiar-finish {animation:none}.familiar-burst {display:none}}
 
-/* Each score keeps its own vial. Only the blind-clearing hand brings it to a boil. */
-.score-potion {
-  --elixir:#177fce; --elixir-light:#88efff;
-  width:1.05em; height:1.2em; display:inline-block; flex:none;
-  overflow:visible; vertical-align:middle; pointer-events:none;
+/* Small shells bloom behind the winning cards and their score. */
+.hand-fireworks {
+  position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; container-type:size;
 }
-.cw-fx-equation:has(> .potion-value) {
-  font-size:min(clamp(22px,2.9vw,45px),calc(145cqi / (var(--fx-digits,8) + 3)));
+.hand-burst {
+  --delay:120ms; --spark:#82ceff;
+  position:absolute; left:27%; top:35%;
+  width:clamp(65px,11vw,154px); max-width:min(30%,65cqh); aspect-ratio:1; transform:translate(-50%,-50%);
+  color:var(--spark);
 }
-.potion-mult {--elixir:#c23a57; --elixir-light:#ffadbd}
-.score-components :is(.stat-chips,.stat-mult) .score-potion {
-  width:1.6em; height:1.65em; margin:-.35em .25em -.15em 0;
+.hand-burst.ruby {--delay:420ms; --spark:#ff92a2; left:73%; top:31%}
+.hand-burst.gold {--delay:760ms; --spark:#ffdb90; left:49%; top:31%; width:clamp(77px,13vw,175px)}
+.hand-burst::before {
+  content:""; position:absolute; left:50%; bottom:50%; width:2px; height:38%; border-radius:50%;
+  background:linear-gradient(to top,transparent,currentColor); transform-origin:50% 0;
+  animation:hand-shell-rise 290ms ease-out var(--delay) both;
 }
-.cw-fx-equation > .potion-value {display:inline-flex; align-items:center; gap:.06em; min-width:0}
-.potion-value .score-potion {width:.67em; height:.76em}
-.potion-liquid,.potion-rising {fill:var(--elixir)}
-.potion-rising,.potion-spill {opacity:0}
-.potion-stream {
-  fill:none; stroke:var(--elixir-light); stroke-width:2.2; stroke-linecap:round;
+.hand-burst svg {
+  display:block; width:100%; height:100%; overflow:visible;
+  filter:drop-shadow(0 0 2px currentColor);
+  animation:hand-shell-bloom 870ms cubic-bezier(.14,.65,.32,1) calc(var(--delay) + 270ms) both;
 }
-.potion-foam,.potion-bubble,.potion-drip {fill:var(--elixir-light)}
-.blind-overdrive .potion-rising,.blind-overdrive .potion-spill {opacity:1}
-.blind-overdrive .potion-rising {
-  animation:potion-fill calc(var(--brew-cycle)*.35) ease-out both;
+.hand-burst path {
+  fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round;
+  animation:hand-shell-trail 820ms ease-out calc(var(--delay) + 270ms) both;
 }
-.blind-overdrive .potion-stream {
-  stroke-dasharray:1; animation:potion-pour var(--brew-cycle) ease-out infinite;
+.hand-burst path:nth-of-type(even) {stroke:#ffebbd; stroke-width:1}
+.hand-burst circle {fill:#fff0cf; animation:hand-shell-embers 780ms ease-out calc(var(--delay) + 380ms) both}
+@keyframes hand-shell-rise {
+  0% {opacity:0; transform:translate(-5px,110%) rotate(-9deg) scaleY(.45)}
+  30% {opacity:.8}
+  85% {opacity:1}
+  100% {opacity:0; transform:translate(0) rotate(-9deg) scaleY(.18)}
 }
-.blind-overdrive .potion-bubble {
-  --drift:-3px; animation:potion-bubble var(--brew-cycle) ease-out infinite;
+@keyframes hand-shell-bloom {
+  0% {opacity:0; transform:scale(.18)}
+  10% {opacity:1}
+  65% {opacity:1}
+  100% {opacity:0; transform:translateY(6%) scale(1)}
 }
-.blind-overdrive .potion-bubble.second {--drift:3px; animation-delay:calc(var(--brew-cycle)*-.43)}
-.blind-overdrive .potion-drip {animation:potion-drip var(--brew-cycle) ease-in infinite}
-@keyframes potion-fill {from{clip-path:inset(70% 0 0)}to{clip-path:inset(0)}}
-@keyframes potion-pour {0%{stroke-dashoffset:1}52%,100%{stroke-dashoffset:0}}
-@keyframes potion-bubble {0%{opacity:0}20%{opacity:1}100%{opacity:0;transform:translate(var(--drift),-6px)}}
-@keyframes potion-drip {0%,50%{opacity:0}58%{opacity:1}100%{opacity:0;transform:translate(-1px,7px)}}
-body.still .score-potion * {animation:none}
-@media(prefers-reduced-motion:reduce){.score-potion * {animation:none!important}}
+@keyframes hand-shell-trail {
+  0% {stroke-dasharray:.02 1; stroke-dashoffset:0}
+  25% {stroke-dasharray:.53 1}
+  75% {stroke-dasharray:.23 1; stroke-dashoffset:-.73}
+  100% {stroke-dasharray:.015 1; stroke-dashoffset:-.98}
+}
+@keyframes hand-shell-embers {0%,30%{opacity:0} 58%{opacity:1} 100%{opacity:0}}
+.still .hand-fireworks {display:none}
+@media(prefers-reduced-motion:reduce){.hand-fireworks {display:none}}
+.owned-action-tab {position:fixed;inset:auto;margin:0;z-index:10000;width:max-content;border:0;padding:0;background:transparent;overflow:visible}
+.owned-action-tab:popover-open {display:grid;gap:3px}
+.familiar-sell-tab {
+  padding:9px 15px;
+  border:2px solid #e9bd72;border-radius:5px 12px 12px 5px;
+  background:linear-gradient(#583650,#362336);color:#ffe5a3;
+  box-shadow:inset 0 0 0 1px #795b47,0 4px 10px #1b112c99;
+  font:700 16px Georgia,serif;cursor:pointer;
+}
+.familiar-sell-tab:enabled:hover,.familiar-sell-tab:focus-visible {background:#694059;color:#fff3ce}
+.familiar-sell-tab:disabled {color:#ccbdba;cursor:default}
+@media (prefers-reduced-motion:no-preference) {
+  .owned-action-tab:popover-open {animation:sell-tab-in .14s ease-out}
+  @keyframes sell-tab-in {from {translate:-6px 0;opacity:0}}
+}

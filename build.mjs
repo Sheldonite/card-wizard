@@ -8,7 +8,7 @@ const args = process.argv.slice(2);
 const embedMusic = args.includes('--embed-music');
 const output = resolve(args.find(arg => arg !== '--embed-music') || join(project, 'dist', 'index.html'));
 const read = name => readFileSync(join(project, name), 'utf8');
-const mime = { '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg' };
+const mime = { '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg', '.wav': 'audio/wav' };
 function embed(name) {
   const type = mime[extname(name)];
   if (!type) throw new Error('Unsupported game asset ' + name);
@@ -23,10 +23,11 @@ for (const file of readdirSync(join(project, 'art', 'familiars'))) {
   if (file.endsWith('.png')) portraits['familiars/' + file.slice(0, -4)] = embed('art/familiars/' + file);
 }
 const scripts = ['window.CWEmbeddedArt = ' + JSON.stringify(portraits) + ';'];
+const soundtrack = { play: 'table.mp3', menu: 'rewards.wav', boss: 'boss.mp3' };
 if (embedMusic) {
   const music = {};
-  for (const [scene, name] of Object.entries({play:'table',shop:'shop',boss:'boss'})) {
-    const asset = 'music/' + name + '.mp3';
+  for (const [scene, name] of Object.entries(soundtrack)) {
+    const asset = 'music/' + name;
     if (existsSync(join(project, asset))) music[scene] = embed(asset);
   }
   scripts.push('window.CWEmbeddedMusic = ' + JSON.stringify(music) + ';');
@@ -46,7 +47,7 @@ if (!embedMusic && existsSync(musicDir)) {
   const destination = join(dirname(output), 'music');
   if (destination !== musicDir) {
     mkdirSync(destination, { recursive: true });
-    for (const file of readdirSync(musicDir).filter(name => name.endsWith('.mp3'))) {
+    for (const file of Object.values(soundtrack).filter(name => existsSync(join(musicDir, name)))) {
       copyFileSync(join(musicDir, file), join(destination, file));
     }
   }

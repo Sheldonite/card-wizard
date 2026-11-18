@@ -2,7 +2,7 @@
 (() => {
   'use strict';
 
-  const tracks = { play: 'music/table.mp3', shop: 'music/shop.mp3', boss: 'music/boss.mp3', ...window.CWEmbeddedMusic };
+  const tracks = { play: 'music/table.mp3', menu: 'music/rewards.wav', boss: 'music/boss.mp3', ...window.CWEmbeddedMusic };
   // Synth arrangements cover devices that cannot load the recorded tracks.
   const scenes = {
     menu: {
@@ -20,14 +20,6 @@
         [36, 52, 55, 59, 62], [40, 50, 55, 59, 62],
         [41, 52, 55, 57, 60], [35, 50, 53, 57, 60],
         [40, 50, 53, 56, 59], [45, 52, 55, 59, 60]
-      ]
-    },
-    shop: {
-      bpm: 84,
-      transpose: 0,
-      chords: [
-        [40, 55, 59, 64], [35, 54, 57, 63], [43, 55, 59, 62], [38, 54, 57, 62],
-        [36, 55, 60, 64], [45, 57, 60, 64], [35, 54, 57, 63], [40, 55, 59, 64]
       ]
     },
     boss: {
@@ -64,12 +56,11 @@
   let lastRapidEffect = -1;
   let unlocked = false;
   let player = null;
-  let playerScene = null;
-  let recordedPlaying = false;
+  const players = new Map();
   let playbackBlocked = false;
   let playRequest = null;
+  let curtain = false, curtainLevel = 1, fadeFrame = 0;
   const unavailable = new Set();
-  const positions = {};
   const frequency = midi => 440 * 2 ** ((midi - 69) / 12);
 
   function routeVolume(node, volume) {
@@ -138,10 +129,6 @@
       playMenuTick(index, time);
       return;
     }
-    if (scene === 'shop') {
-      playShopTick(index, time);
-      return;
-    }
     const bar = Math.floor(index / 8) % 8;
     const step = index % 8;
     const chord = config.chords[bar];
@@ -190,43 +177,29 @@
     }
   }
 
-  const shopMelody = [
-    [71,76,0,79,78,76], [75,0,71,66,0,0], [71,74,0,79,0,81], [78,0,0,74,0,0],
-    [76,0,79,84,0,83], [81,0,79,76,0,0], [75,0,71,78,0,75], [76,0,0,0,67,69]
-  ];
-  function playShopTick(index, time) {
-    const bar = Math.floor(index / 6) % 8;
-    const step = index % 6;
-    const [bass, ...strings] = scenes.shop.chords[bar];
-    if (step === 0 || step === 3) {
-      tone(musicBus, bass + (step === 3 ? 7 : 0), time, .4, .16, 'triangle');
-    }
-    if (step === 1 || step === 4) {
-      strings.forEach((pitch, i) => tone(musicBus, pitch, time + i * .014, .32, .042, 'triangle'));
-    }
-    const melody = shopMelody[bar][step];
-    if (melody) bell(musicBus, melody, time + .01, .56, .11);
-  }
-
   function stopClock() {
     if (timer !== null) clearInterval(timer);
     timer = null;
   }
 
+  function needsSynth() {
+    return !window.Audio || unavailable.has(scene) || playbackBlocked;
+  }
+
   function schedule() {
-    if (!context || context.state !== 'running' || document.hidden || muted || !musicEnabled || !musicVolume || recordedPlaying) return;
+    if (!context || context.state !== 'running' || document.hidden || muted || !musicEnabled || !musicVolume || !needsSynth()) return;
     const now = context.currentTime;
     if (nextTime < now - .025) nextTime = now + .045;
     while (nextTime < now + .16) {
       playTick(tick++, nextTime);
-      nextTime += (scene === 'shop' ? 20 : 30) / scenes[scene].bpm;
+      nextTime += 30 / scenes[scene].bpm;
     }
   }
 
   function syncClock() {
     if (!context) return;
-    const useSynth = context.state === 'running' && !document.hidden && !muted && musicEnabled && musicVolume && !recordedPlaying;
-    routeVolume(musicBus, useSynth ? .43 * musicVolume : 0);
+    const useSynth = context.state === 'running' && !document.hidden && !muted && musicEnabled && musicVolume && curtainLevel > 0 && needsSynth();
+    routeVolume(musicBus, useSynth ? .43 * musicVolume * curtainLevel : 0);
     if (!useSynth) {
       stopClock();
     } else if (timer === null) {
@@ -236,56 +209,35 @@
     }
   }
 
-  function setRecordedPlaying(value) {
-    if (recordedPlaying === value) return;
-    recordedPlaying = value;
-    syncClock();
-  }
-
   function pauseTrack() {
     const pending = Boolean(playRequest);
     playRequest = null;
     if (player && (pending || !player.paused)) player.pause();
-    setRecordedPlaying(false);
   }
 
-  function createPlayer() {
-    // Native media loading works for sibling files opened from disk as well as over HTTP.
-    player = new window.Audio();
-    player.preload = 'auto';
-    player.loop = true;
-    player.volume = .23 * musicVolume;
-    player.onloadedmetadata = () => {
-      const resumeAt = positions[playerScene];
-      if (resumeAt > 0 && resumeAt < player.duration) player.currentTime = resumeAt;
+  function playerFor(theme) {
+    if (players.has(theme)) return players.get(theme);
+    const media = new window.Audio();
+    media.preload = 'auto';
+    media.loop = true;
+    media.onerror = () => {
+      if (!media.error) return;
+      unavailable.add(theme);
+      if (theme === scene) syncMusic();
     };
-    player.onplaying = () => {
-      if (muted || !musicEnabled || !musicVolume || document.hidden || playerScene !== scene) pauseTrack();
-      else if (!player.paused) setRecordedPlaying(true);
-    };
-    player.onwaiting = () => setRecordedPlaying(false);
-    player.onpause = () => { if (player.paused) setRecordedPlaying(false); };
-    player.onerror = () => {
-      if (!player.error || !playerScene) return;
-      unavailable.add(playerScene);
-      pauseTrack();
-    };
+    media.src = tracks[theme];
+    players.set(theme, media);
+    return media;
   }
 
   function syncMusic() {
-    if (!unlocked || document.hidden || muted || !musicEnabled || !musicVolume || !tracks[scene] || unavailable.has(scene) || !window.Audio) {
+    if (!unlocked || document.hidden || muted || !musicEnabled || !musicVolume || curtainLevel === 0 || needsSynth()) {
       pauseTrack();
       syncClock();
       return;
     }
-    if (!player) createPlayer();
-    if (playerScene !== scene) {
-      if (playerScene && Number.isFinite(player.currentTime)) positions[playerScene] = player.currentTime;
-      pauseTrack();
-      playerScene = scene;
-      playbackBlocked = false;
-      player.src = tracks[scene];
-    }
+    player = playerFor(scene);
+    player.volume = .23 * musicVolume * curtainLevel;
     if (player.paused && !playRequest && !playbackBlocked) {
       const request = {};
       playRequest = request;
@@ -293,7 +245,7 @@
         if (playRequest !== request) return;
         if (error?.name === 'NotSupportedError') unavailable.add(scene);
         else playbackBlocked = true;
-        pauseTrack();
+        syncMusic();
       };
       try {
         Promise.resolve(player.play()).then(() => {
@@ -323,7 +275,7 @@
       space = context.createDelay(1);
       const echo = context.createGain();
       master.gain.value = muted ? 0 : .8;
-      musicBus.gain.value = musicEnabled ? .43 * musicVolume : 0;
+      musicBus.gain.value = musicEnabled ? .43 * musicVolume * curtainLevel : 0;
       effectsBus.gain.value = .76 * effectVolume;
       space.delayTime.value = .208;
       echo.gain.value = .15;
@@ -342,8 +294,30 @@
     else syncClock();
   }
 
+  function setCurtain(ending) {
+    if (ending === curtain) return;
+    curtain = ending;
+    cancelAnimationFrame(fadeFrame);
+    const started = performance.now(), initial = curtainLevel;
+    function fade(now) {
+      const t = Math.min(1, (now - started) / (ending ? 8500 : 750));
+      const ease = t * t * (3 - 2 * t);
+      curtainLevel = initial + ((ending ? 0 : 1) - initial) * ease;
+      if (player) player.volume = .23 * musicVolume * curtainLevel;
+      if (context && needsSynth()) routeVolume(musicBus, musicEnabled && !muted ? .43 * musicVolume * curtainLevel : 0);
+      if (t < 1) fadeFrame = requestAnimationFrame(fade);
+      else syncMusic();
+    }
+    // Wake a track that finished fading out even when the destination uses the same theme.
+    if (!ending && !curtainLevel) curtainLevel = .0001;
+    if (!ending) syncMusic();
+    fadeFrame = requestAnimationFrame(fade);
+  }
   function setScene(name) {
     if (!Object.hasOwn(scenes, name) || name === scene) return;
+    pauseTrack();
+    player = null;
+    playbackBlocked = false;
     scene = name;
     tick = 0;
     syncMusic();
@@ -366,7 +340,6 @@
     const nextEffects = Math.min(1, Math.max(0, Number(effects) || 0));
     if (nextMusic !== musicVolume) {
       musicVolume = nextMusic;
-      if (player) player.volume = .23 * musicVolume;
       syncMusic();
     }
     if (nextEffects !== effectVolume) {
@@ -447,5 +420,5 @@
     }
   });
 
-  window.CWSound = { unlock, setMuted, setMusic, setVolumes, setScene, event };
+  window.CWSound = { unlock, setMuted, setMusic, setVolumes, setScene, setCurtain, event };
 })();

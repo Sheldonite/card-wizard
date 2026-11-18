@@ -268,11 +268,36 @@
 
 /* Portrait cards in the market display case */
 .moon-roost.companion-rail {
-  display:grid; grid-template-columns:minmax(0,1fr) minmax(160px,24%);
-  gap:8px 22px; padding:14px 20px 18px;
+  display:grid;
+  grid-template-columns:minmax(0,5fr) minmax(0,2fr) auto;
+  grid-template-areas:"familiar-title spell-title purse" "familiars spells purse";
+  gap:8px clamp(12px,2vw,26px); padding:14px 20px 18px;
 }
-.moon-roost .moon-roost-title {grid-column:1/-1;display:flex;align-items:baseline;gap:12px;}
-.moon-roost .companion-slots {--card-width:clamp(88px,8.5vw,122px);gap:12px;align-items:center;}
+.moon-roost .moon-roost-title,.moon-spell-title {display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 9px;align-self:end}
+.moon-roost .moon-roost-title {grid-area:familiar-title}
+.moon-roost .companion-slots {
+  grid-area:familiars;align-self:start;align-items:center;gap:8px;
+  --card-width:min(clamp(80px,8.5vw,122px),calc((100% - 32px) / 5));
+}
+.moon-roost .roost-purse {grid-area:purse}
+.moon-spell-title {grid-area:spell-title}
+.moon-spell-title h3 {color:#eddaff;font:600 22px/1.1 Georgia,serif;margin:0 0 4px}
+.moon-spell-title small {color:#d2bbd1;font:700 10px/1.25 var(--sans,Arial,sans-serif);text-transform:uppercase;letter-spacing:.045em}
+.moon-spell-slots {grid-area:spells;display:flex;flex-wrap:wrap;align-self:start;align-items:flex-start;gap:7px;min-width:0}
+.moon-spell-card,.moon-spell-empty {
+  box-sizing:border-box;position:relative;width:min(clamp(56px,5.8vw,82px),calc((100% - 7px) / 2));
+  aspect-ratio:.72; padding:0; border-radius:7px;
+}
+.moon-spell-card {
+  display:grid;grid-template-rows:minmax(0,1fr) auto;overflow:hidden;
+  border:1px solid #9e87b4;background:#2f223a;color:#f9edff;
+  box-shadow:inset 0 0 0 2px #201b2b,0 2px 4px #17101e;
+}
+.moon-spell-card:hover,.moon-spell-card:focus-visible {border-color:#dfc2fb;box-shadow:0 0 0 2px #b795d854}
+.moon-spell-card .cw-owned-emblem[data-family] {width:100%;height:100%;margin:0;min-height:0}
+.moon-spell-card .moon-spell-name {padding:4px 2px;font:600 clamp(10px,.85vw,13px)/1.05 Georgia,serif;text-align:center;overflow-wrap:anywhere}
+.moon-spell-empty {display:grid;place-items:center;border:1px dashed #7a668c;background:#292235;color:#917fa1}
+.moon-spell-empty svg {width:31%;height:auto;max-height:46%}
 .moon-roost .moon-companion,.moon-roost .moon-empty-slot {
   width:var(--card-width);height:auto;aspect-ratio: .72;border-radius:10px;
 }
@@ -304,8 +329,7 @@
 .moon-art>.grimoire-card {height:94%;width:auto;max-width:96%;aspect-ratio:.72;}
 .moon-art .grimoire-name {font-size:12px;}
 @media(max-width:850px) {
-  .moon-roost.companion-rail {grid-template-columns:minmax(0,1fr);padding:12px;}
-  .moon-roost .companion-slots {--card-width:clamp(80px,14vw,105px);gap:9px;}
+  .moon-roost.companion-rail {padding:12px}
   .moon-roost .companion-effect {border:0;padding:0;}
 }
 
@@ -322,9 +346,18 @@
 }
 .roost-purse .stat-money::before {display:none;}
 @media(max-width:850px) {
-  .moon-roost .roost-purse {grid-row:1;grid-column:1;justify-self:end;width:96px;}
-  .moon-roost .moon-roost-title {grid-row:1;grid-column:1;padding-right:100px;}
-  .moon-roost .companion-slots {grid-row:2;}
+  .moon-roost .roost-purse {width:96px}
+}
+@media(max-width:650px) {
+  .moon-roost.companion-rail {
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"familiar-title familiar-title" "familiars familiars" "spell-title purse" "spells purse";
+    gap:6px 12px;
+  }
+  .moon-roost .companion-slots {--card-width:min(82px,calc((100% - 20px) / 5));gap:5px}
+  .moon-spell-title {padding-top:4px}
+  .moon-spell-title h3 {font-size:17px}
+  .moon-spell-card,.moon-spell-empty {width:min(60px,calc((100% - 7px) / 2))}
 }
 
 /* Keep the entire encounter picker in view, including optional boss actions. */

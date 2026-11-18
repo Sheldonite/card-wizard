@@ -29,22 +29,8 @@
     diamond:'<path d="m10 2 6 8-6 8-6-8z"/><path d="m10 6 3 4-3 4-3-4z"/>',check:'<path d="m3 10 4 4L17 4"/>'
   };
   function icon(key) {return '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[key] || paths.spark)+'</svg>';}
-  function scorePotion(stat){
-    return '<svg class="score-potion potion-'+stat+'" viewBox="0 0 34 38" aria-hidden="true" focusable="false">'+
-      '<path d="M13 7h8v8c0 3 8 7 8 13 0 6-5 8-12 8S5 34 5 28c0-6 8-10 8-13z" fill="#243040" stroke="#dceaea" stroke-width="1.6"/>'+
-      '<path class="potion-liquid" d="M7 25q4-3 10 0t10-1q4 10-10 10T7 25Z"/>'+
-      '<path class="potion-rising" d="M14 8h6v8c0 3 8 7 8 12q0 7-11 7T6 28c0-5 8-9 8-12Z"/>'+
-      '<path d="M13 19q-5 4-5 8m1 3 1 1" fill="none" stroke="#f2ffff" opacity=".85" stroke-linecap="round" stroke-width="1.7"/>'+
-      '<path d="M22 29q-1 2-4 2" stroke="var(--elixir-light)" fill="none" stroke-linecap="round" stroke-width="1.5"/>'+
-      '<rect x="11.5" y="5.5" width="11" height="4" rx="1.5" fill="#ca9d66" stroke="#543d3c"/>'+
-      '<path d="M13 6.6h8" stroke="#ffe5ae" stroke-linecap="round"/>'+
-      '<g class="potion-spill"><path class="potion-stream" pathLength="1" d="M16 5q-5-2-5 3t.2 6q.4 3-2.4 5" />'+
-      '<path class="potion-foam" d="M11 6q-1-3 2-3 2-4 5-1 5-2 5 3 2 3 0 5-2 1-2-2 0-2-3-1-3 1-5-1Z"/>'+
-      '<circle class="potion-bubble" cx="14" cy="4" r="1.65"/><circle class="potion-bubble second" cx="20" cy="4" r="1.25"/>'+
-      '<circle class="potion-drip" cx="9" cy="18" r="1.5"/></g></svg>';
-  }
-  document.querySelector('.chip-comp .stat-chips').insertAdjacentHTML('afterbegin',scorePotion('chips'));
-  document.querySelector('.mult-comp .stat-mult').insertAdjacentHTML('afterbegin',scorePotion('mult'));
+  const vesselArt='<i class="vessel-art" aria-hidden="true"><i class="vessel-liquid"></i><i class="vessel-spill"></i><i class="vessel-drops"></i></i>';
+  document.querySelectorAll('.score-components .score-vessel').forEach(vessel=>vessel.insertAdjacentHTML('afterbegin',vesselArt));
   document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});
   const suits = {
     S:{name:'Spades',color:'#363346',path:'M10 1C7.9 4.4 1.7 7.9 1.7 12.1c0 4.2 4.8 5.4 7.6 2.1-.4 2.3-1.2 3.7-3.1 5h7.6c-1.9-1.3-2.7-2.7-3.1-5 2.8 3.3 7.6 2.1 7.6-2.1C18.3 7.9 12.1 4.4 10 1Z'},
@@ -78,7 +64,7 @@
   }
   let run=loadRun();
   let hasRun=Boolean(run);
-  let showLobby=!hasRun;
+  let showLobby=true;
   if(!run) run=CW.newRun(undefined,'arcane');
   const prefs={
     muted:false,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -184,13 +170,14 @@
       const label=(type==='pack'?'Booster':type)+' '+it.name+subtitle+': '+it.description;
       const badge=marks.length?'<small class="item-mark" aria-hidden="true">'+esc(marks[0].charAt(0))+'</small>':'';
       const stack=it.stackAmount?'<small class="familiar-stack stat-'+(it.stackStat==='chips'?'chips':'mult')+'" aria-hidden="true">'+esc(it.stackAmount)+'</small>':'';
-      return '<button class="item-slot item-card" data-family="'+type+'" data-item="'+esc(ids[i])+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" '+CWCardTip.attribute(CWCardTip.details(it))+(spell?'':CWCardTip.attribute(CWCardTip.details(it,false,true),'data-extra-tip'))+'><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+window.CWContent.typeBadge(type,true)+window.CWContent.familiarFinish(it,upgradeAge(it))+badge+stack+(it.bossMuted?CWCardTip.cross:'')+'<b>'+esc(it.name)+'</b></button>';
+      return '<button class="item-slot item-card" data-family="'+type+'" data-item="'+esc(ids[i])+'" aria-expanded="false" data-slot="'+i+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" '+CWCardTip.attribute(CWCardTip.details(it))+(spell?'':CWCardTip.attribute(CWCardTip.details(it,false,true),'data-extra-tip'))+'><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+window.CWContent.typeBadge(type,true)+window.CWContent.familiarFinish(it,upgradeAge(it))+badge+stack+(it.bossMuted?CWCardTip.cross:'')+'<b>'+esc(it.name)+'</b></button>';
     }).join('');
   }
   function selectedInPlayOrder(){return currentHand.filter(c=>selected.has(c.id)).map(c=>c.id);}
   function renderSelection(){
     const view=selected.size?CW.preview(run,selectedInPlayOrder()):null;
     $('chips').textContent=$('mult').textContent='\u2014';
+    for(const id of ['chips','mult']) $(id).style.removeProperty('--score-digits');
     $('selected-count').innerHTML=Array.from({length:5},(_,i)=>'<i class="pick-slot'+(i<selected.size?' filled':'')+'" aria-hidden="true"></i>').join('')+'<span class="visually-hidden">'+selected.size+' of 5 selected</span>';
     const area=$('cast-prompt');
     area.classList.remove('scoring');
@@ -231,6 +218,7 @@
     document.querySelectorAll('[data-sort]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.sort===(run.cardOrderMode || prefs.sort))));
   }
   function render(shouldSave=true){
+    CWP.dismissSell();
     const info=CW.blindInfo(run), capacity=CW.capacity(run);
     selected.forEach(id=>{if(!run.hand.some(c=>c.id===id))selected.delete(id);});
     $('blind-name').textContent=info.name;$('blind-type').textContent=['Opening blind','Second blind','Boss blind'][run.blind];$('blind-token').className=['','big','boss'][run.blind];
@@ -259,8 +247,15 @@
     document.querySelector('[data-action="discard"]').disabled=busy || run.phase!=='play' || run.discards<=0;
     renderSelection();
     if(shouldSave)save();
-    const scene=showLobby || ['payout','won'].includes(run.phase)?'menu':run.phase==='shop'?'shop':run.blind===2?'boss':'play';
-    if(scene!==lastViewKey){audio.setScene(scene);lastViewKey=scene;}
+    const atTable = !showLobby && (run.phase === 'select' || run.phase === 'play');
+    const bossFight = run.phase === 'play' && run.blind === 2;
+    const ended = !showLobby && ['lost','won'].includes(run.phase);
+    const scene = ended ? 'curtain' : atTable ? (bossFight ? 'boss' : 'play') : 'menu';
+    if(scene!==lastViewKey){
+      audio.setCurtain(ended);
+      if(!ended) audio.setScene(scene);
+      lastViewKey=scene;
+    }
     if(!busy) CWP.sync();
   }
   function toggle(c){
@@ -356,6 +351,24 @@
       reveal.finished.then(()=>dusk.remove(),()=>dusk.remove());
     };
   }
+  function showHandFireworks(){
+    const layer=document.createElement('div');
+    layer.className='hand-fireworks';
+    layer.setAttribute('aria-hidden','true');
+    layer.innerHTML=['sapphire','ruby','gold'].map((color,index)=>{
+      const rays=Array.from({length:18},(_,i)=>{
+        const angle=(i/18+index/48)*Math.PI*2;
+        const length=i%2===0?43:31;
+        const x=Math.cos(angle)*length, y=Math.sin(angle)*length;
+        const endX=x.toFixed(1), endY=(y+7).toFixed(1);
+        return '<path pathLength="1" d="M0 0 Q'+(x*.55).toFixed(1)+' '+(y*.55-2).toFixed(1)+' '+endX+' '+endY+'"/>'+
+          '<circle cx="'+endX+'" cy="'+endY+'" r="'+(i%3===0?1.5:.9)+'"/>';
+      }).join('');
+      return '<div class="hand-burst '+color+'"><svg viewBox="-52 -52 104 110"><g>'+rays+'</g></svg></div>';
+    }).join('');
+    $('cast-zone').append(layer);
+    return layer;
+  }
   async function commit(discarding=false){
     if(busy || run.phase!=='play' || CWP.isOpen())return;
     if(!selected.size){toast(discarding?'Select cards to discard.':'Select up to 5 cards first.');return;}
@@ -367,11 +380,12 @@
     const pulse=(node,keyframes,duration)=>{
       if(moving && node)node.animate(keyframes,{duration:fxTime(duration),easing:'ease-out'});
     };
-    const pointsNeeded=run.target-run.score;
+    const blindTarget=run.target;
     const counters=$('chips').closest('.score-components');
-    let revealRewards;
+    let revealRewards,fireworks;
     let ghosts=[];
     busy=true;
+    CWP.dismissSell();
     try{
       const result=discarding?CW.discard(run,ids):CW.play(run,ids);
       if(!result){toast('That action is unavailable.');return;}
@@ -388,7 +402,7 @@
         return;
       }
       area.classList.add('scoring','cw-fx-cast');
-      area.innerHTML='<div class="cw-fx-lane" aria-hidden="true"></div><div class="cw-fx-receipt" aria-hidden="true"><div class="cw-fx-name"></div><div class="cw-fx-equation"><div class="potion-value">'+scorePotion('chips')+'<b class="cw-fx-chips"></b></div><span>×</span><div class="potion-value">'+scorePotion('mult')+'<b class="cw-fx-mult"></b></div></div><div class="cw-fx-call"></div></div>';
+      area.innerHTML='<div class="cw-fx-lane" aria-hidden="true"></div><div class="cw-fx-receipt" aria-hidden="true"><div class="cw-fx-name"></div><div class="cw-fx-equation"><div class="potion-value score-vessel vessel-chips">'+vesselArt+'<b class="cw-fx-chips"></b></div><span>×</span><div class="potion-value score-vessel vessel-mult">'+vesselArt+'<b class="cw-fx-mult"></b></div></div><div class="cw-fx-call"></div></div>';
       const receipt=area.querySelector('.cw-fx-receipt');
       const title=area.querySelector('.cw-fx-name');
       const equation=area.querySelector('.cw-fx-equation');
@@ -412,15 +426,13 @@
         }
       }
       const cleared=run.phase==='payout' || run.phase==='won';
+      const singleHandClear=cleared && result.total>=blindTarget;
+      const rewardsHoldMs=2000;
       const count=(chips,mult)=>{
-        if(cleared && Math.floor(chips*mult)>=pointsNeeded && !equation.classList.contains('blind-overdrive')){
-          equation.classList.add('blind-overdrive');
-          counters.classList.add('blind-overdrive');
-          for(const group of [equation,counters]) group.style.setProperty('--brew-cycle',fxTime(880)+'ms');
-          pulse(equation,[{scale:'.94'},{scale:'1.12',offset:.38},{scale:'1'}],285);
-        }
         chipText.textContent=$('chips').textContent=compact(chips);
         multText.textContent=$('mult').textContent=compact(mult);
+        $('chips').style.setProperty('--score-digits',chipText.textContent.length);
+        $('mult').style.setProperty('--score-digits',multText.textContent.length);
         equation.style.setProperty('--fx-digits',chipText.textContent.length+multText.textContent.length+2);
       };
       $('hands').textContent=run.hands;
@@ -465,31 +477,45 @@
         }
       }
       count(result.chips,result.mult);
-      if(cleared)await wait(moving?480:240);
-      title.textContent=cleared?'Blind cleared':result.name;
+      if(cleared)title.textContent=singleHandClear?'One-hand clear':'Blind cleared';
       call.classList.remove('cw-fx-peak');
-      if(result.blocked)call.textContent=steps[0]?.text || 'Blocked by the blind';
-      else if(peak>0){call.textContent=steps[peak].text;window.CWContent.colorStats(call);}
-      else call.textContent=compact(result.chips)+' × '+compact(result.mult);
-      equation.classList.add('cw-fx-total');
-      equation.textContent='+'+compact(result.total);
-      equation.style.setProperty('--fx-digits',equation.textContent.length);
+      const handTotal='+'+compact(result.total);
+      if(cleared){
+        call.textContent=handTotal;
+        call.classList.add('cw-winning-total');
+        if(singleHandClear){
+          if(moving)fireworks=showHandFireworks();
+          for(const group of [equation,counters]){
+            group.style.setProperty('--brew-cycle',rewardsHoldMs+'ms');
+            group.classList.add('potion-eruption');
+          }
+        }
+      }else{
+        if(result.blocked)call.textContent=steps[0]?.text || 'Blocked by the blind';
+        else if(peak>0){call.textContent=steps[peak].text;window.CWContent.colorStats(call);}
+        else call.textContent=compact(result.chips)+' x '+compact(result.mult);
+        equation.classList.add('cw-fx-total');
+        equation.textContent=handTotal;
+        equation.style.setProperty('--fx-digits',handTotal.length);
+      }
       receipt.classList.toggle('cw-fx-cleared',cleared);
       $('round-score').textContent=compact(run.score);
       $('score-progress').style.width=Math.min(100,100*run.score/run.target)+'%';
       $('score-progress').parentElement.setAttribute('aria-valuenow',Math.min(run.score,run.target));
       if(moving){
         $('round-score').classList.add('score-pop');
-        pulse(equation,[{scale:'.9'},{scale:'1.09',offset:.4},{scale:'1'}],260);
+        pulse(cleared?call:equation,[{scale:'.94'},{scale:'1.04',offset:.4},{scale:'1'}],260);
       }
       $('announce').textContent=result.name+', '+num(result.total)+' chips. Round score '+num(run.score)+'.'+(cleared?' Blind cleared.':'');
       if(cleared)audio.event('win');
       if(run.phase==='lost')audio.event('lose');
       const toRewards=moving && run.phase==='payout';
-      await wait(cleared?(moving?(toRewards?1100:1640):460):(moving?380:160));
+      if(cleared)await new Promise(resolve=>setTimeout(resolve,rewardsHoldMs));
+      else await wait(moving?380:160);
       if(toRewards)revealRewards=await dimTableForRewards();
     }finally{
-      counters.classList.remove('blind-overdrive');
+      fireworks?.remove();
+      counters.classList.remove('potion-eruption');
       dismissGhosts(ghosts);
       area.classList.remove('cw-fx-cast','scoring');
       $('round-score').classList.remove('score-pop');
@@ -634,7 +660,7 @@
       audio.event('select');
       return render();
     }
-    if(button.dataset.item)return openPanel('inventory',button.dataset.item);
+    if(button.dataset.item && !busy)return CWP.toggleSell(button,Number(button.dataset.slot),button.closest('#spells')?'consumables':'familiars');
     const a=button.dataset.action;
     if(a==='mute')setSetting('muted',!prefs.muted);
     else if(a==='menu')showMenu();

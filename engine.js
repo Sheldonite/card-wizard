@@ -837,7 +837,8 @@
   }
   const inventoryOpen = s => s.phase === "play" || s.phase === "shop";
   function canSell(s,category,index) {
-    if (!inventoryOpen(s) || !["familiars","consumables"].includes(category) || !Number.isInteger(index)) return false;
+    const betweenBlinds = category === "familiars" && ["select","payout"].includes(s.phase);
+    if ((!inventoryOpen(s) && !betweenBlinds) || !["familiars","consumables"].includes(category) || !Number.isInteger(index)) return false;
     const ref = s[category][index];
     return Boolean(ref) && market.splitVariant(ref).sticker !== "eternal";
   }

@@ -224,14 +224,28 @@
     const nodes=[];
     while(walker.nextNode()) nodes.push(walker.currentNode);
     for(const node of nodes){
-      if(node.parentElement?.closest('.stat-money, .stat-chips, .stat-mult, .term-familiar, .term-constellation, option, svg, [aria-hidden="true"]')) continue;
-      const matches=node.data.matchAll(/(?:[+×x-]?\d+(?:\.\d+)?\s+)?\b(chips?|mult(?:i|iplier)?s?|familiars?|constellations?)\b|(?:[+\-−]?\$\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[-–]\s*\$\d+(?:,\d{3})*(?:\.\d+)?)?|(?:\d+(?:\.\d+)?\s+)?\b(?:dollars?|cash|money|interest|coins)\b)/gi);
+      if(node.parentElement?.closest('[data-colored-term], .stat-money, .stat-chips, .stat-mult, .term-familiar, .term-constellation, option, svg, [aria-hidden="true"]')) continue;
+      const matches=node.data.matchAll(/(?:[+x\u00d7-]?\d+(?:\.\d+)?\s+)?\b(chips?|mult(?:i|iplier)?s?|familiars?|constellations?|spectral(?: cards?)?|spells?|vouchers?|(?:booster )?packs?|boosters?)\b|([+\u2212-]?\$\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[-\u2013]\s*\$\d+(?:,\d{3})*(?:\.\d+)?)?|(?:\d+(?:\.\d+)?\s+)?\b(?:dollars?|cash|money|interest|coins?)\b)|(\+\d+(?:\.\d+)?|\bx\d+(?:\.\d+)?|\u00d7\d+(?:\.\d+)?)(?:\s+(?:more|total|instead)\b)?/gi);
       const parts=document.createDocumentFragment();
-      let end=0;
+      let end=0, scoringStat='';
       for(const match of matches){
+        const term=match[1]?.toLowerCase();
+        let color;
+        if(term?.startsWith('chip'))color=scoringStat='stat-chips';
+        else if(term?.startsWith('mult'))color=scoringStat='stat-mult';
+        else if(term) {
+          let family=term.replace(/s$/,'');
+          if(term.startsWith('spectral'))family='spectral';
+          if(term.startsWith('booster'))family='pack';
+          color='term-'+family;
+        }
+        else if(match[2])color='stat-money';
+        else color=scoringStat;
+        if(!color)continue;
         parts.append(node.data.slice(end,match.index));
         const stat=document.createElement('span');
-        stat.className=!match[1]?'stat-money':/^chip/i.test(match[1])?'stat-chips':/^fam/i.test(match[1])?'term-familiar':/^con/i.test(match[1])?'term-constellation':'stat-mult';
+        stat.className=color;
+        stat.dataset.coloredTerm='';
         stat.textContent=match[0];
         parts.append(stat);
         end=match.index+match[0].length;
