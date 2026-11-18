@@ -10,7 +10,6 @@
     if (!descriptionVisible && !playing && card.description) lines.push(card.description);
     const example = card.kind === 'familiar' && root.CWPlaytest?.deals[card.baseId || card.id]?.example;
     if (example) lines.push(example);
-    if (card.joker) lines.push('Joker equivalent · '+card.joker);
     for (const [field, catalog] of [['enhancement','enhancements'],['edition','editions'],['seal','seals'],['sticker','stickers']]) {
       const effect = root.CWMarket[catalog][card[field]];
       if (effect) {
