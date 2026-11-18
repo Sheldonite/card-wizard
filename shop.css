@@ -1,0 +1,314 @@
+/* Moonlit Market */
+.cw-backdrop:has(.cw-dialog[data-page="shop"]) {
+  padding: clamp(8px, 2.8vw, 44px);
+  background: radial-gradient(ellipse at 18% 17%, #332b4b 0, transparent 56%), radial-gradient(ellipse at 91% 75%, #48283a, transparent 57%), #140f20;
+}
+.cw-backdrop .cw-dialog[data-page="shop"] {
+  --moon-gold: #edc988;
+  width: min(100%, 1320px);
+  max-height: 95dvh;
+  border: 1px solid #977a60;
+  border-radius: 15px;
+  background: #1c1828;
+  box-shadow: 0 24px 90px #080610b3, 0 0 0 4px #10101bbb, inset 0 0 0 2px #56404b;
+}
+.cw-backdrop .cw-dialog[data-page="shop"] .cw-head {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: clamp(105px, 17vh, 184px);
+  padding: clamp(14px, 2.3vw, 32px);
+  border-bottom: 3px double #b19763;
+  background: linear-gradient(90deg,#1d1529f2 1%,#271e36ae 25%,#1d152911 55%,#231a2d66), url("assets/moon-market.webp") center 51% / cover, #382c48;
+}
+.cw-backdrop .cw-dialog[data-page="shop"] .cw-kicker {
+  color: #f7d9a6;
+  letter-spacing: .21em;
+  text-shadow: 0 1px 4px #160b12;
+}
+.cw-backdrop .cw-dialog[data-page="shop"] .cw-head h2 {
+  color: #fff2cf;
+  font: 600 clamp(36px,4.1vw,63px)/1.04 Georgia,serif;
+  letter-spacing: -.045em;
+  text-shadow: 1px 3px 0 #3d202c, 0 3px 13px #1d111e;
+}
+.cw-backdrop .cw-dialog[data-page="shop"] .cw-body {
+  padding: clamp(12px,1.6vw,24px);
+  background: radial-gradient(ellipse at top left,#3b294160,transparent 55%),#1c1827;
+}
+.cw-dialog[data-page="shop"] .cw-purse.moon-purse {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 135px;
+  margin: 0;
+  padding: 10px 15px;
+  flex: none;
+  border: 1px solid #b89862;
+  border-radius: 8px;
+  background: linear-gradient(140deg,#392b2af2,#241b23f2);
+  box-shadow: inset 0 0 0 3px #251d2566,0 4px 16px #100c1c80;
+}
+.moon-purse small, .moon-roost-title small, .moon-copy small {
+  font: 700 10px/1.25 var(--sans,Arial,sans-serif);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+.moon-purse small { display:block; color:#ebd2aa; }
+.cw-dialog[data-page="shop"] .moon-purse strong {
+  display: block; color: #ffe4a0; font: 700 clamp(23px,2.5vw,39px)/1.03 Georgia,serif;
+  font-variant-numeric: tabular-nums; letter-spacing: -.025em;
+}
+.moon-coins { display:block; width:48px; height:41px; position:relative; }
+.moon-coins::before {content:"";position:absolute;left:0;right:0;bottom:6px;height:6px;background:#08081280;border-radius:50%;filter:blur(2px)}
+.moon-coins i {
+  position: absolute; width: 21px; height: 10px; left: calc(var(--pile) * 13px);
+  bottom: calc(4px + var(--level) * 3px + var(--pile) * 2px);
+  border-radius: 50%; border: 1px solid #ecb348;
+  background: radial-gradient(ellipse,#e9ac3a 36%,#ffe681 41% 52%,#d89835 59%,#f9cc68 74%);
+  box-shadow: 0 2px #bf7d29,0 3px #79502b;
+}
+.moon-roost.companion-rail {
+  display:flex; align-items:center; flex-wrap:wrap;
+  gap: 10px clamp(14px,2vw,30px);
+  padding: 10px clamp(12px,1.4vw,20px);
+  margin: 0 0 16px;
+  border: 1px solid #67506e; border-radius: 9px;
+  background: linear-gradient(105deg,#342438,#262034 65%,#35263c); box-shadow: inset 0 2px #d4b89f0c;
+}
+.moon-roost .moon-roost-title h3 { color:#f6e3c0; font: 600 22px/1.1 Georgia,serif; margin:0 0 4px; }
+.moon-roost-title small { color:#d2bbd1; letter-spacing:.045em; }
+.moon-roost .companion-slots { gap:7px; justify-content:flex-start; }
+.moon-roost .moon-companion,.moon-roost .moon-empty-slot {
+  display:grid;place-items:center;width:40px;height:53px;padding:0;border-radius:5px;
+}
+.moon-roost .moon-empty-slot {
+  border:1px dashed #82677e; background:radial-gradient(#372c43,#251e31);color:#897193;
+  font:20px/1 Georgia,serif;
+}
+.moon-roost .moon-companion { border:1px solid #c6a482;background:#31223a; }
+.moon-companion .cw-owned-emblem[data-family] { border:0; border-radius:4px; background:#31223a; }
+.moon-companion .cw-owned-emblem>.type-badge { display:none; }
+.moon-roost .companion-effect {
+  max-width:630px;min-width:140px;border-left:1px solid #6a4e65;padding-left:clamp(12px,1.4vw,21px);
+  font-size:13px;line-height:1.35;color:#ecdfed;
+}
+.moon-roost .companion-effect b { font:700 17px/1.25 Georgia,serif;color:#f8dbae; }
+.moon-shelves { display:grid; grid-template-columns:minmax(0,2.08fr) minmax(0,2fr) minmax(0,1fr); gap:clamp(8px,1.12vw,16px); }
+.moon-shelf {
+  --accent:#dbb6f2;--trim:#795887;--field:#39283f;
+  min-width:0;border-radius:8px;border:1px solid #594455;border-bottom:4px solid #755541;overflow:hidden;
+  background:linear-gradient(180deg,#332635,#281e2d);display:flex;flex-direction:column;
+}
+.moon-shelf.moon-packs { --accent:#a9d8ec;--trim:#4a7b93;--field:#273644; }
+.moon-shelf.moon-vouchers { --accent:#f5d49b;--trim:#8b6b44;--field:#413433; }
+.moon-shelf>header {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  min-height:44px;gap:5px;padding:6px 11px;background:var(--field);
+  border-top:2px solid var(--trim);border-bottom:1px solid #584659;
+}
+.moon-shelf h3 { margin:0;color:var(--accent);font:600 clamp(16px,1.5vw,23px)/1.18 Georgia,serif; }
+.cw-dialog[data-page="shop"] .moon-reroll { min-height:27px;padding:3px 9px;border-radius:14px;border-color:#9b79a7;background:#4a3558;font-size:12px;color:#fae9ff; }
+.moon-goods {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));align-content:start;
+  gap:8px; padding:8px;flex:1;
+}
+.moon-item,.moon-sold {
+  min-width:0;border:1px solid #544456;border-radius:6px;background:#241e2d;
+}
+.moon-item {
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+  box-shadow:0 3px 5px #130d1b3d;--glow:#cba3e4;
+}
+.moon-item[data-stock-type="pack"] { --glow:#84c3da; }
+.moon-item[data-stock-type="voucher"] { --glow:#debc7f; }
+.moon-item:is(:hover,:focus-within) { border-color:var(--trim); }
+.moon-art {
+  position:relative;isolation:isolate;display:grid;place-items:center;height:clamp(92px,14vh,154px);min-height:80px;padding:6px;
+  background:
+    radial-gradient(circle at 20% 25%,#f7dead85 0 .7px,transparent 1.4px),
+    radial-gradient(circle at 81% 43%,#ffe1b37a 0 1px,transparent 1.7px),
+    radial-gradient(circle at 77% 19%,#ffe1b34d 0 1px,transparent 1.7px),
+    radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--glow) 22%,#241e2c),transparent 85%),#27202f;
+  border-bottom:1px solid #78637740;
+}
+.moon-art::before {
+  content:"";position:absolute;z-index:-1; width:80px;height:80px;border:1px solid #c0a2aa26;
+  border-radius:50%;box-shadow:0 0 0 6px #9a84a009,0 0 0 7px #baa2bf14;
+}
+.moon-art>.cw-item-image[data-family], .moon-art .card-display { 
+  width:auto;height:100%;max-width:95%;min-height:0;aspect-ratio:3/4;padding:0;border:0;border-radius:4px;background:none;
+  filter:drop-shadow(0 5px 3px #110c1bb3);
+}
+.moon-art .cw-item-image img { width:100%; height:100%;object-fit:contain;image-rendering:pixelated;display:block; }
+.moon-art .type-badge { display:none; }
+.moon-copy { padding:9px 10px 6px;flex:1; }
+.moon-copy small { color:var(--accent);font-size:9px; }
+.moon-copy h4 { margin:3px 0 5px;color:#fff1dc;font:600 clamp(16px,1.34vw,21px)/1.1 Georgia,serif; }
+.moon-copy p { margin:0;color:#e2d7e4;font-size:13px;line-height:1.36; }
+.moon-actions { display:flex;flex-wrap:wrap;gap:5px; padding:4px 8px 9px; }
+.cw-dialog[data-page="shop"] .moon-buy {
+  display:flex;align-items:center;justify-content:space-between;gap:4px;width:100%;padding:5px 8px;
+  min-height:32px;border:1px solid #a28764;border-radius:5px;color:#fff1d4;background:#504033;
+  box-shadow:inset 0 1px #eee0b616,0 2px #120e19;font-size:13px;
+}
+.cw-dialog[data-page="shop"] .moon-buy:hover:enabled { color:#33211c;background:#f1cf89; border-color:#ffe3a4; }
+.cw-dialog[data-page="shop"] .moon-buy:disabled { opacity:1;color:#c9bdcb;border-color:#514452;background:#332b37; font-size:12px; }
+.moon-price { display:inline-flex;align-items:center;gap:3px;font-weight:800;white-space:nowrap;}
+.moon-price i {
+  display:grid;place-items:center;background:linear-gradient(135deg,#ffeaa1,#dda240);border-radius:50%;border:1px solid #deaf56;
+  color:#805022;font:bold 10px/1 Georgia,serif;width:15px;height:15px;box-shadow:inset 0 0 0 1px #ffe9a4,0 1px #785222;
+}
+.cw-dialog[data-page="shop"] .moon-cast { width:100%;min-height:25px;padding:2px;font-size:12px; }
+.moon-sold {display:grid;align-content:center;justify-items:center;min-height:158px;gap:8px;color:#c3acc4;border-style:dashed;font-family:Georgia,serif;}
+.moon-sold span {font-size:35px;color:#8b728d;}
+/* Crimped foil booster wrappers and the merchant's stamped voucher. */
+.moon-parcel {
+  --foil:#4a627b;--flash:#aacabf;
+  position:relative;display:grid;place-items:center;height:91%;aspect-ratio:.74;transform:rotate(-5deg);isolation:isolate;
+  background:linear-gradient(128deg,transparent 10%,#ffffff40 22%,transparent 28% 65%,#ffffff27 70%,transparent 77%),
+    repeating-linear-gradient(48deg,#ffffff12 0 1px,transparent 1px 9px),linear-gradient(115deg,var(--foil),#302943 70%,var(--foil));
+  border:1px solid var(--flash);border-radius:2px; box-shadow:3px 5px 3px #120c208c;
+}
+.moon-parcel::before,.moon-parcel::after {
+  content:"";position:absolute;height:9%;inset:0 0 auto;
+  background:repeating-linear-gradient(90deg,var(--foil) 0 2px,var(--flash) 2px 3px,var(--foil) 4px);
+  border-bottom:1px solid #c3bbd4a3;
+}
+.moon-parcel::after {top:auto;bottom:0;border-bottom:0;border-top:1px solid #c3bbd4a3;}
+.moon-parcel.parcel-familiar {--foil:#82576f;--flash:#f1c7ae;}
+.moon-parcel.parcel-star {--foil:#56639c;--flash:#c8d7ff;}
+.moon-parcel.parcel-spell {--foil:#478071;--flash:#b5f0d7;}
+.moon-parcel.parcel-spectral {--foil:#62568c;--flash:#c7c1ff;}
+.moon-parcel .cw-item-image[data-family] {
+  background:none;width:60%;height:57%;border-radius:45%;border:2px solid var(--flash);margin:0;padding:0;
+}
+.moon-parcel .cw-item-image img { width:100%;height:100%;object-fit:cover;transform:scale(1.19); }
+.moon-warrant {
+  display:flex;align-items:center;justify-content:space-evenly;position:relative;transform:rotate(-7deg);height:50%;width:89%;max-width:150px;
+  background:repeating-linear-gradient(115deg,transparent 0 4px,#ad844120 4px 5px),linear-gradient(130deg,#f3e4b8,#dbbc82);
+  color:#8e622e;border:3px double #957444;outline:2px solid #e6d099;border-radius:3px;box-shadow:2px 5px 3px #150d1e9c;
+}
+.moon-warrant .cw-item-image[data-family] {height:88%;width:auto;aspect-ratio:1; border-radius:50%;border:2px solid #9d733d;background:#45323b;padding:0;margin:0;}
+.moon-warrant .cw-item-image img {object-fit:cover;transform:scale(1.15);}
+.moon-warrant i {font:18px/1 Georgia,serif;}
+.cw-backdrop .cw-dialog[data-page="shop"] .cw-footer {
+  padding:10px clamp(12px,1.6vw,24px);gap:7px;justify-content:flex-start;background:#28202f;border-color:#69505c;
+}
+.cw-dialog[data-page="shop"] .cw-footer .cw-btn {border-color:#705969;background:#3b3043;color:#e9dce7;min-height:34px;padding:6px 12px;}
+.cw-dialog[data-page="shop"] .cw-footer .moon-next {margin-left:auto;padding-inline:20px;background:#efd099;color:#372620;border-color:#f4deb2;}
+@media (min-width:1081px) {
+  .moon-stock .moon-goods,.moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:1080px) {
+  .moon-shelves {grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  .moon-stock {grid-column:1/-1;}
+  .moon-stock .moon-goods {grid-template-columns:repeat(auto-fit,minmax(min(100%,195px),1fr));}
+  .moon-stock .moon-item {display:grid;grid-template-columns:minmax(65px,29%) 1fr;grid-template-rows:1fr auto;}
+  .moon-stock .moon-art {grid-row:span 2;height:100%;min-height:98px;max-height:190px;border-bottom:0;}
+  .moon-stock .moon-art>.cw-item-image {height:auto;width:min(100%,100px);}
+  .moon-stock .moon-copy {padding-block:7px 4px;}
+  .moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .moon-vouchers .moon-art {height:94px;}
+  .moon-roost {margin-bottom:10px;}
+}
+@media(max-width:650px) {
+  .cw-backdrop:has(.cw-dialog[data-page="shop"]) {padding:4px;}
+  .cw-backdrop .cw-dialog[data-page="shop"] {max-height:98dvh;border-radius:9px;}
+  .cw-backdrop .cw-dialog[data-page="shop"] .cw-head {min-height:83px;padding:10px 12px;}
+  .cw-backdrop .cw-dialog[data-page="shop"] .cw-head h2 {font-size:clamp(28px,7vw,36px);}
+  .cw-dialog[data-page="shop"] .cw-purse.moon-purse {min-width:0;gap:5px;padding:6px 8px;}
+  .moon-purse small {font-size:9px;}
+  .moon-coins {width:37px;transform:scale(.78);transform-origin:left center;margin-right:-6px;}
+  .cw-backdrop .cw-dialog[data-page="shop"] .cw-body {padding:9px;}
+  .moon-roost.companion-rail {gap:7px 12px;padding:8px 10px;margin-bottom:9px;}
+  .moon-roost .moon-roost-title h3 {font-size:17px;}
+  .moon-roost .moon-companion,.moon-roost .moon-empty-slot {width:29px;height:39px;}
+  .moon-roost .companion-slots {gap:4px;}
+  .moon-roost .companion-effect {border:0;padding:0;flex-basis:100%;display:flex;align-items:baseline;gap:7px;font-size:12px;}
+  .moon-roost .companion-effect b {font-size:14px;}
+  .moon-shelves {grid-template-columns:1fr;gap:9px;}
+  .moon-stock {grid-column:auto;}
+  .moon-stock .moon-goods,.moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .moon-stock .moon-item {display:flex;}
+  .moon-stock .moon-art,.moon-art {height:86px;min-height:86px;max-height:none;}
+  .moon-stock .moon-art>.cw-item-image {height:100%;width:auto;}
+  .moon-copy {padding:7px;}
+  .moon-copy p {font-size:12px;}
+  .moon-goods {gap:5px;padding:5px;}
+  .moon-shelf>header {min-height:34px;}
+  .moon-vouchers .moon-item {display:grid;grid-template-columns:27% 1fr;grid-template-rows:1fr auto;}
+  .moon-vouchers .moon-art {height:100%;min-height:92px;grid-row:span 2;}
+  .moon-vouchers .moon-warrant {height:45px;}
+  .moon-vouchers .moon-warrant i {font-size:10px;}
+  .cw-backdrop .cw-dialog[data-page="shop"] .cw-footer {padding:7px;gap:4px;}
+  .cw-dialog[data-page="shop"] .cw-footer .cw-btn {padding:5px 7px;font-size:12px;}
+}
+[data-family=standard] {
+  --ink:#562735; --field:#f3e5c9; --shape:5px;
+  --pattern:repeating-linear-gradient(45deg,transparent 0 8px,#a9835525 8px 9px);
+}
+.moon-parcel[data-family] { --foil:var(--field); --flash:var(--ink); }
+.booster-face .booster-seal { width:64%;height:64%;color:var(--ink); }
+.moon-parcel .booster-face[data-family] {
+  width:80%;height:66%;background:var(--pattern),var(--field);
+  border:2px solid var(--ink);border-radius:var(--shape);
+  box-shadow:0 0 0 2px var(--field),0 0 0 3px var(--ink);
+}
+.moon-art>.cw-item-image[data-family]:not([data-family=""]) {
+  border:2px solid var(--ink);border-radius:var(--shape);
+  background:var(--pattern),var(--field);
+}
+.moon-art>.cw-item-image[data-family=familiar] img {object-fit:cover;}
+.constellation-hand {font-weight:900;color:inherit;}
+@media(min-width:851px) {
+  .moon-roost .moon-companion,.moon-roost .moon-empty-slot {width:49px;height:64px;}
+}
+.moon-art>.cw-item-image[data-family],.moon-art .card-display {margin:0;}
+
+/* Portrait cards in the market display case */
+.moon-roost.companion-rail {
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(160px,24%);
+  gap:8px 22px; padding:14px 20px 18px;
+}
+.moon-roost .moon-roost-title {grid-column:1/-1;display:flex;align-items:baseline;gap:12px;}
+.moon-roost .companion-slots {--card-width:clamp(88px,8.5vw,122px);gap:12px;align-items:center;}
+.moon-roost .moon-companion,.moon-roost .moon-empty-slot {
+  width:var(--card-width);height:auto;aspect-ratio: .72;border-radius:10px;
+}
+.moon-roost .moon-companion {display:block;background:none;border:0;}
+.moon-roost .moon-empty-slot {color:#846a87;background:radial-gradient(ellipse,#392b40,#241d2e);font-size:26px;}
+.grimoire-card {
+  --gem:#ba86ff;position:relative;display:block;width:100%;height:100%;box-sizing:border-box;
+  isolation:isolate;border:2px solid #d0a067;border-radius:10px;
+  background:linear-gradient(135deg,#f8dc91,#754223 19%,#b68048 24%,#342139 29%,#644662 62%,#be904d 76%,#533328 83%,#e4bb71);
+  box-shadow:inset 0 0 0 2px #382231,inset 0 0 0 3px #bb925b,0 4px 7px #120c1db3;
+}
+.grimoire-card[data-rarity="Rare" i] {--gem:#76c9ff;}
+.grimoire-card[data-rarity="Uncommon" i] {--gem:#85edbd;}
+.grimoire-card[data-rarity="Legendary" i] {--gem:#ffc14d;}
+.grimoire-card .cw-owned-emblem[data-family] {
+  position:absolute;inset:5% 6% 19%;width:auto;height:auto;box-sizing:border-box;margin:0;
+  overflow:hidden;border:3px ridge #e5bd7c;border-radius:48% 48% 33% 33%;
+  background:radial-gradient(ellipse,color-mix(in srgb,var(--item-color) 48%,#221727),#211728 78%);
+}
+.grimoire-card .cw-owned-emblem img {width:100%;height:100%;object-fit:cover;image-rendering:pixelated;}
+.grimoire-card .type-badge {display:none;}
+.grimoire-name {
+  position:absolute;inset:auto 1% 8%;display:grid;align-content:center;min-height:21%;padding:2px 3%;
+  border-block:2px ridge #f6cf88;border-radius:20% / 38%;background:linear-gradient(#654052,#392336 58%,#4d3040);
+  color:#fff1ca;text-align:center;font:700 clamp(12px,1.1vw,16px)/1.02 Georgia,serif;
+  text-shadow:0 1px 2px #160c1b;box-shadow:0 2px 3px #160d1c;
+}
+.grimoire-jewel {position:absolute;bottom:2%;left:46%;width:8%;aspect-ratio:1;transform:rotate(45deg);border:1px solid #ffe0a5;background:linear-gradient(120deg,white,var(--gem) 45%,#432a59);box-shadow:1px 1px 2px #201322;}
+.moon-art>.grimoire-card {height:94%;width:auto;max-width:96%;aspect-ratio:.72;}
+.moon-art .grimoire-name {font-size:12px;}
+@media(max-width:850px) {
+  .moon-roost.companion-rail {grid-template-columns:minmax(0,1fr);padding:12px;}
+  .moon-roost .companion-slots {--card-width:clamp(80px,14vw,105px);gap:9px;}
+  .moon-roost .companion-effect {border:0;padding:0;}
+}

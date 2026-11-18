@@ -16,6 +16,7 @@
       if (definitions[id]) throw new Error("Duplicate familiar " + id);
       const [icon, color] = portraits[art];
       definitions[id] = { id, name, kind: "familiar", cost: prices[rarity], rarity, description, art, icon, color };
+      if (event.trackedStat) definitions[id].trackedStat = event.trackedStat;
       effects[id] = typeof event === "string" ? { [event]: effect } : event;
     }
   }
@@ -44,6 +45,7 @@
   const scored = c => c.scoring?.length || 0;
   const opposite = cards => (cards || []).some(red) && (cards || []).some(black);
   const growth = (event, test, step, limit, key, baseline = 0) => ({
+    trackedStat: key,
     [event](c, memory) {
       if (test(c)) memory.bonus = Math.min(limit, (memory.bonus || 0) + step);
     },

@@ -3,8 +3,15 @@
   'use strict';
 
   const tracks = { play: 'music/table.mp3', shop: 'music/shop.mp3', boss: 'music/boss.mp3', ...window.CWEmbeddedMusic };
-  // Three eight-bar arrangements. Each bass note anchors a close upper voicing.
+  // Synth arrangements cover devices that cannot load the recorded tracks.
   const scenes = {
+    menu: {
+      bpm: 68,
+      chords: [
+        [50,57,60,64], [43,55,59,64], [48,55,59,62], [45,55,60,64],
+        [53,57,60,64], [43,55,59,62], [45,55,59,64], [50,57,60,64]
+      ]
+    },
     play: {
       bpm: 86,
       transpose: 0,
@@ -16,13 +23,11 @@
       ]
     },
     shop: {
-      bpm: 76,
+      bpm: 84,
       transpose: 0,
       chords: [
-        [41, 53, 57, 60, 64], [46, 53, 57, 60, 62],
-        [38, 53, 57, 60, 64], [43, 53, 57, 59, 64],
-        [36, 52, 55, 59, 62], [45, 52, 55, 59, 60],
-        [38, 53, 57, 60, 64], [36, 52, 55, 58, 62]
+        [40, 55, 59, 64], [35, 54, 57, 63], [43, 55, 59, 62], [38, 54, 57, 62],
+        [36, 55, 60, 64], [45, 57, 60, 64], [35, 54, 57, 63], [40, 55, 59, 64]
       ]
     },
     boss: {
@@ -74,7 +79,7 @@
     node.gain.setTargetAtTime(volume, now, .018);
   }
 
-  function tone(bus, midi, time, length, level, wave = 'sine', glide = 0) {
+  function tone(bus, midi, time, length, level, wave = 'sine', glide = 0, attack = .014) {
     if (voices >= 56) return;
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
@@ -82,7 +87,7 @@
     oscillator.frequency.setValueAtTime(frequency(midi), time);
     if (glide) oscillator.frequency.exponentialRampToValueAtTime(frequency(midi + glide), time + length);
     envelope.gain.setValueAtTime(.0001, time);
-    envelope.gain.exponentialRampToValueAtTime(level, time + Math.min(.014, length / 4));
+    envelope.gain.exponentialRampToValueAtTime(level, time + Math.min(attack, length / 2));
     envelope.gain.exponentialRampToValueAtTime(.0001, time + length);
     oscillator.connect(envelope);
     envelope.connect(bus);
@@ -129,6 +134,14 @@
 
   function playTick(index, time) {
     const config = scenes[scene];
+    if (scene === 'menu') {
+      playMenuTick(index, time);
+      return;
+    }
+    if (scene === 'shop') {
+      playShopTick(index, time);
+      return;
+    }
     const bar = Math.floor(index / 8) % 8;
     const step = index % 8;
     const chord = config.chords[bar];
@@ -150,10 +163,49 @@
       bell(musicBus, chord[phrase[1]] + shift + register, at + .016, beat * 1.8, .093);
     }
     if (step === 2 || step === 6) brush(musicBus, at, .09, .044, 1950);
-    if (step % 2 && scene !== 'shop') brush(musicBus, at, .042, .025, 6350);
+    if (step % 2) brush(musicBus, at, .042, .025, 6350);
     if (scene === 'boss' && (step === 0 || step === 5)) {
       tone(musicBus, 39, at, .14, .17, 'sine', -13);
     }
+  }
+
+  // A lilting three-beat phrase: felt keys ask a question, then a low flute answers.
+  const menuMelody = [
+    [0,0,0,69,0,72], [71,0,0,67,0,0], [0,0,64,0,67,0], [69,0,0,0,0,0],
+    [0,0,69,0,72,74], [71,0,67,0,0,0], [0,0,64,0,67,0], [62,0,0,0,0,0]
+  ];
+  function playMenuTick(index, time) {
+    const step = index % 6;
+    const bar = Math.floor(index / 6) % menuMelody.length;
+    const [bass, ...harmony] = scenes.menu.chords[bar];
+    if (step === 0) {
+      tone(musicBus, bass, time, 2.6, .068, 'sine', 0, .38);
+      harmony.forEach((pitch,i) => tone(musicBus, pitch, time + .06*i, 2.8, .025, 'sine', 0, .55));
+    }
+    const note = menuMelody[bar][step];
+    if (note) {
+      const flute = bar % 2 === 1;
+      tone(musicBus, note, time, flute ? 1.42 : .95, flute ? .063 : .075, 'sine', 0, flute ? .17 : .055);
+      if (!flute) tone(musicBus, note + 12, time, .48, .012, 'sine', 0, .06);
+    }
+  }
+
+  const shopMelody = [
+    [71,76,0,79,78,76], [75,0,71,66,0,0], [71,74,0,79,0,81], [78,0,0,74,0,0],
+    [76,0,79,84,0,83], [81,0,79,76,0,0], [75,0,71,78,0,75], [76,0,0,0,67,69]
+  ];
+  function playShopTick(index, time) {
+    const bar = Math.floor(index / 6) % 8;
+    const step = index % 6;
+    const [bass, ...strings] = scenes.shop.chords[bar];
+    if (step === 0 || step === 3) {
+      tone(musicBus, bass + (step === 3 ? 7 : 0), time, .4, .16, 'triangle');
+    }
+    if (step === 1 || step === 4) {
+      strings.forEach((pitch, i) => tone(musicBus, pitch, time + i * .014, .32, .042, 'triangle'));
+    }
+    const melody = shopMelody[bar][step];
+    if (melody) bell(musicBus, melody, time + .01, .56, .11);
   }
 
   function stopClock() {
@@ -167,7 +219,7 @@
     if (nextTime < now - .025) nextTime = now + .045;
     while (nextTime < now + .16) {
       playTick(tick++, nextTime);
-      nextTime += 30 / scenes[scene].bpm;
+      nextTime += (scene === 'shop' ? 20 : 30) / scenes[scene].bpm;
     }
   }
 
@@ -221,7 +273,7 @@
   }
 
   function syncMusic() {
-    if (!unlocked || document.hidden || muted || !musicEnabled || !musicVolume || unavailable.has(scene) || !window.Audio) {
+    if (!unlocked || document.hidden || muted || !musicEnabled || !musicVolume || !tracks[scene] || unavailable.has(scene) || !window.Audio) {
       pauseTrack();
       syncClock();
       return;

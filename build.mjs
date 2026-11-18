@@ -8,7 +8,7 @@ const args = process.argv.slice(2);
 const embedMusic = args.includes('--embed-music');
 const output = resolve(args.find(arg => arg !== '--embed-music') || join(project, 'dist', 'index.html'));
 const read = name => readFileSync(join(project, name), 'utf8');
-const mime = { '.png': 'image/png', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg' };
+const mime = { '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg' };
 function embed(name) {
   const type = mime[extname(name)];
   if (!type) throw new Error('Unsupported game asset ' + name);
@@ -18,6 +18,9 @@ function embed(name) {
 const portraits = {};
 for (const filename of readdirSync(join(project, 'art'))) {
   if (filename.endsWith('.png')) portraits[filename.slice(0, -4)] = embed('art/' + filename);
+}
+for (const file of readdirSync(join(project, 'art', 'familiars'))) {
+  if (file.endsWith('.png')) portraits['familiars/' + file.slice(0, -4)] = embed('art/familiars/' + file);
 }
 const scripts = ['window.CWEmbeddedArt = ' + JSON.stringify(portraits) + ';'];
 if (embedMusic) {

@@ -1,0 +1,160 @@
+/* The opened vault and its brass-bound reward ledger. */
+.cw-backdrop:has(.cw-dialog:is([data-page="payout"],[data-page="won"])) {
+  background: radial-gradient(ellipse at 40% 46%, #2c153188, #090810ec 78%);
+  backdrop-filter: blur(8px);
+}
+.cw-dialog:is([data-page="payout"],[data-page="won"]) {
+  --vault-gold: #ffd987;
+  --vault-line: #795e47;
+  width: min(1020px,100%);
+  max-height: min(92dvh,800px);
+  display: grid;
+  grid-template: "scene alert" auto "scene ledger" minmax(0,1fr) "scene action" auto / minmax(0,1.25fr) minmax(0,1fr);
+  border: 1px solid #b58b54;
+  border-radius: 15px;
+  box-shadow: 0 0 0 3px #1a1123, 0 0 0 4px #826247, 0 28px 85px #08040de3;
+  background: radial-gradient(ellipse at 56% 0%,#4b2843 0,transparent 68%),#241827;
+}
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-head {
+  grid-area: scene;
+  min-height: clamp(380px,51vh,510px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:space-between;
+  padding: clamp(24px,3vw,42px);
+  border:0;
+  border-right:1px solid #a37d50;
+  background-color: #34223a;
+  background-image: linear-gradient(180deg,#100918d9 0%,#180f2244 28%,transparent 47%,#17102014 62%,#120b16e0 100%),url("assets/victory-vault.webp");
+  background-position:center;
+  background-size:cover;
+}
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-head::before {
+  content:"";
+  position:absolute;
+  inset:9px;
+  z-index:-1;
+  border:1px solid #ffe2a854;
+  border-radius:6px;
+  pointer-events:none;
+}
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-kicker,
+.spoils-heading,.vault-balance span {
+  font: 750 11px/1.3 "Trebuchet MS",Arial,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.18em;
+}
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-kicker {
+  color:#ffe0a1;
+  margin:0 0 9px;
+  text-shadow:0 2px 6px #180e1b;
+}
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-head h2 {
+  color:#fff3d4;
+  font: bold clamp(36px,4.5vw,64px)/.99 Georgia,"Times New Roman",serif;
+  letter-spacing:-.055em;
+  text-shadow: 0 2px 2px #241421, 0 4px 19px #170d1b;
+}
+.vault-score { display:flex; align-items:center; gap:12px; color:#fff0d0; text-shadow:0 2px 8px #100818; }
+.vault-score b { display:block; font:bold clamp(19px,2.3vw,28px)/1.15 Georgia,serif; }
+.vault-score div > span { display:inline-block; margin-top:4px; font-size:13px; color:#f7e7d2; }
+.vault-score strong { color:#fff6dd; font-weight:850; }
+.vault-seal { border:1px solid #e7be73; color:#ffda8d; background:#321e2cbb; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; box-shadow:inset 0 0 0 3px #35232e,inset 0 0 0 4px #d4a766; font:25px/1 Georgia,serif; }
+.vault-dust { position:absolute; inset:27% 7% 19%; z-index:-1; pointer-events:none; }
+.vault-dust i { --drift:8px; --delay:0s; position:absolute; left:20%; top:45%; width:7px; height:9px; background:#ffe8a6; clip-path:polygon(50% 0,62% 39%,100% 50%,62% 59%,50% 100%,37% 61%,0 50%,37% 40%); animation:vault-spark 3s var(--delay) ease-in-out infinite; }
+.vault-dust i:nth-child(2) { left:38%; top:68%; --delay:-1.4s; }
+.vault-dust i:nth-child(3) { left:72%; top:64%; --delay:-.5s; width:5px; }
+.vault-dust i:nth-child(4) { left:58%; top:36%; --delay:-2.4s; --drift:-5px; }
+.vault-dust i:nth-child(5) { left:81%; top:34%; --delay:-1.8s; width:4px; }
+.vault-dust i:nth-child(6) { left:34%; top:29%; --delay:-2.2s; width:4px; }
+@keyframes vault-spark { 0%,100% {opacity:0; transform:translate(0,8px) scale(.4)} 45% {opacity:.95} 85% {opacity:0;transform:translate(var(--drift),-15px) scale(1.1)} }
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-message { grid-area:alert; }
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-body {
+  grid-area:ledger;
+  align-self:center;
+  padding:clamp(22px,3vw,42px) clamp(22px,3vw,42px) 18px;
+  width:100%;
+  max-height:100%;
+  scrollbar-color:#90714c #2a1b2a;
+}
+.spoils-heading { margin:0; color:#eed0a0; }
+.spoils-total { display:flex; align-items:center; gap:16px; padding:8px 0 20px; }
+.spoils-total strong { color:var(--vault-gold); text-shadow:0 2px #814f32,0 0 26px #ffca541f; font:bold clamp(46px,5.5vw,76px)/1.12 Georgia,serif; letter-spacing:-.055em; font-variant-numeric:lining-nums tabular-nums; transform-origin:left center; overflow-wrap:anywhere; }
+.vault-coin,.spoils-stack i {
+  display:inline-grid; place-items:center;
+  border-radius:50%;
+  border:1px solid #ffdfa0;
+  background:linear-gradient(145deg,#fff0a3 4%,#ffd262 26%,#de9633 67%,#f0b745 84%);
+  box-shadow:inset 0 0 0 2px #c88a39,inset 0 0 0 3px #ffe797,2px 3px #95522d;
+}
+.vault-coin { flex:none; width:clamp(37px,4.6vw,58px); height:clamp(37px,4.6vw,58px); color:#ab631e; font:bold clamp(22px,2.8vw,35px)/1 Georgia,serif; transform:rotate(-10deg); }
+.vault-coin::before { content:"✦"; text-shadow:.5px 1px #ffe8a0; }
+.spoils-lines { padding:0; margin:0; list-style:none; }
+.spoils-line { display:grid; grid-template-columns: minmax(0,1fr) auto auto; gap:10px; align-items:center; padding:11px 0; border-top:1px solid #8263446b; font-size:15px; color:#f3dfd6; }
+.spoils-line b { min-width:31px; text-align:right; color:#ffdc91; font-size:17px; font-variant-numeric:tabular-nums; }
+.spoils-line[data-amount="0"] { color:#c0aaba; }
+.spoils-line[data-amount="0"] b { color:#c0aaba; }
+.spoils-stack { display:inline-flex; padding-inline-start:6px; }
+.spoils-stack i { width:15px; height:15px; margin-left:-6px; box-shadow:inset 0 0 0 1px #b98134,1px 2px #804728; }
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-footer {
+  grid-area:action;
+  background:#1c1323b3;
+  border-top:1px solid #81674988;
+  padding:18px clamp(22px,3vw,42px);
+}
+.cw-dialog[data-page="payout"] .cw-footer { justify-content:space-between; flex-wrap:nowrap; }
+.vault-balance { min-width:0; }
+.vault-balance span { display:block; font-size:9px; color:#c9b6bb; letter-spacing:.12em; }
+.vault-balance b { display:block; color:#f8dfab; font:bold 27px/1.25 Georgia,serif; overflow-wrap:anywhere; }
+.vault-collect { text-align:center; }
+.vault-collect small { display:block; margin-top:6px; color:#cebdc9; font-size:11px; }
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-primary {
+  min-height:45px;
+  padding:10px 20px;
+  color:#3e2314;
+  border:1px solid #ffe29d;
+  border-radius:6px;
+  background:linear-gradient(#ffdd83,#e8af52);
+  box-shadow:inset 0 0 0 2px #d59e49,0 3px #80542e;
+}
+.cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-primary:hover:enabled { background:linear-gradient(#ffebb1,#f1c06b); }
+.vault-achievement { margin:9px 0 18px; font:bold clamp(30px,4vw,48px)/1.08 Georgia,serif; letter-spacing:-.045em; color:var(--vault-gold); }
+.vault-stats .cw-stat { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border:0; border-top:1px solid #795e4777; border-radius:0; background:transparent; }
+.vault-stats .cw-stat span { font-size:14px; color:#ddcbdc; }
+.vault-stats .cw-stat strong { font-size:23px; color:#f7d591; overflow-wrap:anywhere; }
+.cw-dialog[data-page="won"] .cw-footer { gap:7px; }
+.cw-dialog[data-page="won"] .cw-footer .cw-btn { padding-inline:10px; }
+@media(max-width:680px) {
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) {
+    width:min(100%,480px);
+    max-height:calc(100dvh - 24px);
+    grid-template:"scene" auto "alert" auto "ledger" minmax(0,1fr) "action" auto / minmax(0,1fr);
+  }
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-head {
+    min-height:clamp(140px,31dvh,250px);
+    padding:20px 23px;
+    border:0; border-bottom:1px solid #957446;
+    background-position:center 52%;
+  }
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-head h2 { font-size:36px; }
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-kicker { font-size:10px; margin-bottom:6px; }
+  .vault-seal { width:30px; height:30px; font-size:19px; }
+  .vault-score { gap:9px; } .vault-score b { font-size:19px; } .vault-score div > span { font-size:11px; margin-top:2px; }
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-body { padding:20px 23px 12px; }
+  .spoils-total { padding:4px 0 12px; gap:12px; }
+  .spoils-line { padding:7px 0; font-size:14px; }
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-footer { padding:12px 23px; }
+}
+@media(min-width:681px) and (max-height:530px) {
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-head { min-height:0; }
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-body { padding:14px 24px 8px; }
+  .spoils-total { padding:2px 0 8px; }
+  .spoils-line { padding:5px 0; }
+  .cw-dialog:is([data-page="payout"],[data-page="won"]) .cw-footer { padding:9px 24px; }
+}
+body.still .vault-dust i { animation:none!important; opacity:.48; }
+@media(prefers-reduced-motion:reduce){ .vault-dust i { animation:none!important; opacity:.48; } }

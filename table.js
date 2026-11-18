@@ -114,7 +114,7 @@
   const sealIcons={red:'repeat',gold:'coin',blue:'stars',purple:'scroll'};
   function cardMarkup(c,i,n,preview=false){
     const offset=i-(n-1)/2, rot=offset*Math.min(1.7,11/(n-1 || 1));
-    const rank=rankText(c.rank)+pip(c.suit), debuffed=!preview && CW.debuffed?.(run,c);
+    const rank=rankText(c.rank)+pip(c.suit), debuffed=run.phase==='play' && CW.debuffed(run,c);
     const bonus=Object.hasOwn(enhancementIcons,c.enhancement)?c.enhancement:'';
     const label=[bonus==='stone'?'Stone card':cardName(c),bonus==='stone'?'':bonus,c.edition,c.seal && (c.seal+' seal'),debuffed && 'debuffed'].filter(Boolean).join(', ');
     const seal=c.seal?'<span class="wax-seal '+esc(c.seal)+'" aria-hidden="true">'+icon(sealIcons[c.seal])+'</span>':'';
@@ -123,8 +123,8 @@
     const badge=bonus?'<span class="card-enhance" aria-hidden="true">'+icon(enhancementIcons[bonus])+'<b>'+esc(bonus)+'</b></span>':'';
     const finish=c.edition?'<span class="edition-frame" aria-hidden="true"></span>':'';
     const element=preview?'div':'button';
-    const controls=preview?'role="img"':'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
-    return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" title="'+esc(label)+'" style="--suit:'+suits[c.suit].color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+seal+badge+'</'+element+'>';
+    const controls=preview?'role="img" tabindex="0"':'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
+    return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" '+CWCardTip.attribute(CWCardTip.details(c,debuffed))+' style="--suit:'+suits[c.suit].color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+seal+badge+(debuffed?CWCardTip.cross:'')+'</'+element+'>';
   }
   function describeFamiliar(id){
     const i=run.familiars.indexOf(id);
@@ -144,20 +144,31 @@
       const type=window.CWContent.cardType(it);
       const label=(type==='pack'?'Booster':type)+' '+it.name+subtitle+': '+it.description;
       const badge=marks.length?'<small class="item-mark" aria-hidden="true">'+esc(marks[0].charAt(0))+'</small>':'';
-      return '<button class="item-slot item-card" data-family="'+type+'" data-item="'+esc(ids[i])+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" title="'+esc(label)+'"><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+window.CWContent.typeBadge(type,true)+badge+'<b>'+esc(it.name)+'</b></button>';
+      const stack=it.stackAmount?'<small class="familiar-stack stat-'+(it.stackStat==='chips'?'chips':'mult')+'" aria-hidden="true">'+esc(it.stackAmount)+'</small>':'';
+      return '<button class="item-slot item-card" data-family="'+type+'" data-item="'+esc(ids[i])+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" '+CWCardTip.attribute(CWCardTip.details(it))+'><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+window.CWContent.typeBadge(type,true)+badge+stack+(it.bossMuted?CWCardTip.cross:'')+'<b>'+esc(it.name)+'</b></button>';
     }).join('');
   }
   function selectedInPlayOrder(){return currentHand.filter(c=>selected.has(c.id)).map(c=>c.id);}
   function renderSelection(){
     const view=selected.size?CW.preview(run,selectedInPlayOrder()):null;
-    $('chips').textContent=compact(view?.chips??0);$('mult').textContent=compact(view?.mult??0);
+    $('chips').textContent=$('mult').textContent='\u2014';
     $('selected-count').innerHTML=Array.from({length:5},(_,i)=>'<i class="pick-slot'+(i<selected.size?' filled':'')+'" aria-hidden="true"></i>').join('')+'<span class="visually-hidden">'+selected.size+' of 5 selected</span>';
     const area=$('cast-prompt');
     area.classList.remove('scoring');
     area.innerHTML=view
-      ? '<h3>'+esc(view.name)+'</h3><p class="cast-score"><span class="stat-chips">'+num(view.chips)+'</span> × <span class="stat-mult">'+num(view.mult)+'</span> = <b>'+num(view.total)+'</b></p>'
+      ? '<h3>'+esc(view.name)+'</h3>'
       : '<div class="cast-ornament">'+icon('cards')+'</div><h3>Pick up to 5</h3>';
-    for(const card of $('hand').children)card.classList.toggle('will-score',!!view?.scoring?.includes(card.dataset.card));
+    for(const card of $('hand').children){
+      const id=card.dataset.card;
+      card.classList.toggle('will-score',!!view?.scoring?.includes(id));
+      card.querySelector('.boss-partial')?.remove();
+      const part=view?.suppressed?.[id];
+      if(part){
+        const note=part==='rank'?'Rank chips disabled':'Enhancement disabled';
+        card.querySelector(part==='rank'?'.corner-rank':'.card-enhance')?.insertAdjacentHTML('beforeend',
+          '<span class="boss-partial" aria-label="'+note+'" title="'+note+'">&times;</span>');
+      }
+    }
     for(const card of $('hand').children) card.setAttribute('aria-pressed',String(selected.has(card.dataset.card)));
     updateOrderTools();
   }
@@ -186,6 +197,7 @@
     $('blind-name').textContent=info.name;$('blind-type').textContent=['Opening blind','Second blind','Boss blind'][run.blind];$('blind-token').className=['','big','boss'][run.blind];
     $('target').textContent=compact(run.target);$('reward').textContent='$'+info.reward;
     $('boss-rule').hidden=run.blind!==2;$('boss-rule').textContent=run.blind===2?info.description:'';
+    if(run.blind===2) window.CWContent.colorStats($('boss-rule'));
     $('round-score').textContent=compact(run.score);$('score-progress').style.width=Math.min(100,100*run.score/run.target)+'%';
     const progress=$('score-progress').parentElement;progress.setAttribute('aria-valuemax',run.target);progress.setAttribute('aria-valuenow',Math.min(run.score,run.target));
     $('hands').textContent=run.hands;$('discards').textContent=run.discards;$('money').textContent='$'+num(run.money);
@@ -200,14 +212,14 @@
     const counts={S:0,H:0,C:0,D:0};
     for(const card of run.draw) if(card.enhancement!=='stone') counts[card.suit]++;
     $('deck-suits').innerHTML=Object.entries(counts).map(([suit,n])=>
-      '<span data-suit="'+suit+'" aria-label="'+suits[suit].name+': '+n+'">'+pip(suit)+'<b>'+n+'</b></span>').join('');
+      '<span data-suit="'+suit+'" aria-label="'+suits[suit].name+': '+n+'">'+pip(suit)+'<b>'+n+'</b>'+(run.phase==='play' && CW.debuffed(run,{suit})?CWCardTip.cross:'')+'</span>').join('');
     $('deck-count').textContent=run.draw.length+' / '+run.deck.length;
     renderHand();
     document.querySelector('[data-action="play"]').disabled=busy || run.phase!=='play';
     document.querySelector('[data-action="discard"]').disabled=busy || run.phase!=='play' || run.discards<=0;
     renderSelection();
     if(shouldSave)save();
-    const scene=showLobby?'play':run.phase==='shop'?'shop':run.blind===2?'boss':'play';
+    const scene=showLobby?'menu':run.phase==='shop'?'shop':run.blind===2?'boss':'play';
     if(scene!==lastViewKey){audio.setScene(scene);lastViewKey=scene;}
     if(!busy) CWP.sync();
   }

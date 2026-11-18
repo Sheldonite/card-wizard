@@ -100,12 +100,12 @@
   const enhancements = {
     bonus:{name:"Bonus", description:"+30 Chips when scored."},
     mult:{name:"Mult", description:"+4 Mult when scored."},
-    glass:{name:"Glass", description:"×2 Mult when scored. It may break after the hand."},
+    glass:{name:"Glass", description:"×2 Mult when scored. Has a 1 in 4 chance to break after scoring."},
     steel:{name:"Steel", description:"×1.5 Mult when held during scoring."},
     wild:{name:"Wild", description:"Can match any suit."},
     stone:{name:"Stone", description:"Always scores +40 Chips. It has no rank or suit."},
     gold:{name:"Gold", description:"Earn $2 when held at the end of a winning blind."},
-    lucky:{name:"Lucky", description:"Can roll +12 Mult or $8 when scored."}
+    lucky:{name:"Lucky", description:"When scored, independently rolls a 20% chance for +12 Mult and a 12% chance for $8."}
   };
 
   const seals = {

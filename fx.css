@@ -99,7 +99,7 @@ body span.stat-mult {color:#ff8988;font-weight:700}
 .score-ticket,.score-ticket.mult-ticket {background:#241d30}
 
 /* Round transitions take over the felt. */
-.cw-backdrop:has(.cw-dialog:is([data-page=shop],[data-page=select])) {
+.cw-backdrop:has(.cw-dialog[data-page=shop]) {
   background:repeating-linear-gradient(120deg,#ffffff03 0 2px,transparent 2px 8px),radial-gradient(ellipse at 50% 20%,#355751,#182e31 68%,#101d26);
 }
 .cw-dialog:is([data-page=shop],[data-page=select]) {width:min(100%,940px);max-height:94dvh;border:0;border-radius:0;background:none;box-shadow:none}
@@ -158,7 +158,7 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
   background:repeating-linear-gradient(106deg,#24182d33 0 46px,#ab80500a 46px 92px),radial-gradient(ellipse at top,#533552,#241a2d 60%,#15101d);
 }
 .cw-backdrop:has([data-page=select]) {
-  background:radial-gradient(1px 1px at 16px 30px,#e4d6af 90%,transparent) 0 0/91px 113px,radial-gradient(1px 1px at 12px 5px,#acb5d2 80%,transparent) 0 0/151px 77px,radial-gradient(ellipse at top,#344265,#191d39 68%,#101326);
+  background:var(--table-felt);
 }
 .cw-dialog:is([data-page=shop],[data-page=select]) .cw-head {padding-bottom:5px}
 .cw-dialog:is([data-page=shop],[data-page=select]) .cw-head h2 {font:600 clamp(28px,4vw,48px)/1.12 Georgia,serif;color:#ffedc2}
@@ -299,3 +299,35 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .item-card[data-edition=foil]{--finish-ink:#abecff}
 .item-card[data-edition=holographic]{--finish-ink:#ffb5f4}
 .item-card[data-edition=polychrome]{--finish-ink:#ceff95}
+#cw-card-tooltip {
+  position:fixed;z-index:2147483647;pointer-events:none;box-sizing:border-box;
+  width:max-content;max-width:min(292px,calc(100vw - 12px));padding:10px 13px;
+  background:#241b30;color:#f8eddc;border:1px solid #bf9c70;border-radius:7px;
+  box-shadow:0 5px 18px #110b19a8;font:500 13px/1.35 var(--sans, sans-serif);
+}
+#cw-card-tooltip[hidden] {display:none}
+#cw-card-tooltip>b {display:block;color:#ffdf9c;font-size:15px}
+#cw-card-tooltip>div {margin-top:5px}
+.cw-fx-card[data-card-tip], .cast-faces [data-card-tip] {pointer-events:auto}
+
+body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
+.stat-money::before {content:"";display:inline-block;width:1.15em;height:.9em;vertical-align:-.08em;margin-right:.14em;background:url("assets/coin-pile.svg") center/contain no-repeat}
+
+/* Keep the boss mark legible on light cards and dark familiar portraits. */
+:where(.item-card,.cw-owned-emblem,.cw-item-image,.cw-target,.cw-deck-tile,.cw-mod-list > span,#deck-suits > span):has(> .boss-cross) { position:relative }
+.boss-cross {
+  pointer-events:none; position:absolute; z-index:8; left:50%; top:48%;
+  transform:translate(-50%,-50%) rotate(-8deg); display:grid; place-items:center;
+  width:1.03em; height:1.03em; border:2px solid #fff2d4; border-radius:50%;
+  background:#901c32; color:white; font:900 clamp(22px,3vw,40px)/1 Arial,sans-serif;
+  box-shadow:0 2px 5px #230917b3;
+}
+.playing-card[data-debuffed=true]::after {content:none}
+.cw-deck-tile > .boss-cross,#deck-suits > span > .boss-cross,.cw-mod-list .boss-cross {
+  left:auto; right:-2px; top:-3px; transform:none; font-size:12px; border-width:1px;
+}
+.boss-partial {
+  position:absolute; right:-.55em; top:-.35em; z-index:3; border-radius:50%;
+  background:#901c32; color:white; outline:1px solid #fff2d4;
+  width:1em; height:1em; text-align:center; font:bold 16px/1 Arial,sans-serif;
+}

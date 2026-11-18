@@ -159,6 +159,7 @@
   const expansion = root.CWFamiliars || (typeof require === "function" && require("./familiars.js"));
   const market = root.CWMarket || (typeof require === "function" && require("./market.js"));
   Object.assign(familiars, expansion.definitions);
+  for (const familiar of Object.values(familiars)) familiar.art = "familiars/" + familiar.id;
   Object.assign(spells, market.spells);
   Object.assign(vouchers, market.vouchers);
   Object.assign(packs, market.packs);
@@ -186,13 +187,14 @@
     const nodes=[];
     while(walker.nextNode()) nodes.push(walker.currentNode);
     for(const node of nodes){
-      const matches=node.data.matchAll(/(?:[+×x-]?\d+(?:\.\d+)?\s+)?\b(chips?|mult(?:i|iplier)?s?|familiars?|constellations?)\b/gi);
+      if(node.parentElement?.closest('.stat-money, .stat-chips, .stat-mult, .term-familiar, .term-constellation, option, svg, [aria-hidden="true"]')) continue;
+      const matches=node.data.matchAll(/(?:[+×x-]?\d+(?:\.\d+)?\s+)?\b(chips?|mult(?:i|iplier)?s?|familiars?|constellations?)\b|(?:[+\-−]?\$\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[-–]\s*\$\d+(?:,\d{3})*(?:\.\d+)?)?|(?:\d+(?:\.\d+)?\s+)?\b(?:dollars?|cash|money|interest|coins)\b)/gi);
       const parts=document.createDocumentFragment();
       let end=0;
       for(const match of matches){
         parts.append(node.data.slice(end,match.index));
         const stat=document.createElement('span');
-        stat.className=/^chip/i.test(match[1])?'stat-chips':/^fam/i.test(match[1])?'term-familiar':/^con/i.test(match[1])?'term-constellation':'stat-mult';
+        stat.className=!match[1]?'stat-money':/^chip/i.test(match[1])?'stat-chips':/^fam/i.test(match[1])?'term-familiar':/^con/i.test(match[1])?'term-constellation':'stat-mult';
         stat.textContent=match[0];
         parts.append(stat);
         end=match.index+match[0].length;
@@ -201,6 +203,7 @@
     }
   }
   const cardTypes = {
+    standard: ['Playing card','<path d="M5 5h13v16H5z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8 3 12-1 2 16M12 8l3 5-3 5-4-5z" fill="currentColor"/>'],
     familiar: ['Familiar','<path fill="currentColor" d="M5 17c0-2 2-3 3-5 2-3 5-3 7 0 1 2 4 3 4 5 0 4-4 3-7 2-3 1-7 2-7-2Z"/><g fill="currentColor"><ellipse cx="4" cy="10" rx="2" ry="3"/><ellipse cx="9" cy="6" rx="2" ry="3"/><ellipse cx="15" cy="6" rx="2" ry="3"/><ellipse cx="20" cy="10" rx="2" ry="3"/></g>'],
     spell: ['Spell','<path d="M8 3h8m-6 1v5L5 17q-2 4 3 4h8q5 0 3-4l-5-8V4M7 15q3-2 5 0t5 0" fill="none" stroke="currentColor" stroke-width="2"/>'],
     constellation: ['Constellation','<path d="m3 16 6-11 7 12 5-9" fill="none" stroke="currentColor" stroke-width="1.8"/><g fill="currentColor"><circle cx="3" cy="16" r="2.4"/><circle cx="9" cy="5" r="3"/><circle cx="16" cy="17" r="2.7"/><circle cx="21" cy="8" r="2"/></g>'],
@@ -218,7 +221,7 @@
     const [name, drawing] = cardTypes[type];
     return '<span class="type-badge" title="'+name+'"><svg aria-hidden="true" viewBox="0 0 24 24">'+drawing+'</svg><span'+(compact?' class="visually-hidden"':'')+'>'+name+'</span></span>';
   }
-  const api = { cardType, typeBadge, familiars, spells, vouchers, packs, get, score, trigger, portrait, colorStats };
+  const api = { cardTypes, cardType, typeBadge, familiars, spells, vouchers, packs, get, score, trigger, portrait, colorStats };
   root.CWContent = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);

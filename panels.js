@@ -65,11 +65,29 @@
   function stat(label, value) { return '<div class="cw-stat"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>'; }
   function formula(chips, mult) { return '<span class="cw-formula"><b>' + num(chips) + '</b> <span>×</span> <b>' + num(mult) + '</b></span>'; }
   function cash(n) { return '$' + num(n); }
+  function packFamily(d) {
+    const pool = d.pool || api().item(d.id)?.pool;
+    return pool === 'star' ? 'constellation' : pool || 'standard';
+  }
+  function itemDescription(d) {
+    const hand = d.rarity === 'Constellation' && (d.value || api().item(d.id)?.value);
+    const description = esc(d.description);
+    return hand ? description.replace(esc(hand), '<strong class="constellation-hand">'+esc(hand)+'</strong>') : description;
+  }
+  function cardTip(card) {
+    const run = state();
+    const muted = card.suit && run?.phase === 'play' && api().debuffed(run,card);
+    return global.CWCardTip.attribute(global.CWCardTip.details(card,muted));
+  }
   function picture(d, compact = false) {
     if(d.kind==='card' && options.cardPreview) return '<div class="card-display">'+options.cardPreview(d)+'</div>';
     const css = compact ? 'cw-owned-emblem' : 'cw-item-image';
     let content;
-    if (d.kind !== 'card' && pictures.has(d.art) && global.CWContent?.portrait) {
+    if (d.kind === 'pack') {
+      const family = packFamily(d);
+      return '<div class="'+css+' booster-face" data-family="'+family+'"><svg class="booster-seal" viewBox="0 0 24 24" aria-hidden="true">'+global.CWContent.cardTypes[family][1]+'</svg></div>';
+    }
+    if (d.kind === 'familiar' || pictures.has(d.art)) {
       content = '<img alt="" src="' + esc(global.CWContent.portrait(d.art)) + '">';
     } else if (d.kind === 'card') {
       content = '<span>' + esc(rank(d.rank) + (suits[d.suit] || '')) + '</span>';
@@ -79,7 +97,7 @@
     const type=global.CWContent.cardType(d);
     const accent = /^#[a-f\d]{3,8}$/i.test(d.color || '') ? d.color : '#c3abdc';
     const edition = ['foil','holographic','polychrome','negative'].includes(d.edition) ? ' cw-edition-'+d.edition : '';
-    return '<div class="' + css + edition + '" data-family="'+type+'" style="--item-color:' + accent + '">' + content + global.CWContent.typeBadge(type,compact) + '</div>';
+    return '<div class="' + css + edition + '"'+cardTip(d)+' data-family="'+type+'" style="--item-color:' + accent + '">' + content + global.CWContent.typeBadge(type,compact) + (d.bossMuted?global.CWCardTip.cross:'') + '</div>';
   }
   function badges(d) {
     const edition = d.edition && (api().EDITIONS?.[d.edition]?.name || global.CWMarket?.editions?.[d.edition]?.name || d.edition);
@@ -227,32 +245,16 @@
     const view = views[page]?.(s);
     if (!view) return;
     dialog().dataset.page = page;
-    layer.querySelector('.cw-head').innerHTML = '<div><p class="cw-kicker">' + esc(view.kicker) + '</p><h2 id="cw-panel-title">' + esc(view.title) + '</h2></div>' + (isDismissible() ? '<button type="button" class="cw-x" data-cw="close" aria-label="Close panel">×</button>' : '');
+    layer.querySelector('.cw-head').innerHTML = '<div><p class="cw-kicker">' + esc(view.kicker) + '</p><h2 id="cw-panel-title">' + esc(view.title) + '</h2></div>' + (view.headerEnd || '') + (isDismissible() ? '<button type="button" class="cw-x" data-cw="close" aria-label="Close panel">×</button>' : '');
+    if (view.heroDetail) layer.querySelector('.cw-head').insertAdjacentHTML('beforeend',view.heroDetail);
     layer.querySelector('.cw-message').textContent = message;
     global.CWContent.colorStats(layer.querySelector('.cw-head'));
     body.innerHTML = view.body;
     global.CWContent?.colorStats?.(body);
-    if(page==='payout' && !options.getSettings?.()?.reducedMotion && body.animate){
-      const rows=[...body.querySelectorAll('.cw-ledger-row')];
-      const speed=options.getSettings?.()?.speed || 1;
-      rows.forEach((row,i)=>row.animate([
-        {opacity:0,translate:'0 7px'},
-        {opacity:1,translate:'0 0'}
-      ],{duration:180/speed,delay:i*105/speed,fill:'backwards'}));
-      const total=rows.at(-1).querySelector('b');
-      let subtotal=0;
-      total.textContent=cash(0);
-      [s.payout.blind,s.payout.hands,s.payout.interest,s.payout.bonus||0].forEach((value,i)=>{
-        setTimeout(()=>{
-          if(!total.isConnected)return;
-          subtotal+=value;
-          total.textContent=cash(subtotal);
-          if(value)options.playSound?.('coin',i);
-        },(i*105+70)/speed);
-      });
-      rows.at(-1).getAnimations().forEach(a=>a.cancel());
-    }
+    if(page==='payout' && reset && !options.getSettings?.()?.reducedMotion && body.animate) tallySpoils(body);
     layer.querySelector('.cw-footer').innerHTML = view.footer;
+    global.CWContent.colorStats(layer.querySelector('.cw-footer'));
+    global.CWContent.colorStats(layer.querySelector('.cw-message'));
     body.scrollTop = priorScroll;
     if (reset && page==='inventory' && detail) body.querySelector('.cw-highlight-item')?.scrollIntoView({block:'nearest'});
     if (focusedId) {
@@ -269,7 +271,7 @@
   function perform(action, ...args) {
     const paying=action==='cashOut' && !options.getSettings?.()?.reducedMotion && layer.animate;
     const speed=options.getSettings?.()?.speed || 1;
-    const origin=paying && layer.querySelector('.cw-total b')?.getBoundingClientRect();
+    const origin=paying && layer.querySelector('.spoils-total strong')?.getBoundingClientRect();
     const amount=origin && state().payout.total;
     const ok = api()[action]?.(state(), ...args);
     if (ok == null || ok === false) { options.playSound?.('error'); announce('That action is unavailable right now.'); return false; }
@@ -277,7 +279,7 @@
     const sounds = {buy:'buy',buyAndUse:'buy',pick:'buy',sell:'buy',sellConsumable:'buy',reroll:'buy',rerollBoss:'buy',cashOut:'shop',startBlind:'deal',endless:'deal'};
     changed(sounds[action]);
     if(origin && amount>0){
-      const purse=layer.querySelector('.cw-purse strong') || document.getElementById('money');
+      const purse=layer.querySelector('.cw-purse strong, .vault-stat-wallet strong') || document.getElementById('money');
       const end=purse.getBoundingClientRect();
       const dx=end.left+end.width/2-origin.left-origin.width/2;
       const dy=end.top+end.height/2-origin.top-origin.height/2;
@@ -320,9 +322,9 @@
       const visible = Object.entries(api().HANDS).filter(([name,h])=>!h.secret || s.seenHands?.[name]);
       const rows = visible.map(([name,h]) => {
         const level = s.levels[name] || 1;
-        return '<tr><td class="cw-guide-name">' + esc(name) + '</td><td class="cw-level">' + num(level) + '</td><td class="cw-example-col">' + example(name) + '</td><td>' + formula(h.chips+(level-1)*h.chipStep,h.mult+(level-1)*h.multStep) + '</td></tr>';
+        return '<tr><td class="cw-guide-name">' + esc(name) + '</td><td>' + num(s.seenHands?.[name] || 0) + '</td><td class="cw-level">' + num(level) + '</td><td class="cw-example-col">' + example(name) + '</td><td>' + formula(h.chips+(level-1)*h.chipStep,h.mult+(level-1)*h.multStep) + '</td></tr>';
       }).join('');
-      section = '<table class="cw-guide"><thead><tr><th>Hand</th><th>Lv.</th><th class="cw-example-col">Example</th><th>Chips × Mult</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      section = '<table class="cw-guide"><thead><tr><th>Hand</th><th title="Times played this run">Played</th><th>Lv.</th><th class="cw-example-col">Example</th><th>Chips × Mult</th></tr></thead><tbody>' + rows + '</tbody></table>';
       if (visible.length < Object.keys(api().HANDS).length) section += '<p class="cw-guide-hint">Changing your deck can unlock hidden hands.</p>';
     }
     return result('Grimoire','Hand guide',tabs+section);
@@ -335,13 +337,18 @@
     for (const suit of suitOrder) {
       grid += '<span class="cw-suit-label'+red(suit)+'" aria-label="'+suitNames[suit]+'">'+suits[suit]+'</span>';
       for (const r of ranks) {
-        const n = source.filter(c=>c.rank===r && c.suit===suit).length;
+        const copies = source.filter(c=>c.rank===r && c.suit===suit);
+        const n = copies.length;
         const label = rank(r)+' of '+suitNames[suit]+', '+n+' copies';
-        grid += '<span class="cw-deck-tile'+red(suit)+(n?'':' cw-spent')+'" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+(n>1?'×'+n:n?rank(r):'–')+'</span>';
+        const descriptions = copies.map(c=>global.CWCardTip.details(c,s.phase==='play' && api().debuffed(s,c)));
+        const crossed = n && s.phase==='play' && copies.every(c=>api().debuffed(s,c));
+        const variants = [...new Set(descriptions)];
+        const tip = n ? global.CWCardTip.attribute(variants.length===1 ? variants[0] : [label,...variants.map(v=>descriptions.filter(d=>d===v).length+' × '+v.replaceAll('\n',' · '))].join('\n')) : '';
+        grid += '<span class="cw-deck-tile'+red(suit)+(n?'':' cw-spent')+'"'+(n?' tabindex="0"'+tip:'')+' aria-label="'+esc(label)+'">'+(n>1?'×'+n:n?rank(r):'–')+(crossed?global.CWCardTip.cross:'')+'</span>';
       }
     }
     const modified = source.filter(c=>c.enhancement || c.edition || c.seal);
-    const mods = modified.length ? heading('Modified cards')+'<div class="cw-mod-list">'+modified.map(c=>'<span>'+esc(rank(c.rank)+suits[c.suit]+' · '+cardModifiers(c).join(' · '))+'</span>').join('')+'</div>' : '';
+    const mods = modified.length ? heading('Modified cards')+'<div class="cw-mod-list">'+modified.map(c=>'<span tabindex="0"'+cardTip(c)+'>'+esc(rank(c.rank)+suits[c.suit]+' · '+cardModifiers(c).join(' · '))+(s.phase==='play' && api().debuffed(s,c)?global.CWCardTip.cross:'')+'</span>').join('')+'</div>' : '';
     return result('Deck inspection','Your deck',tabs+grid+'</div>'+mods);
   }
   function road(s) {
@@ -447,7 +454,7 @@
     const summary='<div class="cw-collection-summary"><strong>'+entries.filter(e=>e.discovered).length+' / '+entries.length+' discovered</strong><div class="cw-tabs">'+tab('collection-filter','all','All',collectionFilter)+tab('collection-filter','known','Discovered',collectionFilter)+tab('collection-filter','unknown','Unknown',collectionFilter)+'</div></div>';
     const list=visible.map(entry=>{
       if (!entry.discovered) return '<article class="cw-collection-item unknown"><span class="cw-owned-emblem" aria-hidden="true">'+(entry.locked?'◇':'?')+'</span><div><b>'+esc(entry.locked?'Locked':'Undiscovered')+'</b>'+(entry.unlockHint?'<small>'+esc(entry.unlockHint)+'</small>':'')+'</div></article>';
-      return '<article class="cw-collection-item">'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+esc(entry.description)+'</small></div></article>';
+      return '<article class="cw-collection-item">'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
     }).join('');
     return result(data.profile?.name || '','Collection',tabs+summary+(list?'<div class="cw-collection-items">'+list+'</div>':'<p class="cw-empty">No entries match this view.</p>'),button('close','Back'));
   }
@@ -466,7 +473,7 @@
         const canSell=api().canSell?.(s,category,i) ?? true;
         controls+=button('use-item','Use','cw-primary',i,!canUse)+button('sell-consumable','Sell '+cash(price),'',i,!canSell);
       }
-      return '<div class="cw-owned'+(d.id===detail?' cw-highlight-item':'')+'">'+picture(d,true)+'<div class="cw-owned-info"><b>'+esc(d.name)+'</b>'+badges(d)+'<small>'+esc(d.description)+'</small></div><div class="cw-owned-controls">'+controls+'</div></div>';
+      return '<div class="cw-owned'+(d.id===detail?' cw-highlight-item':'')+'"'+cardTip(d)+'>'+picture(d,true)+'<div class="cw-owned-info"><b>'+esc(d.name)+'</b>'+badges(d)+'<small>'+itemDescription(d)+'</small></div><div class="cw-owned-controls">'+controls+'</div></div>';
     }).join('');
     return entries || '<p class="cw-empty">No '+esc(category)+' yet.</p>';
   }
@@ -478,8 +485,9 @@
     return cards.map(c=>{
       const isSelected = targets.includes(c.id);
       const mods=cardModifiers(c);
-      const label = [rank(c.rank)+' of '+suitNames[c.suit], ...mods].join(', ');
-      return '<button class="cw-target'+red(c.suit)+'" type="button" aria-label="'+esc(label)+'" title="'+esc(label)+'" data-cw="'+action+'" data-value="'+esc(c.id)+'" aria-pressed="'+isSelected+'"'+(!isSelected && targets.length>=d.maxTargets?' disabled':'')+'>'+esc(rank(c.rank)+suits[c.suit])+(mods.length?'<small>'+mods.map(esc).join('<br>')+'</small>':'')+'</button>';
+      const muted = state().phase==='play' && api().debuffed(state(),c);
+      const label = [rank(c.rank)+' of '+suitNames[c.suit], ...mods, ...(muted?['Boss disabled']:[])].join(', ');
+      return '<button class="cw-target'+red(c.suit)+'" type="button" aria-label="'+esc(label)+'" '+cardTip(c)+' data-cw="'+action+'" data-value="'+esc(c.id)+'" aria-pressed="'+isSelected+'"'+(!isSelected && targets.length>=d.maxTargets?' disabled':'')+'>'+esc(rank(c.rank)+suits[c.suit])+(mods.length?'<small>'+mods.map(esc).join('<br>')+'</small>':'')+(muted?global.CWCardTip.cross:'')+'</button>';
     }).join('');
   }
   function targetLabel(d) {
@@ -492,7 +500,7 @@
     const index=Number(detail);
     const shopping=page==='shop-spell';
     const d=shopping?item(s.offers[index]):ownedItem(s,'consumables',index);
-    const body='<p class="cw-explain">'+esc(d.description)+'</p>'+heading(targetLabel(d))+'<div class="cw-targets">'+targetCards(usableCards(s),d)+'</div>';
+    const body='<p class="cw-explain">'+itemDescription(d)+'</p>'+heading(targetLabel(d))+'<div class="cw-targets">'+targetCards(usableCards(s),d)+'</div>';
     const label=shopping?'Buy & use '+cash(api().price(s,s.offers[index])):'Cast spell';
     const check=shopping?api().canBuyAndUse?.(s,index,targets):api().canUse?.(s,index,targets);
     return result('',d.name,body,button('close','Back')+button(shopping?'buy-use-cast':'cast',label,'cw-primary','',!targetsReady(d) || check===false));
@@ -505,7 +513,7 @@
   function offer(d, control) {
     const family=global.CWContent.cardType(d);
     const rarity=d.rarity && ![family,'booster'].includes(d.rarity.toLowerCase())?'<div class="cw-item-type">'+esc(d.rarity)+'</div>':'';
-    return '<article class="cw-offer">'+picture(d)+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+esc(d.description)+'</p>'+control+'</article>';
+    return '<article class="cw-offer"'+cardTip(d)+'>'+picture(d)+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
   }
   function companionRail(s) {
     const cap=api().capacity(s).familiars;
@@ -517,30 +525,82 @@
     }).join('');
     return '<section class="companion-rail" aria-label="Equipped familiars"><div><h3>Familiars <small>'+s.familiars.length+' / '+cap+'</small></h3><div class="companion-slots">'+slots+'</div></div><div class="companion-effect">'+(s.familiars.length?'<b>'+esc(first.name)+'</b><span>'+esc(first.description)+'</span>':'')+'</div></section>';
   }
-  function stockEffect(d,s) {
-    if(d.kind!=='pack')return esc(d.description);
-    const kind={familiar:'Familiars',star:'Constellations',spell:'Spells',spectral:'Spectral spells',standard:'Cards'}[d.pool];
-    return '<span class="pack-odds" aria-label="'+esc(d.description)+'"><b>'+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+'</b> '+esc(kind)+' <i aria-hidden="true">→</i> Pick '+d.picks+'</span>';
+  function marketFamiliars(s) {
+    const cap=api().capacity(s).familiars;
+    if (!cap) return '';
+    const slots=Array.from({length:cap},(_,i)=>{
+      if (!s.familiars[i]) return '<span class="moon-empty-slot" aria-hidden="true">✧</span>';
+      const d=ownedItem(s,'familiars',i);
+      return '<button type="button" class="companion-card moon-companion'+(i===0?' lit':'')+'" data-companion="'+i+'" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
+    }).join('');
+    const first=s.familiars.length && ownedItem(s,'familiars',0);
+    return '<section class="companion-rail moon-roost" aria-label="Equipped familiars"><div class="moon-roost-title"><h3>Your familiars</h3><small>'+s.familiars.length+' / '+cap+' equipped</small></div><div class="companion-slots">'+slots+'</div><div class="companion-effect">'+(first?'<b>'+esc(first.name)+'</b><span>'+esc(first.description)+'</span>':'<b>Empty roost</b><span>Buy a Familiar to equip its ability.</span>')+'</div></section>';
   }
+
+  function marketPurse(money) {
+    const coins=Array.from({length:Math.min(14,Math.max(0,money))},(_,i)=>'<i style="--pile:'+Math.floor(i/5)+';--level:'+i%5+'"></i>').join('');
+    return '<div class="cw-purse moon-purse"><span class="moon-coins" aria-hidden="true">'+coins+'</span><div><small>Coin purse</small><strong>'+cash(money)+'</strong></div></div>';
+  }
+
+  function marketFamiliar(d) {
+    return '<span class="grimoire-card" data-rarity="'+esc(d.rarity || 'Common')+'">'+picture(d,true)+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i></span>';
+  }
+  function marketObject(d) {
+    if (d.kind==='familiar') return marketFamiliar(d);
+    const art=picture(d);
+    if (d.kind==='pack') return '<div class="moon-parcel" data-family="'+packFamily(d)+'">'+art+'</div>';
+    if (d.kind==='voucher') return '<div class="moon-warrant"><i>✧</i>'+art+'<i>✧</i></div>';
+    return art;
+  }
+
   function shopView(s) {
+    const cap=api().capacity(s);
     function stockCard(i) {
       const id=s.offers[i];
-      if(!id)return '<div class="shop-empty">Sold out</div>';
+      if (!id) return '<div class="moon-sold"><span aria-hidden="true">✧</span>Sold out</div>';
       const d=item(id), price=api().price(s,id), ok=api().canBuy(s,i);
-      const label=ok?(d.kind==='pack'?'Open':'Buy'):s.money<price?'Need '+cash(price-s.money):s.familiars.includes(d.id)?'Already owned':'Unavailable';
-      const cast=mayBuyAndUse(s,i,d)?button('buy-use','Buy & use','',i):'';
-      return '<article class="market-item '+esc(d.kind)+'"><div class="market-art">'+picture(d)+'<small>'+cash(price)+'</small></div><b>'+esc(d.name)+'</b>'+badges(d)+'<p>'+stockEffect(d,s)+'</p><div class="cw-buy-controls">'+button('buy',label,'cw-primary',i,!ok)+cast+'</div></article>';
+      const family=global.CWContent.cardType(d);
+      const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
+      const action={pack:'Open',familiar:'Equip',voucher:'Redeem',spell:'Store'}[d.kind] || 'Buy';
+      let reason='';
+      if (!ok) {
+        if (s.money<price) reason='Need '+cash(price-s.money)+' more';
+        else if (d.kind==='familiar' && s.familiars.some(ref=>global.CWMarket.splitVariant(ref).id===global.CWMarket.splitVariant(id).id)) reason='Already equipped';
+        else if (d.kind==='familiar' && s.familiars.length>=cap.familiars) reason='Roost full';
+        else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
+        else reason='Unavailable';
+      }
+      const priceText='<span class="moon-price"><i aria-hidden="true">✧</i>'+cash(price)+'</span>';
+      const buy='<button type="button" class="cw-btn moon-buy" data-cw="buy" data-value="'+i+'" aria-label="'+esc(action+' '+d.name+' for '+cash(price)+(reason?'. '+reason:''))+'"'+(ok?'':' disabled')+'><span>'+esc(reason || action)+'</span>'+priceText+'</button>';
+      const cast=mayBuyAndUse(s,i,d)?button('buy-use','Buy & cast','moon-cast',i):'';
+      let effect=itemDescription(d);
+      if (d.kind==='pack') {
+        const pool={familiar:'familiars',star:'constellations',spell:'spells',spectral:'spectral spells',standard:'playing cards'}[d.pool];
+        effect='Pick <b>'+d.picks+'</b> of <b>'+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+'</b> '+esc(pool)+'.';
+      }
+      const rarity=d.kind==='familiar' && d.rarity?' · '+esc(d.rarity):'';
+      return '<article class="moon-item"'+cardTip(d)+' data-stock-type="'+esc(family || d.kind)+'"><div class="moon-art">'+marketObject(d)+'</div><div class="moon-copy"><small>'+esc(type)+rarity+'</small><h4>'+esc(d.name)+'</h4>'+badges(d)+'<p>'+effect+'</p></div><div class="moon-actions">'+buy+cast+'</div></article>';
     }
-    const reroll=api().rerollPrice(s);
-    const shelf=(label,slots,action='')=>'<section class="shop-shelf"><header><h3>'+label+'</h3>'+action+'</header><div>'+slots.map(stockCard).join('')+'</div></section>';
     const count=s.shopOfferCount ?? Math.max(0,s.offers.length-3);
-    const stock=shelf('Cards',Array.from({length:count},(_,i)=>i),button('reroll','Reroll '+cash(reroll),'reroll','',s.money<reroll || Boolean(s.rules?.noReroll)));
-    const lower='<div class="shop-lower">'+shelf('Voucher',[count+2])+shelf('Booster packs',[count,count+1])+'</div>';
+    const shelf=(name,cls,indices,control='')=>'<section class="moon-shelf '+cls+'"><header><h3>'+name+'</h3>'+control+'</header><div class="moon-goods">'+indices.map(stockCard).join('')+'</div></section>';
+    const reroll=api().rerollPrice(s);
+    const rerollControl=!s.rules?.noReroll?button('reroll','↻  Reroll '+(reroll?cash(reroll):'free'),'moon-reroll','',s.money<reroll):'';
+    const stock=shelf('Card counter','moon-stock',Array.from({length:count},(_,i)=>i),rerollControl);
+    const packs=shelf('Booster packs','moon-packs',[count,count+1]);
+    const voucher=shelf('Voucher','moon-vouchers',[count+2]);
     const rewards=s.rewardPacks?.length?'<div class="cw-rewards">'+button('reward-pack','Open reward pack ('+s.rewardPacks.length+')','cw-primary')+'</div>':'';
-    const footer='<div class="cw-purse">Wallet <strong>'+cash(s.money)+'</strong></div>'+button('show-menu','Menu')+button('open','Inventory','','inventory')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary');
-    return result('Shop · Ante '+s.ante,'Moonlit Market',companionRail(s)+rewards+'<div class="shop-racks">'+stock+lower+'</div>',footer);
+    const footer=button('show-menu','Menu')+button('open','Inventory','','inventory')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary moon-next');
+    const view=result('Shop · Ante '+s.ante,'Moonlit Market',marketFamiliars(s)+rewards+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
+    view.headerEnd=marketPurse(s.money);
+    return view;
   }
+  let lastPack, dealStart;
   function packView(s) {
+    if (lastPack !== s.pack) { lastPack=s.pack; dealStart=performance.now(); }
+    const spread=s.pack.choices.filter(Boolean).length;
+    const speed=options.getSettings?.()?.speed || 1;
+    const elapsed=performance.now()-dealStart;
+    let position=0;
     const cap=api().capacity(s);
     const hand=s.pack.hand || [];
     const active=detail===''?-1:Number(detail);
@@ -552,19 +612,61 @@
       const blocked=api().canPick ? !api().canPick(s,i) : fallback || (targeted && hand.length < (d.minTargets || 0));
       const action=targeted?'prepare-pack-spell':'pick';
       const label=blocked?'Unavailable':targeted?(active===i?'Selected':'Select spell'):isSpell(d)?'Cast':'Take';
-      return offer(d,button(action,label,active===i?'cw-active':'cw-primary',i,blocked));
+      const offset=position++ - (spread-1)/2;
+      const delay=(240+i*80)/speed-elapsed;
+      return '<div class="pack-slot'+(active===i?' chosen':'')+'" style="--tilt:'+offset*2+'deg;--drop:'+Math.abs(offset)*5+'px;--from:'+(-offset*70)+'px;--delay:'+delay+'ms">'+offer(d,button(action,label,active===i?'cw-active':'cw-primary',i,blocked))+'</div>';
     }).join('');
     const d=active>=0?item(s.pack.choices[active]):null;
     const valid=d && targetsReady(d) && api().canPick?.(s,active,targets)!==false;
     const dealt=hand.length?'<div class="cw-pack-hand">'+heading(d?targetLabel(d):'Pack hand')+(d?'<div class="cw-targets">'+targetCards(hand,d,'pack-target')+'</div>'+button('pick-cast','Cast '+d.name,'cw-primary',active,!valid):
-      '<div class="cw-targets">'+hand.map(c=>'<span class="cw-dealt'+red(c.suit)+'" title="'+esc(cardModifiers(c).join(', '))+'">'+esc(rank(c.rank)+suits[c.suit])+'</span>').join('')+'</div>')+'</div>':'';
-    return result('Booster pack',s.pack.name,companionRail(s)+'<div class="cw-market-summary"><strong>'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong>'+button('open','Inventory','','inventory')+'</div><div class="cw-items">'+cards+'</div>'+dealt,button('show-menu','Menu')+button('close-pack','Skip remaining'));
+      '<div class="cw-targets">'+hand.map(c=>'<span class="cw-dealt'+red(c.suit)+'" tabindex="0"'+cardTip(c)+'>'+esc(rank(c.rank)+suits[c.suit])+'</span>').join('')+'</div>')+'</div>':'';
+    const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
+    const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,button('open','Inventory','','inventory')+button('close-pack','Skip remaining'));
+    view.headerEnd='<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong>';
+    return view;
+  }
+  function tallySpoils(body) {
+    const speed = options.getSettings?.()?.speed || 1;
+    const total = body.querySelector('.spoils-total strong');
+    let subtotal = 0;
+    total.textContent = cash(0);
+    body.querySelectorAll('.spoils-line').forEach((row,i) => {
+      const delay = (70 + i*155) / speed;
+      row.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],
+        {duration:230/speed,delay,fill:'backwards'});
+      setTimeout(() => {
+        if (!total.isConnected) return;
+        const value = Number(row.dataset.amount);
+        subtotal += value;
+        total.textContent = cash(subtotal);
+        if (value) {
+          options.playSound?.('coin',i);
+          total.animate([{transform:'scale(1.08)'},{transform:'scale(1)'}],{duration:160/speed});
+        }
+      },delay);
+    });
+  }
+  function vaultScene(s) {
+    const name = api().blindInfo(s).name;
+    return '<div class="vault-dust" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>'+
+      '<div class="vault-score"><span class="vault-seal" aria-hidden="true">&#10022;</span><div>'+
+      '<b>'+esc(name)+'</b><span><strong>'+num(s.score)+' chips</strong> / '+num(s.target)+' target</span></div></div>';
   }
   function payoutView(s) {
     const p = s.payout;
-    const row=(name,value,total=false)=>'<div class="cw-ledger-row'+(total?' cw-total':'')+'"><span>'+esc(name)+'</span><span class="cash-stack" aria-hidden="true">'+('<i></i>').repeat(Math.min(8,Math.max(0,value)))+'</span><b>'+cash(value)+'</b></div>';
-    return result('Round '+s.round,'Blind cleared','<div class="cw-ledger">'+row('Blind',p.blind)+row('Hands left',p.hands)+(p.interest?row('Interest',p.interest):'')+(p.bonus?row('Bonus',p.bonus):'')+row('Total',p.total,true)+'</div>',button('cash-out','Collect '+cash(p.total),'cw-primary'));
-
+    const row = (label,value) => '<li class="spoils-line" data-amount="'+Number(value)+'"><span>'+esc(label)+
+      '</span><span class="spoils-stack" aria-hidden="true">'+ '<i></i>'.repeat(Math.min(7,Math.max(0,value)))+
+      '</span><b>'+cash(value)+'</b></li>';
+    const ledger = row('Blind bounty',p.blind) + row('Unused hands',p.hands) +
+      (!s.rules?.noInterest || p.interest ? row('Interest',p.interest || 0) : '') + (p.bonus ? row('Bonus',p.bonus) : '');
+    const body = '<h3 class="spoils-heading">Round spoils</h3>'+
+      '<div class="spoils-total" aria-label="'+cash(p.total)+' earned"><i class="vault-coin" aria-hidden="true"></i>'+
+      '<strong aria-hidden="true">'+cash(p.total)+'</strong></div><ul class="spoils-lines">'+ledger+'</ul>';
+    const finalBlind = s.ante === s.rules?.anteLimit && s.blind === 2;
+    const footer = '<div class="vault-balance"><span>Current purse</span><b>'+cash(s.money)+'</b></div>'+
+      '<div class="vault-collect">'+button('cash-out','Collect '+cash(p.total)+'  →','cw-primary')+
+      '<small>'+(finalBlind?'Finish run':'Continue to shop')+'</small></div>';
+    return {...result('Ante '+s.ante+'  ·  Round '+s.round,s.blind===2?'Boss defeated!':'Blind defeated!',body,footer),heroDetail:vaultScene(s)};
   }
   function selectView(s) {
     const tickets=[0,1,2].map(i=>{
@@ -586,11 +688,73 @@
     return cost>0?' '+cash(cost):'';
   }
   function endView(s) {
-    const won=s.phase==='won';
-    const challenge=api().CHALLENGES?.[s.challengeId];
-    const headline=won?(challenge?.name || 'The final blind falls'):'Out of hands';
-    const note=won?'You cleared '+(s.rules?.anteLimit || 8)+' antes.'+(challenge?' Challenge complete.':' Continue with your current deck in Endless.'):'Your score reached '+num(s.score)+' of the '+num(s.target)+' chips required.';
-    return result('Run complete',won?'Victory':'Run over','<div class="cw-hero"><span class="cw-hero-emblem" aria-hidden="true">'+(won?'✶':'♠')+'</span><h3 class="cw-hero-title">'+esc(headline)+'</h3><p class="cw-explain">'+esc(note)+'</p></div><div class="cw-stats">'+stat('Ante reached',s.ante)+stat('Blinds won',s.stats.roundsWon)+stat('Best hand score',num(s.stats.bestScore))+'</div>',button('show-menu','Menu')+button('open','New run',won?'':'cw-primary','restart')+(won && !s.challengeId?button('endless','Continue endless →','cw-primary'):''));
+    if(s.phase==='won') {
+      const challenge=api().CHALLENGES?.[s.challengeId];
+      const body='<h3 class="spoils-heading">'+esc(challenge?.name || 'Run complete')+'</h3>'+
+        '<div class="vault-achievement">'+num(s.rules?.anteLimit || 8)+' antes cleared</div>'+
+        '<div class="vault-stats">'+stat('Blinds won',num(s.stats.roundsWon))+stat('Best hand score',num(s.stats.bestScore))+
+        '<div class="cw-stat vault-stat-wallet"><span>Final purse</span><strong>'+cash(s.money)+'</strong></div></div>';
+      const footer=button('show-menu','Menu')+button('open','New run',s.challengeId?'cw-primary':'','restart')+
+        (!s.challengeId?button('endless','Continue endless →','cw-primary'):'');
+      return {...result('The final blind','Victory!',body,footer),heroDetail:vaultScene(s)};
+    }
+    const note='Your score reached '+num(s.score)+' of the '+num(s.target)+' chips required.';
+    return result('Run complete','Run over','<div class="cw-hero"><span class="cw-hero-emblem" aria-hidden="true">♠</span><h3 class="cw-hero-title">Out of hands</h3><p class="cw-explain">'+esc(note)+'</p></div><div class="cw-stats">'+stat('Ante reached',s.ante)+stat('Blinds won',s.stats.roundsWon)+stat('Best hand score',num(s.stats.bestScore))+'</div>',button('show-menu','Menu')+button('open','New run','cw-primary','restart'));
+  }
+  function resolveCast(s,d,action,index,ids) {
+    const before=ids.map(id=>({...usableCards(s).find(c=>c.id===id)}));
+    const deckSize=s.deck.length;
+    const bag=[...s.familiars,...s.consumables.filter((_,i)=>action!=='use' || i!==index)];
+    const levels={...s.levels};
+    const balance=s.money-(action==='buyAndUse'?api().price(s,s.offers[index]):0);
+    if (!api()[action](s,index,ids)) return false;
+    const results=[];
+    const push=(oldFace,newFace,label,style='turn')=>results.push({oldFace,newFace,label,style});
+    const face=c=>'<div class="card-display">'+options.cardPreview(c)+'</div>';
+    for (const old of before) {
+      const card=s.deck.find(c=>c.id===old.id);
+      if (!card) { push(face(old),'','Removed','burn'); continue; }
+      if (d.effect==='copy') {
+        for (const copy of s.deck.slice(deckSize)) push('',face(copy),'Copy added','copy');
+        continue;
+      }
+      const changes=[];
+      if (old.rank!==card.rank) changes.push(rank(old.rank)+' → '+rank(card.rank));
+      if (old.suit!==card.suit) changes.push(suits[old.suit]+' → '+suits[card.suit]);
+      for (const key of ['enhancement','edition','seal']) {
+        if (old[key]===card[key]) continue;
+        changes.push(card[key]?(key==='seal'?card[key]+' seal':card[key]):old[key]+' removed');
+      }
+      push(face(old),face(card),changes.join(' · ') || (d.effect==='rankCopy' && old.id===ids[0]?'Rank source':'Unchanged'),d.effect==='seal'?'stamp':'turn');
+    }
+    if (d.effect==='generate' || d.effect==='inventoryEdition') {
+      for (const ref of [...s.familiars,...s.consumables]) {
+        const i=bag.indexOf(ref);
+        if (i>=0) { bag.splice(i,1); continue; }
+        const reward=item(ref);
+        push('',picture(reward),reward.name+(d.effect==='inventoryEdition'?' · Negative':''),'copy');
+      }
+    }
+    if (!results.length) {
+      const gains=Object.keys(levels).filter(k=>levels[k]!==s.levels[k]).map(k=>k+' · Lv '+s.levels[k]);
+      const label=gains.join(' / ') || (['money','cash'].includes(d.effect)?'+'+cash(s.money-balance):d.effect==='bossDisable'?'Boss ward active':'No new cards');
+      push('',picture(d),label,'copy');
+    }
+    showCast(d,results);
+    return true;
+  }
+  function showCast(d,results) {
+    document.querySelector('.cast-reveal')?.remove();
+    const el=document.createElement('aside');
+    el.className='cast-reveal';
+    el.dataset.family=global.CWContent.cardType(d);
+    el.setAttribute('role','status');
+    el.innerHTML='<strong>'+esc(d.name)+'</strong><div class="cast-results">'+results.map(r=>
+      '<div class="cast-result '+r.style+'"><div class="cast-faces"><div class="cast-before">'+r.oldFace+'</div><div class="cast-after">'+r.newFace+'</div></div><b>'+esc(r.label)+'</b></div>'
+    ).join('')+'</div>';
+    global.CWContent.colorStats(el);
+    document.body.append(el);
+    setTimeout(()=>el.remove(),2700);
   }
   function act(name, value) {
     const s=state() || {};
@@ -647,13 +811,15 @@
     if(name==='use-item') {
       const d=ownedItem(s,'consumables',index);
       if (d.maxTargets>0) return open('spell',String(index));
-      if(perform('use',index,[])) announce(d.name+' cast.');
+      if(resolveCast(s,d,'use',index,[])) changed('select');
+      else announce('That spell is unavailable right now.');
       return;
     }
     if(name==='buy-use') {
       const d=item(s.offers[index]);
       if (d.maxTargets>0) return open('shop-spell',String(index));
-      if(perform('buyAndUse',index,[])) announce(d.name+' cast.');
+      if(resolveCast(s,d,'buyAndUse',index,[])) changed('buy');
+      else announce('That spell is unavailable right now.');
       return;
     }
     if(name==='prepare-pack-spell') {
@@ -672,13 +838,14 @@
     if(name==='cast' || name==='buy-use-cast') {
       const i=Number(detail), buying=name==='buy-use-cast';
       const d=buying?item(s.offers[i]):ownedItem(s,'consumables',i);
-      if(api()[buying?'buyAndUse':'use'](s,i,targets)) { close(); changed(buying?'buy':'select'); announce(d.name+' cast.'); }
+      if(resolveCast(s,d,buying?'buyAndUse':'use',i,targets)) { close(); changed(buying?'buy':'select'); announce(d.name+' cast.'); }
       else announce('Choose valid cards for this spell.');
       return;
     }
     if(name==='pick' || name==='pick-cast') {
       const ids=name==='pick-cast'?targets:[];
-      if(!api().pick(s,index,ids)) { announce('Choose valid cards or make inventory space first.'); return; }
+      const choice=item(s.pack.choices[index]);
+      if(!(isSpell(choice)?resolveCast(s,choice,'pick',index,ids):api().pick(s,index,ids))) { announce('Choose valid cards or make inventory space first.'); return; }
       detail='';
       targets=[];
       changed('buy');

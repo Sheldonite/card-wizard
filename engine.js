@@ -340,9 +340,10 @@
     for (const group of ["cards","scoring","held"]) context[group] = context[group].map(contextCard);
     return context;
   }
+  const bossSilences = (s,index) => index < bossValue(s,"noJokers");
   function familiarEffect(s,index,event,ctx,memory,resolveCopy = true) {
     const id = s.familiars[index];
-    if (!id || index < bossValue(s,"noJokers") || s.rules.noFamiliarEffects) return {};
+    if (!id || bossSilences(s,index) || s.rules.noFamiliarEffects) return {};
     const {id:key,sticker} = market.splitVariant(id);
     const data = memory[key] ??= {};
     if (sticker === "perishable" && (data.age || 0) >= 5) return {};
@@ -414,9 +415,12 @@
       apply(effect,content.familiars[baseId(id)].name,{familiarId:id,...(extra.card && {cardId:extra.card.id})});
       return effect.retriggers || 0;
     }
+    const suppressed = {};
     function scoreCard(card,cardIndex,isHeld) {
       const event = isHeld ? "heldCard" : "scoredCard";
       const enhancement = !isHeld && cardIndex < bossValue(s,"noEnhancements") ? null : card.enhancement;
+      if (!isHeld && card.enhancement && !enhancement) suppressed[card.id] = "enhancement";
+      if (!isHeld && enhancement !== "stone" && cardIndex < bossValue(s,"noCardChips")) suppressed[card.id] = "rank";
       const label = cardLabel(card);
       let repeats = card.seal === "red" ? 1 : 0;
       for (let pass=0;pass<=repeats;pass++) {
@@ -448,7 +452,7 @@
       const id = s.familiars[i];
       const {edition,sticker} = market.splitVariant(id);
       const editionDef = market.editions[edition];
-      const live = i >= bossValue(s,"noJokers") && !s.rules.noFamiliarEffects &&
+      const live = !bossSilences(s,i) && !s.rules.noFamiliarEffects &&
         (sticker !== "perishable" || (memory[baseId(id)]?.age || 0) < 5);
       if (live && editionDef && edition !== "polychrome") apply(editionDef,editionDef.name,{familiarId:id});
       familiarAt(i,"hand",{});
@@ -465,7 +469,7 @@
       if (guard.rule === "halveMult") mult *= guard.value;
       if (chips !== before[0] || mult !== before[1]) steps.push({label:guard.name,text:guard.description,chips,mult});
     }
-    const score = {name,level,chips,mult,total:Math.floor(chips * mult),money,scoring:active.map(c=>c.id),steps};
+    const score = {name,level,chips,mult,total:Math.floor(chips * mult),money,scoring:active.map(c=>c.id),suppressed,steps};
     Object.defineProperty(score,"commit",{value:{memory,rng:roll.rng,generated,used}});
     return score;
   }
@@ -565,12 +569,34 @@
     const enhancement = enhancementKey === "plain" ? null : enhancementKey;
     const effects = [market.enhancements[enhancement],market.editions[cardEdition],market.seals[seal]].filter(Boolean);
     const face = ({11:"Jack",12:"Queen",13:"King",14:"Ace"})[rank] || String(rank);
-    return {id,name:face + " of " + SUITS[suit],kind:"card",cost:3 + effects.length,rank,suit,enhancement,edition:cardEdition,seal,
+    const name = enhancement === "stone" ? "Stone Card" : face + " of " + SUITS[suit];
+    return {id,name,kind:"card",cost:3 + effects.length,rank,suit,enhancement,edition:cardEdition,seal,
       rarity:effects.map(x=>x.name).join(" · ") || "Standard",art:"card",icon:SYMBOLS[suit],
       description:effects.map(x=>x.description).join(" ") || "Add this card to your permanent deck."};
   }
+  // These bonuses scale with the run or charge up for the next hand.
+  const runScalingStats = {
+    dust_scribe:"chips", vault_watcher:"chips", folio:"chips", jasper_clock:"chips",
+    kiln_crawler:"chips", tower_oracle:"mult", good_omen:"mult", silt_phoenix:"mult",
+    coven:"xmult", dusk_undertaker:"xmult"
+  };
   function ownedItem(s,category,index) {
-    const def = item(s[category]?.[index]);
+    let def = item(s[category]?.[index]);
+    if (category === "familiars" && def) {
+      const id = baseId(def.id);
+      const stat = def.trackedStat || runScalingStats[id];
+      if (stat) {
+        // Next-hand effects may consume charges. Inspect a copy of the saved counters.
+        const memory = {...s.familiarMemory?.[id]};
+        const value = content.trigger(id,"hand",makeContext(s),memory)[stat];
+        const amount = (stat === "xmult" ? "×" : "+") + Number(value.toFixed(2));
+        const label = amount + (stat === "chips" ? " Chips" : " Mult");
+        def = {...def,stackAmount:amount,stackStat:stat,description:"Currently " + label + ". " + def.description};
+      }
+      if (s.phase === "play" && bossSilences(s,index)) {
+        def = {...def,bossMuted:true,description:"Silenced by " + boss(s).name + ". " + def.description};
+      }
+    }
     if (def?.sticker !== "perishable") return def;
     const remaining = Math.max(0,5 - (s.familiarMemory[baseId(def.id)]?.age || 0));
     return {...def,perishRounds:remaining,debuffed:!remaining};
