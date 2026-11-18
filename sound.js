@@ -379,6 +379,32 @@
         bell(fx, note, now, .24, .13);
         break;
       }
+      case 'proc-daybreak_minnow':
+        tone(fx, 67, now, .066, .066, 'sine', 7, .005);
+        tone(fx, 79, now + .055, .13, .034, 'sine', -2, .007);
+        break;
+      case 'proc-tin_echo':
+        bell(fx, 71, now, .145, .054);
+        bell(fx, 78, now + .081, .15, .037);
+        break;
+      case 'proc-copper_plover':
+        brush(fx, now, .045, .064, 810);
+        tone(fx, 48, now, .072, .064, 'triangle', -6, .005);
+        bell(fx, 76, now + .037, .11, .03);
+        break;
+      case 'proc-linen_sprite':
+        tone(fx, 74, now, .092, .045, 'triangle', -5, .004);
+        brush(fx, now + .044, .085, .034, 2450, 1.5);
+        break;
+      case 'proc-fox_in_ink':
+        brush(fx, now, .12, .052, 1280, .85);
+        brush(fx, now + .074, .07, .034, 1830, 1.1);
+        tone(fx, 60, now + .11, .082, .028, 'sine', -3);
+        break;
+      case 'proc-second_shadow':
+        tone(fx, 62, now, .13, .044, 'sine', -2, .024);
+        tone(fx, 62, now + .12, .145, .024, 'sine', -2, .028);
+        break;
       case 'coin':
         bell(fx, 82+step*2, now, .16, .11);
         bell(fx, 94+step*2, now+.028, .12, .055);

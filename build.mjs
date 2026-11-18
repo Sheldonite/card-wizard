@@ -35,7 +35,7 @@ if (embedMusic) {
 let html = read('index.html').replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, name) => {
   const css = read(name).replace(/url\("([^"]+)"\)/g, (_, path) => 'url("' + embed(path) + '")');
   return '<style>\n' + css + '\n</style>';
-}).replace(/<script defer src="([^"]+)"><\/script>/g, (_, name) => {
+}).replace(/^[ \t]*<script defer src="([^"]+)"><\/script>\r?\n/gm, (_, name) => {
   scripts.push(read(name));
   return '';
 }).replace(/(src|href)="((?:art|assets)\/[^"]+)"/g, (_, attr, path) => attr + '="' + embed(path) + '"');

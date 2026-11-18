@@ -1,0 +1,22 @@
+.familiar-proc-layer {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2147483600;
+  overflow: hidden;
+  pointer-events: none !important;
+  contain: strict;
+}
+.familiar-proc-layer * {pointer-events:none !important}
+.familiar-proc-mark {transform-origin:0 0;shape-rendering:geometricPrecision}
+.familiar-proc-mark > svg {filter:drop-shadow(0 2px 1px #20192cc2)}
+.familiar-proc-mark.proc-minnow > svg {filter:drop-shadow(0 0 3px #a4fbdf)}
+.familiar-proc-mark.proc-pebble > svg,.familiar-proc-mark.proc-wave > svg {filter:drop-shadow(0 0 2px #caffe9)}
+.familiar-proc-mark.proc-bell > svg,.familiar-proc-mark.proc-coin > svg {filter:drop-shadow(0 1px 2px #fff2ab)}
+.familiar-proc-trail {opacity:.9}
+.familiar-proc-mark.proc-speck > svg {filter:none;shape-rendering:crispEdges}
+@media (prefers-reduced-motion:reduce) {
+  .familiar-proc-mark > svg {filter:none}
+}

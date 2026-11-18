@@ -10,6 +10,7 @@
   let guideTab = 'hands';
   let deckTab = 'draw';
   let targets = [];
+  let castSourceRect;
   let restartDeck = 'arcane';
   let restartStake = '';
   let restartChallenge = '';
@@ -110,8 +111,8 @@
     }
     const canSell=api().canSell(s,category,index);
     addAction(canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
-      canSell,()=>perform(category==='familiars'?'sell':'sellConsumable',index));
-    if (category==='consumables') addAction('Use',api().canUse(s,index),()=>act('use-item',String(index)));
+      canSell,()=>perform(card.getBoundingClientRect(),category==='familiars'?'sell':'sellConsumable',index));
+    if (category==='consumables') addAction('Use',api().canUse(s,index),()=>act('use-item',String(index),card));
     card.after(sellTab);
     global.CWContent.colorStats(sellTab);
     sellTab.showPopover?.();
@@ -144,7 +145,7 @@
     const muted = card.suit && run?.phase === 'play' && api().debuffed(run,card);
     return global.CWCardTip.attribute(global.CWCardTip.details(card,muted,descriptionVisible));
   }
-  function picture(d, compact = false) {
+  function picture(d, compact = false, frame = global.CWFamiliarFrames) {
     if(d.kind==='card' && options.cardPreview) return '<div class="card-display">'+options.cardPreview(d)+'</div>';
     const css = compact ? 'cw-owned-emblem' : 'cw-item-image';
     let content;
@@ -162,7 +163,7 @@
     const type=global.CWContent.cardType(d);
     const accent = /^#[a-f\d]{3,8}$/i.test(d.color || '') ? d.color : '#c3abdc';
     const edition = ['foil','holographic','polychrome','negative'].includes(d.edition) ? ' cw-edition-'+d.edition : '';
-    return '<div class="' + css + edition + '" data-family="'+type+'" style="--item-color:' + accent + '">' + content + global.CWContent.familiarFinish(d,d.upgradeAge) + global.CWContent.typeBadge(type,compact) + (d.bossMuted?global.CWCardTip.cross:'') + '</div>';
+    return '<div class="' + css + edition + '"' + (frame?.attribute(d) || '') + ' data-family="'+type+'" style="--item-color:' + accent + '">' + content + (frame?.ornament(d) || '') + global.CWContent.familiarFinish(d,d.upgradeAge) + global.CWContent.typeBadge(type,compact) + (d.bossMuted?global.CWCardTip.cross:'') + '</div>';
   }
   function badges(d) {
     const edition = d.edition && (api().EDITIONS?.[d.edition]?.name || global.CWMarket?.editions?.[d.edition]?.name || d.edition);
@@ -190,15 +191,6 @@
     const observer = new ResizeObserver(fitTrials);
     observer.observe(layer);
     observer.observe(dialog());
-    function inspectCompanion(event) {
-      const card = event.target.closest('[data-companion]');
-      if (!card) return;
-      const rail = card.closest('.companion-rail');
-      rail.querySelector('.lit')?.classList.remove('lit');
-      card.classList.add('lit');
-
-    }
-    for (const event of ['pointerover','focusin','click']) layer.addEventListener(event, inspectCompanion);
     layer.addEventListener('input', event => {
       if (event.target.id === 'cw-run-seed') restartSeed = event.target.value;
       if (event.target.type === 'range') {
@@ -230,7 +222,7 @@
       if (companion) return toggleSell(companion,Number(companion.dataset.companion));
       if (e.target === layer) { if (isDismissible()) close(); return; }
       const b = e.target.closest('[data-cw]');
-      if (b && !b.disabled) act(b.dataset.cw, b.dataset.value ?? '');
+      if (b && !b.disabled) act(b.dataset.cw, b.dataset.value ?? '', b);
     });
     document.addEventListener('keydown', event => {
       if (!page) return;
@@ -238,7 +230,7 @@
         event.preventDefault(); event.stopImmediatePropagation();
         if (isDismissible()) close();
       } else if (event.key === 'Tab') {
-        const buttons = [...layer.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled)')];
+        const buttons = [...layer.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), summary')].filter(el=>el.getClientRects().length);
         if (!buttons.length) { event.preventDefault(); return; }
         const first = buttons[0], last = buttons[buttons.length-1];
         if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog() || !layer.contains(document.activeElement))) {
@@ -269,7 +261,7 @@
     paint(true);
     dialog().focus({preventScroll:true});
   }
-  function open(next, value = '') {
+  function open(next, value = '', sourceRect) {
     const s = state();
     const names = {codex:'guide',info:'run',options:'settings'};
     next = names[next] || next;
@@ -289,12 +281,18 @@
       targets = selected.length <= d.maxTargets ? selected : [];
     }
     if (next === 'shop-spell') targets = [];
+    if (next === 'shop-spell' || next === 'spell') castSourceRect = sourceRect;
     route(next, value);
   }
   function close() {
     if (page && !isDismissible()) return;
+    const leaving = page;
     const previous = backStack.pop() || [readPhase(state()), ''];
     route(previous[0], previous[1]);
+    if (previous[0] === 'lobby') {
+      const trigger = leaving === 'guide' ? '[data-cw="learn"]' : '[data-value="'+leaving+'"]';
+      layer.querySelector(trigger)?.focus({preventScroll:true});
+    }
   }
   function sync() {
     const now = readPhase(state());
@@ -317,6 +315,7 @@
     const priorScroll = reset ? 0 : body.scrollTop;
     const focused = !reset && layer.contains(document.activeElement) && document.activeElement.dataset.cw ? {action:document.activeElement.dataset.cw,value:document.activeElement.dataset.value} : null;
     const focusedId = !reset && layer.contains(document.activeElement) && document.activeElement.id;
+    const practiceOpen = !reset && page==='restart' && body.querySelector('.practice-seed')?.open;
     const selection = !reset && document.activeElement?.tagName === 'INPUT' ? [document.activeElement.selectionStart,document.activeElement.selectionEnd] : null;
     const views = {guide:guideView,deck:deckView,run:runView,settings:settingsView,restart:restartView,spell:spellView,'shop-spell':spellView,shop:shopView,pack:packView,payout:payoutView,select:selectView,won:endView,lost:endView,lobby:lobbyView,career:careerView,collection:collectionView,profiles:profilesView};
     const view = views[page]?.(s);
@@ -325,6 +324,10 @@
     layer.classList.toggle('in-parlor',Boolean(options.wantsLobby?.()));
     layer.classList.toggle('at-verdict',page==='won' || page==='lost');
     layer.querySelector('.cw-head').innerHTML = '<div><p class="cw-kicker">' + esc(view.kicker) + '</p><h2 id="cw-panel-title">' + esc(view.title) + '</h2></div>' + (view.headerEnd || '') + (isDismissible() ? '<button type="button" class="cw-x" data-cw="close" aria-label="Close panel">×</button>' : '');
+    const emblem = {restart:'logo',guide:'grimoire',collection:'orb',career:'blind',settings:'key',profiles:'owl'}[page];
+    if (emblem && options.wantsLobby?.()) {
+      layer.querySelector('.cw-head').insertAdjacentHTML('afterbegin','<img class="parlor-emblem" alt="" src="'+global.CWContent.portrait(emblem)+'">');
+    }
     dialog().querySelector(':scope > .victory-sky')?.remove();
     if (view.victory) {
       dialog().insertAdjacentHTML('afterbegin','<div class="victory-sky" aria-hidden="true"><div class="astrolabe"><i class="orbit-outer"></i><i class="orbit-middle"></i><i class="orbit-inner"></i><i class="victory-star"></i></div></div>');
@@ -333,6 +336,7 @@
     layer.querySelector('.cw-message').textContent = message;
     global.CWContent.colorStats(layer.querySelector('.cw-head'));
     body.innerHTML = view.body;
+    if (practiceOpen) body.querySelector('.practice-seed').open = true;
     global.CWContent?.colorStats?.(body);
     if(page==='payout' && reset && !options.getSettings?.()?.reducedMotion && body.animate) tallySpoils(body);
     layer.querySelector('.cw-footer').innerHTML = view.footer;
@@ -349,8 +353,13 @@
     }
   }
   function announce(text) { message = text; paint(false); }
-  function changed(sound = 'select') { options.playSound?.(sound); options.onChange?.(); sync(); }
-  function perform(action, ...args) {
+  function changed(sound = 'select', sourceRect) {
+    options.playSound?.(sound);
+    options.onChange?.();
+    sync();
+    options.playFamiliarEvents?.(sourceRect);
+  }
+  function perform(sourceRect, action, ...args) {
     const paying=action==='cashOut' && !options.getSettings?.()?.reducedMotion && layer.animate;
     const speed=options.getSettings?.()?.speed || 1;
     const origin=paying && layer.querySelector('.spoils-total strong')?.getBoundingClientRect();
@@ -359,7 +368,7 @@
     if (ok == null || ok === false) { options.playSound?.('error'); announce('That action is unavailable right now.'); return false; }
     message = '';
     const sounds = {buy:'buy',buyAndUse:'buy',pick:'buy',sell:'buy',sellConsumable:'buy',reroll:'buy',rerollBoss:'buy',cashOut:state().phase==='won'?'win':'shop',startBlind:'deal',endless:'deal'};
-    changed(sounds[action]);
+    changed(sounds[action],sourceRect);
     if(origin && amount>0){
       const purse=layer.querySelector('.cw-purse strong, .victory-stat-wallet strong') || document.getElementById('money');
       const end=purse.getBoundingClientRect();
@@ -399,7 +408,8 @@
         ['Spend your winnings','Visit the shop after a blind for familiars, spells, vouchers and boosters. Save cash to earn interest at the end of a round.'],
         ['Survive eight antes','Each ante contains a Small Blind, a Big Blind and a Boss Blind with its own rule. Skipping an eligible blind awards its listed bonus. Defeat the eighth boss to win.']
       ];
-      section = '<dl class="cw-instructions">' + notes.map(([t,d])=>'<div><dt>'+esc(t)+'</dt><dd>'+esc(d)+'</dd></div>').join('') + '</dl>';
+      const lesson = '<div class="grimoire-lesson"><div class="lesson-hand" aria-hidden="true">'+parlorCard('K','♥','ruby')+parlorCard('K','♣','jade')+'</div><div><b>A pair of kings</b><p>Play two kings together. Both cards score, and your familiar can add its bonus.</p></div></div>';
+      section = lesson+'<dl class="cw-instructions">' + notes.map(([t,d])=>'<div><dt>'+esc(t)+'</dt><dd>'+esc(d)+'</dd></div>').join('') + '</dl>';
     } else {
       const visible = Object.entries(api().HANDS).filter(([name,h])=>!h.secret || s.seenHands?.[name]);
       const rows = visible.map(([name,h]) => {
@@ -409,7 +419,7 @@
       section = '<table class="cw-guide"><thead><tr><th>Hand</th><th title="Times played this run">Played</th><th>Lv.</th><th class="cw-example-col">Example</th><th>Chips × Mult</th></tr></thead><tbody>' + rows + '</tbody></table>';
       if (visible.length < Object.keys(api().HANDS).length) section += '<p class="cw-guide-hint">Changing your deck can unlock hidden hands.</p>';
     }
-    return result('Grimoire','Hand guide',tabs+section);
+    return result('Grimoire',guideTab==='rules'?'How to play':'Hand guide',tabs+section);
   }
   function deckView(s) {
     const source = deckTab === 'draw' ? s.draw : s.deck;
@@ -489,10 +499,17 @@
     const seed = '<div class="cw-seed-form"><label for="cw-run-seed">Run seed <small>Optional · practice</small></label><div><input id="cw-run-seed" type="text" maxlength="'+seedLimit+'" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(restartSeed)+'" placeholder="Random seed">'+(resumable() && s.seed?button('repeat-seed','Reuse seed'):'')+'</div></div>';
     const hints=progress().unlockHints || {};
     const nextDeck=Object.keys(decks).find(id=>unlocked.decks && !unlocked.decks.includes(id) && hints[id]);
-    const hint=nextDeck && !challenge?'<p class="cw-unlock-hint"><b>'+esc(decks[nextDeck].name)+'</b> '+esc(hints[nextDeck])+'</p>':'';
-    return '<form id="cw-new-run"><div class="cw-run-grid">'+runSelect('Starting deck','deck',decks,deckId,unlocked.decks,!!(challenge?.deck || challenge?.deckId))+
+    const hint=nextDeck && !challenge && resumable()?'<p class="cw-unlock-hint"><b>'+esc(decks[nextDeck].name)+'</b> '+esc(hints[nextDeck])+'</p>':'';
+    const starters=challenge?.rules?.starter ?? decks[deckId].starter ?? ['merlin'];
+    const companions=starters.map(id=>{
+      const d=item(id);
+      return '<span><img alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
+    }).join('');
+    const preview='<div class="deck-preview"><i aria-hidden="true"></i><div><strong>'+esc(decks[deckId].name)+'</strong><div class="deck-companions">'+(companions || 'No starting familiar')+'</div></div></div>';
+    return '<form id="cw-new-run">'+preview+'<div class="cw-run-grid">'+runSelect('Starting deck','deck',decks,deckId,unlocked.decks,!!(challenge?.deck || challenge?.deckId))+
       (Object.keys(stakes).length?runSelect('Difficulty','stake',stakes,stakeId,unlocked.stakes,!!(challenge?.stake || challenge?.stakeId)):'')+'</div>'+
-      (Object.keys(challenges).length?runSelect('Mode','challenge',challenges,challengeId,unlocked.challenges):'')+hint+seed+'</form>';
+      (Object.keys(challenges).length?runSelect('Mode','challenge',challenges,challengeId,unlocked.challenges):'')+hint+
+      '<details class="practice-seed"><summary>Practice with a seed</summary>'+seed+'</details></form>';
   }
   function startButton() { return '<button class="cw-btn cw-primary" type="submit" form="cw-new-run">Start run</button>'; }
   function restartView(s) {
@@ -504,10 +521,25 @@
   function parlorScene() {
     const motes = Array.from({length:16},(_,i)=>
       '<i style="--x:'+(9+(i*31)%86)+'%;--y:'+(10+(i*13)%69)+'%;--delay:-'+(i*.77)+'s"></i>').join('');
-    return '<div class="parlor-scene" aria-hidden="true"><div class="parlor-painting">'+
+    return '<div class="parlor-scene"><div class="parlor-painting">'+
       '<span class="parlor-lantern"></span><div class="parlor-dust">'+motes+'</div>'+
-      '<div class="dealer-window"><div class="dealer-cat"></div></div><div class="dealer-spell"><i></i><i></i><i></i></div>'+
-      '<div class="dealer-hand">'+parlorCard('Q','♥','ruby')+parlorCard('K','♣','jade')+parlorCard('A','♠','amethyst')+'</div></div></div>';
+      '<button type="button" class="dealer-window" data-cw="deal-trick" aria-label="Ask the market cat to deal a poker hand"><span class="dealer-cat"></span></button>'+
+      '<div class="dealer-spell" aria-hidden="true"><i></i><i></i><i></i></div>'+
+      '<div class="dealer-hand" aria-hidden="true">'+parlorCard('Q','♥','ruby')+parlorCard('K','♣','jade')+parlorCard('A','♠','amethyst')+'</div>'+
+      '<output class="dealer-call" aria-live="polite"></output></div></div>';
+  }
+  function dealParlorTrick() {
+    const hand=layer.querySelector('.dealer-hand');
+    const tricks=['Pair','Three of a Kind','Straight Flush'];
+    const index=Number(hand.dataset.deal || 0);
+    const name=tricks[index], cards=guideExamples[name];
+    hand.dataset.deal=String((index+1)%tricks.length);
+    hand.innerHTML=cards.map((card,i)=>{
+      const suit=card.slice(-1), angle=(i-(cards.length-1)/2)*18;
+      return '<span class="trick-card" style="--fan:'+angle+'deg;--order:'+i+'">'+parlorCard(card.slice(0,-1),suits[suit],red(suit)?'ruby':'jade')+'</span>';
+    }).join('');
+    layer.querySelector('.dealer-call').textContent=name;
+    options.playSound?.('select');
   }
   function lobbyView(s) {
     const profile=progress().profile;
@@ -525,7 +557,7 @@
       '<h1 class="parlor-logo"><em>Card</em> <strong>Wizard</strong></h1>'+
       '<p>Cast poker hands. Collect familiars. Beat the blinds.</p>'+
       '<div class="parlor-actions">'+main+secondary+'</div></div>';
-    return result('','Card Wizard',parlorScene()+title+nav+account);
+    return result('','Card Wizard',title+nav+account+parlorScene());
   }
   function profilesView() {
     const profiles=options.getProfiles?.() || [];
@@ -554,8 +586,14 @@
     const tabs='<div class="cw-tabs">'+groups.map(g=>tab('collection-tab',g.key,g.name,active?.key)).join('')+'</div>';
     const entries=active?.entries || [];
     const visible=entries.filter(e=>collectionFilter==='all' || (collectionFilter==='known'?e.discovered:!e.discovered));
+    if (active?.key==='decks') visible.sort((a,b)=>Number(a.locked)-Number(b.locked));
     const summary='<div class="cw-collection-summary"><strong>'+entries.filter(e=>e.discovered).length+' / '+entries.length+' discovered</strong><div class="cw-tabs">'+tab('collection-filter','all','All',collectionFilter)+tab('collection-filter','known','Discovered',collectionFilter)+tab('collection-filter','unknown','Unknown',collectionFilter)+'</div></div>';
     const list=visible.map(entry=>{
+      const deckId=active.key==='decks' && entry.id.replace(/^deck_/,'');
+      if (deckId && !entry.discovered && data.unlocked?.decks?.includes(deckId)) {
+        const emblem=({arcane:'grimoire',alchemist:'potion',oracle:'orb'})[deckId] || 'grimoire';
+        return '<article class="cw-collection-item available-deck"><img alt="" src="'+global.CWContent.portrait(emblem)+'"><div><b>'+esc(entry.name)+'</b><small>Available to play</small></div></article>';
+      }
       if (!entry.discovered) return '<article class="cw-collection-item unknown"><span class="cw-owned-emblem" aria-hidden="true">'+(entry.locked?'◇':'?')+'</span><div><b>'+esc(entry.locked?'Locked':'Undiscovered')+'</b>'+(entry.unlockHint?'<small>'+esc(entry.unlockHint)+'</small>':'')+'</div></article>';
       return '<article class="cw-collection-item"'+cardTip(entry,true)+'>'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
     }).join('');
@@ -580,7 +618,7 @@
     const index=Number(detail);
     const shopping=page==='shop-spell';
     const d=shopping?item(s.offers[index]):ownedItem(s,'consumables',index);
-    const body='<p class="cw-explain">'+itemDescription(d)+'</p>'+heading(targetLabel(d))+'<div class="cw-targets">'+targetCards(usableCards(s),d)+'</div>';
+    const body='<p class="cw-explain">'+itemDescription(d)+'</p>'+(d.maxTargets?heading(targetLabel(d))+'<div class="cw-targets">'+targetCards(usableCards(s),d)+'</div>':'');
     const label=shopping?'Buy & use '+cash(api().price(s,s.offers[index])):'Cast spell';
     const check=shopping?api().canBuyAndUse?.(s,index,targets):api().canUse?.(s,index,targets);
     return result('',d.name,body,button('close','Back')+button(shopping?'buy-use-cast':'cast',label,'cw-primary','',!targetsReady(d) || check===false));
@@ -600,16 +638,18 @@
     const slots=Array.from({length:cap},(_,i)=>{
       if (!s.familiars[i]) return '<span class="companion-empty" aria-hidden="true">✧</span>';
       const d=ownedItem(s,'familiars',i);
-      return '<button type="button" class="companion-card'+(i===0?' lit':'')+'" data-companion="'+i+'"'+cardTip(d)+' aria-expanded="false" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
+      return '<button type="button" class="companion-card" data-companion="'+i+'"'+cardTip(d)+' aria-expanded="false" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
     }).join('');
     return '<section class="companion-rail" aria-label="Equipped familiars"><div><h3>Familiars <small>'+s.familiars.length+' / '+cap+'</small></h3><div class="companion-slots">'+slots+'</div></div>'+marketPurse(s.money)+'</section>';
   }
   function marketInventory(s,cap) {
-    const slots=Array.from({length:Math.max(cap.familiars,s.familiars.length)},(_,i)=>{
-      if (!s.familiars[i]) return '<span class="moon-empty-slot" aria-hidden="true">✧</span>';
+    const count=s.familiars.length;
+    const slots=s.familiars.map((_,i)=>{
       const d=ownedItem(s,'familiars',i);
-      return '<button type="button" class="companion-card moon-companion'+(i===0?' lit':'')+'" data-companion="'+i+'"'+cardTip(d)+' aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
-    }).join('');
+      const tilt=count>1 ? (2*i/(count-1)-1)*Math.min(8,(count-1)*2) : 0;
+      const pose='--slot:'+i+';--tilt:'+tilt.toFixed(2)+'deg;--drop:'+Math.abs(tilt).toFixed(2)+'px';
+      return '<button type="button" class="companion-card moon-companion" style="'+pose+'" data-companion="'+i+'"'+cardTip(d)+' aria-expanded="false" aria-label="'+esc(d.name+'. '+d.description)+'">'+marketFamiliar(d)+'</button>';
+    }).join('') || '<span class="moon-empty-slot" aria-hidden="true">✧</span>';
     const spellSlots=Array.from({length:Math.max(cap.consumables,s.consumables.length)},(_,i)=>{
       if (!s.consumables[i]) return '<span class="moon-spell-empty" aria-hidden="true"><svg viewBox="0 0 24 24">'+global.CWContent.cardTypes.spell[1]+'</svg></span>';
       const d=ownedItem(s,'consumables',i);
@@ -618,7 +658,7 @@
     }).join('');
     return '<section class="companion-rail moon-roost" aria-label="Shop inventory">'+
       '<div class="moon-roost-title"><h3>Your familiars</h3><small>'+s.familiars.length+' / '+cap.familiars+' equipped</small></div>'+
-      '<div class="companion-slots">'+slots+'</div>'+
+      '<div class="companion-slots" style="--intervals:'+Math.max(1,count-1)+';--spread:'+Math.max(.56,.94-.045*count)+'">'+slots+'</div>'+
       '<div class="moon-spell-title"><h3>Your spells</h3><small>'+s.consumables.length+' / '+cap.consumables+' stored</small></div>'+
       '<div class="moon-spell-slots">'+spellSlots+'</div>'+marketPurse(s.money)+'</section>';
   }
@@ -628,7 +668,8 @@
   }
 
   function marketFamiliar(d) {
-    return '<span class="grimoire-card" data-rarity="'+esc(d.rarity || 'Common')+'">'+picture(d,true)+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i></span>';
+    const frame = global.CWFamiliarFrames;
+    return '<span class="grimoire-card"'+(frame?.attribute(d) || '')+' data-rarity="'+esc(d.rarity || 'Common')+'">'+picture(d.bossMuted ? {...d,bossMuted:false} : d,true,null)+(frame?.ornament(d) || '')+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i>'+(d.bossMuted?global.CWCardTip.cross:'')+'</span>';
   }
   function marketObject(d) {
     if (d.kind==='familiar') return marketFamiliar(d);
@@ -646,7 +687,6 @@
       const d=item(id), price=api().price(s,id), ok=api().canBuy(s,i);
       const family=global.CWContent.cardType(d);
       const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
-      const action={pack:'Open',familiar:'Equip',voucher:'Redeem',spell:'Store'}[d.kind] || 'Buy';
       let reason='';
       if (!ok) {
         if (s.money<price) reason='Need '+cash(price-s.money)+' more';
@@ -655,16 +695,20 @@
         else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
         else reason='Unavailable';
       }
-      const priceText='<span class="moon-price">'+cash(price)+'</span>';
-      const buy='<button type="button" class="cw-btn moon-buy" data-cw="buy" data-value="'+i+'" aria-label="'+esc(action+' '+d.name+' for '+cash(price)+(reason?'. '+reason:''))+'"'+(ok?'':' disabled')+'><span>'+esc(reason || action)+'</span>'+priceText+'</button>';
-      const cast=mayBuyAndUse(s,i,d)?button('buy-use','Buy & cast','moon-cast',i):'';
-      let effect=itemDescription(d);
-      if (d.kind==='pack') {
-        const pool={familiar:'familiars',star:'constellations',spell:'spells',spectral:'spectral spells',standard:'playing cards'}[d.pool];
-        effect='Pick <b>'+d.picks+'</b> of <b>'+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+'</b> '+esc(pool)+'.';
-      }
-      const rarity=d.kind==='familiar' && d.rarity?' · '+esc(d.rarity):'';
-      return '<article class="moon-item"'+cardTip(d,true)+' data-stock-type="'+esc(family || d.kind)+'"><div class="moon-art">'+marketObject(d)+'</div><div class="moon-copy"><small>'+esc(type)+rarity+'</small><h4>'+esc(d.name)+'</h4>'+badges(d)+'<p>'+effect+'</p></div><div class="moon-actions">'+buy+cast+'</div></article>';
+      const castable=mayBuyAndUse(s,i,d);
+      const description=d.kind==='pack'
+        ? d.description.replace(' of '+d.choices+' ', ' of '+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+' ')
+        : d.description;
+      const details=global.CWCardTip.details({...d,description},false).split('\n');
+      details.splice(1,0,type+(d.kind==='familiar' && d.rarity?' · '+d.rarity:''));
+      if (reason) details.push(reason);
+      if (castable) details.push('Select the spell to buy and cast it.');
+      const tip=global.CWCardTip.attribute(details.join('\n'));
+      const art=castable
+        ? '<button type="button" class="moon-art" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Inspect '+d.name)+'"'+tip+'>'+marketObject(d)+'</button>'
+        : '<div class="moon-art" tabindex="0" aria-label="'+esc(d.name)+'"'+tip+'>'+marketObject(d)+'</div>';
+      const buy='<button type="button" class="cw-btn moon-buy" data-cw="buy" data-value="'+i+'" aria-label="'+esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''))+'"'+(ok?'':' disabled')+'>Buy <span class="moon-price">'+cash(price)+'</span></button>';
+      return '<article class="moon-item" data-stock-type="'+esc(family || d.kind)+'">'+art+buy+'</article>';
     }
     const count=s.shopOfferCount ?? Math.max(0,s.offers.length-3);
     const shelf=(name,cls,indices,control='')=>'<section class="moon-shelf '+cls+'"><header><h3>'+name+'</h3>'+control+'</header><div class="moon-goods">'+indices.map(stockCard).join('')+'</div></section>';
@@ -778,14 +822,23 @@
   }
   function endView(s) {
     const won=s.phase==='won', challenge=api().CHALLENGES?.[s.challengeId];
-    const symbol=won?'☀':'☾';
-    const crest='<div class="verdict-art" aria-hidden="true"><i class="verdict-orbit"></i><div class="verdict-hand">'+
-      parlorCard('K','♦','ruby')+parlorCard('Q','♣','jade')+parlorCard('A',symbol,'omen')+'</div><div class="verdict-stars">✦ <i>✧</i> ✦</div></div>';
-    const score=won?'<b>'+num(s.stats.roundsWon)+'</b> blinds won':'<b>'+num(s.score)+'</b> / '+num(s.target)+' chips';
-    const summary='<div class="verdict-summary"><p>'+esc(won?(challenge?.name || 'The final blind is yours.') : api().blindInfo(s).name)+'</p>'+
-      '<div>'+score+'</div></div>';
-    const stats='<div class="verdict-stats">'+stat(won?'Antes cleared':'Ante reached',num(won?s.rules.anteLimit:s.ante))+
-      stat('Best hand',num(s.stats.bestScore))+stat(won?'Final purse':'Blinds won',won?cash(s.money):num(s.stats.roundsWon))+'</div>';
+    const last=s.lastScore;
+    const faces=last?.finalCards || (last?.scoring || []).map(id=>s.deck.find(card=>card.id===id)).filter(Boolean);
+    const fan=faces.map((c,i)=>{
+      const stone=c.enhancement==='stone';
+      const angle=(i-(faces.length-1)/2)*14;
+      return '<span class="verdict-leaf" style="--fan:'+angle+'deg;--order:'+i+'">'+
+        parlorCard(stone?'':esc(rank(c.rank)),stone?'◆':suits[c.suit],stone?'stone':red(c.suit)?'ruby':'amethyst')+'</span>';
+    }).join('');
+    const crest='<div class="verdict-art" aria-hidden="true"><div class="verdict-halo"></div><i class="verdict-orbit"></i>'+
+      '<div class="verdict-stars">✦ <i>✧</i> ✦</div><div class="verdict-hand">'+(fan || parlorCard('A',won?'☀':'☾','omen'))+'</div></div>';
+    const blind=api().blindInfo(s).name;
+    const outcome=won ? (challenge?challenge.name+' complete':blind+' defeated') : num(Math.max(0,s.target-s.score))+' chips short of '+blind;
+    const summary='<div class="verdict-summary">'+(last?'<div class="last-cast">Final hand <strong>'+esc(last.name)+'</strong></div>':'')+
+      '<p>'+esc(outcome)+'</p><div class="verdict-meter" aria-hidden="true"><i style="width:'+Math.min(100,100*s.score/Math.max(1,s.target))+'%"></i></div>'+
+      '<div class="verdict-total"><b>'+num(s.score)+'</b> / '+num(s.target)+' chips</div></div>';
+    const stats='<div class="verdict-stats">'+stat('Blinds won',num(s.stats.roundsWon))+
+      stat(s.stats.bestHand?'Best hand · '+s.stats.bestHand:'Best hand',num(s.stats.bestScore))+stat('Final purse',cash(s.money))+'</div>';
     const actions=button('replay','Play Again','verdict-play')+button('show-menu','Main Menu')+
       (won && !s.challengeId?button('endless','Continue Endless','verdict-endless'):'');
     return result('Ante '+s.ante+'  /  Round '+s.round,won?'You won!':'You lost',crest+summary+stats,actions);
@@ -845,10 +898,11 @@
     document.body.append(el);
     setTimeout(()=>el.remove(),2700);
   }
-  function act(name, value) {
+  function act(name, value, control) {
     const s=state() || {};
     const index=Number(value);
     if(name==='close') return close();
+    if(name==='deal-trick' && page==='lobby') return dealParlorTrick();
     if(name==='learn') { guideTab='rules'; return open('guide'); }
     if(name==='replay' && (s.phase==='won' || s.phase==='lost')) {
       backStack.length=0;
@@ -903,15 +957,18 @@
     }
     if(name==='use-item') {
       const d=ownedItem(s,'consumables',index);
-      if (d.maxTargets>0) return open('spell',String(index));
-      if(resolveCast(s,d,'use',index,[])) changed('select');
+      const sourceRect=control?.getBoundingClientRect();
+      if (d.maxTargets>0) return open('spell',String(index),sourceRect);
+      if(resolveCast(s,d,'use',index,[])) changed('select',sourceRect);
       else announce('That spell is unavailable right now.');
       return;
     }
+    if(name==='inspect-cast') return open('shop-spell',String(index),control.getBoundingClientRect());
     if(name==='buy-use') {
       const d=item(s.offers[index]);
-      if (d.maxTargets>0) return open('shop-spell',String(index));
-      if(resolveCast(s,d,'buyAndUse',index,[])) changed('buy');
+      const sourceRect=(control?.closest('.moon-item')?.querySelector('.moon-art') || control)?.getBoundingClientRect();
+      if (d.maxTargets>0) return open('shop-spell',String(index),sourceRect);
+      if(resolveCast(s,d,'buyAndUse',index,[])) changed('buy',sourceRect);
       else announce('That spell is unavailable right now.');
       return;
     }
@@ -931,17 +988,23 @@
     if(name==='cast' || name==='buy-use-cast') {
       const i=Number(detail), buying=name==='buy-use-cast';
       const d=buying?item(s.offers[i]):ownedItem(s,'consumables',i);
-      if(resolveCast(s,d,buying?'buyAndUse':'use',i,targets)) { close(); changed(buying?'buy':'select'); announce(d.name+' cast.'); }
+      const sourceRect=castSourceRect || control?.getBoundingClientRect();
+      if(resolveCast(s,d,buying?'buyAndUse':'use',i,targets)) {
+        close();
+        message=d.name+' cast.';
+        changed(buying?'buy':'select',sourceRect);
+      }
       else announce('Choose valid cards for this spell.');
       return;
     }
     if(name==='pick' || name==='pick-cast') {
       const ids=name==='pick-cast'?targets:[];
       const choice=item(s.pack.choices[index]);
+      const sourceRect=(control?.closest('.pack-slot') || layer.querySelector('.pack-slot.chosen') || control)?.getBoundingClientRect();
       if(!(isSpell(choice)?resolveCast(s,choice,'pick',index,ids):api().pick(s,index,ids))) { announce('Choose valid cards or make inventory space first.'); return; }
       detail='';
       targets=[];
-      changed('buy');
+      changed('buy',sourceRect);
       return;
     }
     const commands={
@@ -951,7 +1014,7 @@
       'move-left':['reorder',index,index-1],'move-right':['reorder',index,index+1],endless:['endless'],
       'reroll-boss':['rerollBoss'],'disable-boss':['disableBoss']
     };
-    if(commands[name]) perform(...commands[name]);
+    if(commands[name]) perform(control?.getBoundingClientRect(),...commands[name]);
   }
   global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page,getPage:()=>page};
 })(window);

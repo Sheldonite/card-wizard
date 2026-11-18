@@ -371,17 +371,43 @@
     }
     return effect;
   }
-  function applyReward(s,effect) {
-    if (effect.money) earn(s,effect.money);
-    const created = effect.generate && generate(s,effect.generate);
-    return Boolean(effect.money || created);
+  // Action feedback belongs to the current client, never to a saved run.
+  const familiarEvents = new WeakMap();
+  function drainFamiliarEvents(s) {
+    const events = familiarEvents.get(s) || [];
+    familiarEvents.delete(s);
+    return events;
   }
   function dispatch(s,event,extra) {
     const ctx = makeContext(s,extra);
     for (let i=0;i<s.familiars.length;i++) {
       const id = s.familiars[i];
+      const key = baseId(id);
+      const oldBonus = s.familiarMemory[key]?.bonus || 0;
       const effect = familiarEffect(s,i,event,ctx,s.familiarMemory);
-      if (applyReward(s,effect)) countUse(s,id);
+      const created = [];
+      if (effect.money) earn(s,effect.money);
+      if (effect.generate) generate(s,effect.generate,created);
+      if (effect.money || created.length) countUse(s,id);
+      const memory = s.familiarMemory[key];
+      let growth;
+      const stat = content.familiars[key].trackedStat;
+      if (stat && memory && memory.bonus > oldBonus) {
+        const snapshot = {...ctx,random:()=>0};
+        const before = content.trigger(key,"hand",snapshot,{...memory,bonus:oldBonus})[stat];
+        const after = content.trigger(key,"hand",snapshot,{...memory})[stat];
+        if (Number.isFinite(before) && Number.isFinite(after) && after > before) growth = {stat,before,after};
+      }
+      if (growth || effect.money || created.length) {
+        const fact = {event,familiarId:id};
+        if (extra?.item) fact.itemId = extra.item.id;
+        if (extra?.cards) fact.cardIds = extra.cards.map(c=>c.id);
+        if (growth) fact.growth = growth;
+        if (effect.money) fact.money = effect.money;
+        if (created.length) fact.created = created;
+        if (!familiarEvents.has(s)) familiarEvents.set(s,[]);
+        familiarEvents.get(s).push(fact);
+      }
       ctx.money = s.money;
       ctx.consumableCount = s.consumables.length;
     }
@@ -414,7 +440,7 @@
     const held = s.hand.filter(c=>!ids.includes(c.id) && !debuffed(s,c));
     const ctx = makeContext(s,{name,level,flushSuit,cards,scoring:active,held,handsLeft:s.hands - 1,totalHands:s.stats.handsPlayed + 1,
       playedCount:s.playedCount + 1,handCounts:{...s.handCounts,[name]:previous + 1},random:()=>random(roll)});
-    function apply(effect,label,source = {}) {
+    function apply(effect,label,source = {},origin = {}) {
       const labels = [];
       if (effect.chips) { chips += effect.chips; labels.push("+" + effect.chips + " chips"); }
       if (effect.mult) { mult += effect.mult; labels.push("+" + effect.mult + " Mult"); }
@@ -424,14 +450,23 @@
       if (effect.retriggers) labels.push("Retrigger");
       if (labels.length) {
         if (source.familiarId) used.add(source.familiarId);
-        steps.push({label,text:labels.join(" · "),...source,chips,mult});
+        const step = {label,text:labels.join(" · "),...source,chips,mult};
+        const fact = {...source};
+        for (const key of ["chips","mult","money","retriggers"]) if (effect[key]) fact[key] = effect[key];
+        if (effect.xmult != null && effect.xmult !== 1) fact.xmult = effect.xmult;
+        Object.assign(fact,origin);
+        Object.defineProperty(step,"fact",{value:fact});
+        steps.push(step);
       }
     }
-    function familiarAt(i,event,extra,resolved) {
+    function familiarAt(i,event,extra,resolved,repeatCapacity = 8) {
       const id = s.familiars[i];
       const raw = familiarEffect(s,i,event,{...ctx,...extra},memory,resolved);
       const effect = extra.retrigger && raw.retriggers ? {...raw,retriggers:0} : raw;
-      apply(effect,content.familiars[baseId(id)].name,{familiarId:id,...(extra.card && {cardId:extra.card.id})});
+      const origin = {event,pass:extra.pass || 0};
+      if (effect.retriggers) origin.retriggers = Math.min(effect.retriggers,repeatCapacity);
+      if (resolved[i]?.copy) origin.copiedFrom = s.familiars[i + (resolved[i].copy === "previous" ? -1 : 1)];
+      apply(effect,content.familiars[baseId(id)].name,{familiarId:id,...(extra.card && {cardId:extra.card.id})},origin);
       return effect.retriggers || 0;
     }
     const suppressed = {};
@@ -444,7 +479,7 @@
       let repeats = card.seal === "red" ? 1 : 0;
       for (let pass=0;pass<=repeats;pass++) {
         if (isHeld) {
-          if (enhancement === "steel") apply({xmult:1.5},label,{cardId:card.id});
+          if (enhancement === "steel") apply({xmult:1.5},label,{cardId:card.id},{event,pass});
         } else {
           const rank = cardIndex < bossValue(s,"noCardChips") ? 0 : card.rank === 14 ? 11 : Math.min(10,card.rank);
           const lucky = enhancement === "lucky";
@@ -453,15 +488,15 @@
           apply({chips:enhancement === "stone" ? 40 : rank + (enhancement === "bonus" ? 30 : 0),
             mult:enhancement === "mult" ? 4 : luckyMult ? 12 : 0,
             xmult:enhancement === "glass" ? 2 : 1,money:Number(card.seal === "gold") * 3 + Number(luckyMoney) * 8},
-          pass ? "Retrigger · " + label : label,{cardId:card.id});
+          pass ? "Retrigger · " + label : label,{cardId:card.id},{event,pass});
           const edition = market.editions[card.edition];
-          if (edition) apply(edition,edition.name,{cardId:card.id});
+          if (edition) apply(edition,edition.name,{cardId:card.id},{event:"edition",pass});
         }
         const resolved = [];
         for (let i=0;i<s.familiars.length;i++) {
           const effective = contextCard(card);
           const more = familiarAt(i,event,{card:effective.enhancement === enhancement ? effective : {...effective,enhancement},
-            cardIndex,retrigger:pass > 0},resolved);
+            cardIndex,pass,retrigger:pass > 0},resolved,8 - repeats);
           if (!pass) repeats = Math.min(8,repeats + more);
         }
       }
@@ -475,9 +510,9 @@
       const editionDef = market.editions[edition];
       const live = !bossSilences(s,i) && !s.rules.noFamiliarEffects &&
         (sticker !== "perishable" || (memory[baseId(id)]?.age || 0) < 5);
-      if (live && editionDef && edition !== "polychrome") apply(editionDef,editionDef.name,{familiarId:id});
+      if (live && editionDef && edition !== "polychrome") apply(editionDef,editionDef.name,{familiarId:id},{event:"edition",pass:0});
       familiarAt(i,"hand",{},resolvedHand);
-      if (live && editionDef && edition === "polychrome") apply(editionDef,editionDef.name,{familiarId:id});
+      if (live && editionDef && edition === "polychrome") apply(editionDef,editionDef.name,{familiarId:id},{event:"edition",pass:0});
     }
     if (s.rules.chipToMult) {
       apply({mult:Math.min(8,Math.floor(chips / s.rules.chipToMult))},DECKS[s.deckId].name);
@@ -552,6 +587,9 @@
     else {
       refill(s);
       if (s.hands === 0 || !s.hand.length) s.phase = "lost";
+    }
+    if (s.phase === "lost" || (s.phase === "payout" && s.blind === 2 && s.ante === s.rules.anteLimit)) {
+      result.finalCards = used.map(({rank,suit,enhancement}) => ({rank,suit,enhancement}));
     }
     return result;
   }
@@ -747,7 +785,7 @@
     if (def.sticker) discover(s,"sticker_" + def.sticker);
     return true;
   }
-  function generate(s,value) {
+  function generate(s,value,created) {
     const {pool,count = 1} = typeof value === "string" ? {pool:value} : value;
     const ids = [];
     for (let i=0;i<count;i++) {
@@ -755,6 +793,11 @@
         choose(s,spellPool(s,pool).filter(def=>!ids.includes(def.id)))?.id;
       if (!ref || !acquire(s,ref)) break;
       ids.push(ref);
+      if (created) {
+        const category = pool === "legendary" ? "familiars" : "consumables";
+        const index = s[category].length - 1;
+        created.push({id:s[category][index],category,index});
+      }
     }
     return ids.length > 0;
   }
@@ -959,7 +1002,7 @@
   }
 
   const api = {HANDS,DECKS,STAKES,CHALLENGES,SUITS,BOSSES,TAGS,newRun,restore,blindInfo,handSize,startBlind,skipBlind,debuffed,
-    evaluate,preview,play,discard,cashOut,endless,leaveShop,item,ownedItem,price,sellPrice,rerollPrice,reroll,
+    evaluate,preview,play,discard,cashOut,endless,leaveShop,item,ownedItem,price,sellPrice,rerollPrice,reroll,drainFamiliarEvents,
     capacity,canBuy,buy,canBuyAndUse,buyAndUse,canPick,pick,closePack,claimRewardPack,canSell,sell,sellConsumable,reorder,
     canUse,use,canRerollBoss,rerollBoss,bossRerollPrice,canDisableBoss,disableBoss};
   root.CW = api;

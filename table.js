@@ -170,7 +170,8 @@
       const label=(type==='pack'?'Booster':type)+' '+it.name+subtitle+': '+it.description;
       const badge=marks.length?'<small class="item-mark" aria-hidden="true">'+esc(marks[0].charAt(0))+'</small>':'';
       const stack=it.stackAmount?'<small class="familiar-stack stat-'+(it.stackStat==='chips'?'chips':'mult')+'" aria-hidden="true">'+esc(it.stackAmount)+'</small>':'';
-      return '<button class="item-slot item-card" data-family="'+type+'" data-item="'+esc(ids[i])+'" aria-expanded="false" data-slot="'+i+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" '+CWCardTip.attribute(CWCardTip.details(it))+(spell?'':CWCardTip.attribute(CWCardTip.details(it,false,true),'data-extra-tip'))+'><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+window.CWContent.typeBadge(type,true)+window.CWContent.familiarFinish(it,upgradeAge(it))+badge+stack+(it.bossMuted?CWCardTip.cross:'')+'<b>'+esc(it.name)+'</b></button>';
+      const frame=window.CWFamiliarFrames;
+      return '<button class="item-slot item-card"'+(frame?.attribute(it) || '')+' data-family="'+type+'" data-item="'+esc(ids[i])+'" aria-expanded="false" data-slot="'+i+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" '+CWCardTip.attribute(CWCardTip.details(it))+(spell?'':CWCardTip.attribute(CWCardTip.details(it,false,true),'data-extra-tip'))+'><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+(frame?.ornament(it) || '')+window.CWContent.typeBadge(type,true)+window.CWContent.familiarFinish(it,upgradeAge(it))+badge+stack+(it.bossMuted?CWCardTip.cross:'')+'<b>'+esc(it.name)+'</b></button>';
     }).join('');
   }
   function selectedInPlayOrder(){return currentHand.filter(c=>selected.has(c.id)).map(c=>c.id);}
@@ -286,6 +287,62 @@
   function focusCard(id){
     [...$('hand').children].find(card=>card.dataset.card===id)?.focus({preventScroll:true});
   }
+  function familiarSlot(ref, panel) {
+    const index=run.familiars.indexOf(ref);
+    if(index<0)return null;
+    return panel ? panel.querySelector('[data-companion="'+index+'"]') : $('familiars').children[index];
+  }
+  const frameTimers=new WeakMap();
+  function familiarCue(fact, anchors, speed=prefs.speed, still=prefs.reducedMotion) {
+    if(!fact?.familiarId || !anchors.source)return false;
+    const id=CWMarket.splitVariant(fact.familiarId).id;
+    const drew=CWFamiliarScoreFX.play(id,{...anchors,speed,reducedMotion:still,facts:fact});
+    if(drew){
+      const frame=anchors.source.matches?.('[data-familiar-frame]') ? anchors.source : anchors.source.querySelector?.('[data-familiar-frame]');
+      if(frame){
+        clearTimeout(frameTimers.get(frame));
+        frame.setAttribute('data-proc-active','');
+        frameTimers.set(frame,setTimeout(()=>frame.removeAttribute('data-proc-active'),480/speed));
+      }
+    }
+    return drew;
+  }
+  function playFamiliarEvents(card) {
+    const events=CW.drainFamiliarEvents(run);
+    if(!events.length)return;
+    const panel=document.querySelector('.cw-backdrop:not([hidden]) .cw-dialog');
+    for(const fact of events){
+      const id=CWMarket.splitVariant(fact.familiarId).id;
+      if(!(id==='fox_in_ink' && fact.event==='cast' && fact.growth) &&
+         !(id==='linen_sprite' && fact.event==='discard' && fact.created?.length))continue;
+      let source=familiarSlot(fact.familiarId,panel);
+      const spell=fact.created?.find(entry=>entry.category==='consumables');
+      const consumable=spell && (panel ? panel.querySelector('[data-owned-category="consumables"][data-slot="'+spell.index+'"]') : $('spells').children[spell.index]);
+      // A pack can stay open after a cast and hide the entire familiar rail.
+      const bounds=source?.getBoundingClientRect();
+      const railVisible=bounds?.width && bounds.bottom>0 && bounds.top<window.innerHeight;
+      if(!railVisible && id==='fox_in_ink' && panel){
+        const item=CW.ownedItem(run,'familiars',run.familiars.indexOf(fact.familiarId));
+        if(!item)continue;
+        document.querySelector('.familiar-proc-witness')?.remove();
+        source=document.createElement('div');
+        source.className='familiar-proc-witness';
+        source.setAttribute('aria-hidden','true');
+        const portrait=document.createElement('img');
+        portrait.src=CWContent.portrait(item.art);
+        portrait.alt='';
+        source.append(portrait,item.name+'  +'+fact.growth.after+' Mult');
+        document.body.append(source);
+        setTimeout(()=>source.remove(),Math.max(700,1200/prefs.speed));
+      }
+      if(familiarCue(fact,{source,card,consumable})){
+        audio.event('proc-'+id);
+        const name=CW.item(fact.familiarId).name;
+        const message=spell ? name+' created '+CW.item(spell.id).name+'.' : name+' grew to +'+fact.growth.after+' Mult.';
+        $('announce').textContent+= ' '+message;
+      }
+    }
+  }
   function animateCards(ids,discarding){
     const lane = $('cast-prompt').querySelector('.cw-fx-lane');
     const nodes = [...$('hand').children];
@@ -381,6 +438,8 @@
       if(moving && node)node.animate(keyframes,{duration:fxTime(duration),easing:'ease-out'});
     };
     const blindTarget=run.target;
+    const walletBefore=run.money;
+    const discardOrigin=discarding ? [...$('hand').children].find(el=>el.dataset.card===String(ids[0]))?.getBoundingClientRect() : null;
     const counters=$('chips').closest('.score-components');
     let revealRewards,fireworks;
     let ghosts=[];
@@ -439,20 +498,44 @@
       count(steps[0]?.chips??0,steps[0]?.mult??0);
       call.textContent=result.blocked?steps[0]?.label:'Base hand';
       const shine=[{filter:'brightness(1)'},{filter:'brightness(1.22) drop-shadow(0 0 4px #edc174)',offset:.29},{filter:'brightness(1)'}];
+      const featured=new Set();
+      function showProc(step,still){
+        const fact=step.fact;
+        if(!fact?.familiarId)return false;
+        const first=!featured.has(fact.familiarId);
+        if(!first && still)return false;
+        const card=ghosts.find(c=>c.id===fact.cardId)?.ghost ||
+          [...$('hand').children].find(el=>el.dataset.card===String(fact.cardId));
+        const triggered=familiarCue(fact,{
+          source:familiarSlot(fact.familiarId), card,
+          neighbor:fact.copiedFrom && familiarSlot(fact.copiedFrom),
+          chips:chipText,mult:multText,money:$('money')
+        },prefs.speed*(first?1:2),still);
+        if(triggered)featured.add(fact.familiarId);
+        return triggered;
+      }
       if(moving){
         await wait(180);
         const beat=Math.min(115,Math.floor(1250/Math.max(1,steps.length-1)));
+        let wallet=walletBefore;
         for(let i=1;i<steps.length;i++){
           const step=steps[i],last=steps[i-1],strongest=i===peak;
+          const first=!featured.has(step.familiarId);
+          const signature=showProc(step,false);
+          if(signature && first){
+            audio.event('proc-'+CWMarket.splitVariant(step.familiarId).id);
+            await wait(260);
+          }
           count(step.chips??0,step.mult??0);
-          call.textContent=step.text;
+          if(step.fact?.money){wallet+=step.fact.money;$('money').textContent='$'+num(wallet);}
+          call.textContent=signature ? step.label+' · '+step.text : step.text;
           window.CWContent.colorStats(call);
           call.classList.toggle('cw-fx-peak',strongest);
           let source=ghosts.find(c=>c.id===step.cardId)?.ghost;
           if(!source && step.cardId)source=[...$('hand').children].find(c=>c.dataset.card===String(step.cardId));
           if(step.familiarId)source=[...$('familiars').children].find(c=>c.dataset.item===step.familiarId || c.dataset.baseItem===step.familiarId);
-          pulse(source,shine,190);
-          if(source){
+          if(!signature)pulse(source,shine,190);
+          if(source && !signature){
             const multGain=step.mult-last.mult;
             const chipGain=step.chips-last.chips;
             const badge=document.createElement('b');
@@ -472,9 +555,11 @@
           }
           if(last.chips!==step.chips)pulse(chipText,[{scale:'1.16'},{scale:'1'}],135);
           if(last.mult!==step.mult)pulse(multText,[{scale:strongest?'1.31':'1.16'},{scale:'1'}],190);
-          if(i<=6 || strongest || i===steps.length-1)audio.event('score',Math.min(8,i));
+          if(!signature && (i<=6 || strongest || i===steps.length-1))audio.event('score',Math.min(8,i));
           await wait(beat+(strongest?210:0));
         }
+      }else{
+        for(const step of steps)showProc(step,true);
       }
       count(result.chips,result.mult);
       if(cleared)title.textContent=singleHandClear?'One-hand clear':'Blind cleared';
@@ -506,7 +591,8 @@
         $('round-score').classList.add('score-pop');
         pulse(cleared?call:equation,[{scale:'.94'},{scale:'1.04',offset:.4},{scale:'1'}],260);
       }
-      $('announce').textContent=result.name+', '+num(result.total)+' chips. Round score '+num(run.score)+'.'+(cleared?' Blind cleared.':'');
+      const activated=[...featured].map(ref=>CW.item(ref).name).join(', ');
+      $('announce').textContent=result.name+', '+num(result.total)+' chips. Round score '+num(run.score)+'.'+(activated?' Activated '+activated+'.':'')+(cleared?' Blind cleared.':'');
       if(cleared)audio.event('win');
       if(run.phase==='lost')audio.event('lose');
       const toRewards=moving && run.phase==='payout';
@@ -521,6 +607,7 @@
       $('round-score').classList.remove('score-pop');
       busy=false;
       render(false);
+      if(discarding)playFamiliarEvents(discardOrigin);
       revealRewards?.();
       if(run.phase==='play'){
         audio.event('deal');
@@ -688,7 +775,7 @@
   });
   function moveFocus(direction){
     const scope=document.querySelector('.cw-backdrop:not([hidden])') || document.querySelector('.game');
-    const controls=[...scope.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled)')].filter(el=>el.getClientRects().length);
+    const controls=[...scope.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary')].filter(el=>el.getClientRects().length);
     const active=document.activeElement;
     if(!controls.includes(active)){controls[0]?.focus();return;}
     const horizontal=direction>=14;
@@ -706,6 +793,7 @@
       if(sign<0)active.stepDown();
       else active.stepUp();
       active.dispatchEvent(new Event('input',{bubbles:true}));
+      active.dispatchEvent(new Event('change',{bubbles:true}));
       return;
     }
     const center=el=>{
@@ -761,7 +849,7 @@
     hasSavedRun:()=>hasRun,
     hasRun:()=>hasRun,
     showMenu,continueRun,setSetting,restart,
-    upgradeAge,onChange:()=>render(),
+    upgradeAge,onChange:()=>render(),playFamiliarEvents,
     playSound:(name,step)=>audio.event(name,step)
   });
   updatePrefs();render();

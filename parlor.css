@@ -13,6 +13,24 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
   border-bottom-color:#765947;
 }
 .in-parlor .cw-dialog:not([data-page="lobby"]) .cw-head h2 {color:#ffe6b4}
+.in-parlor .cw-head:has(.parlor-emblem) {grid-template-columns:auto minmax(0,1fr) auto;gap:14px}
+.parlor-emblem {width:44px;height:46px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 3px 2px #170e23)}
+.deck-preview,.grimoire-lesson {display:flex;align-items:center;gap:22px;min-height:92px;margin:0 0 20px;padding:14px 20px;border:1px solid #82614e;border-radius:7px;background:radial-gradient(ellipse at 4% 50%,#694362,transparent 70%),#271c30}
+.deck-preview>i {flex:0 0 41px;height:58px;transform:rotate(-9deg);border-radius:3px;background:url("assets/cardback.svg") center/contain no-repeat;box-shadow:2px 2px #d6bd95,4px 4px #4e394c,6px 6px #ac917c}
+.deck-preview strong,.grimoire-lesson b {font:700 22px/1.2 var(--pixel);color:#ffdf9d}
+.deck-companions {display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;color:#e2d2e7}
+.deck-companions span {display:inline-flex;align-items:center;gap:5px}
+.deck-companions img {width:24px;height:24px;object-fit:contain;image-rendering:pixelated}
+.available-deck {border-color:#967a56;background:linear-gradient(115deg,#473344,#2a2130)}
+.available-deck>img {width:38px;height:44px;object-fit:contain;image-rendering:pixelated}
+.available-deck small {color:#ead19e}
+.practice-seed {margin-top:14px;color:#d6c6d6}
+.practice-seed summary {width:fit-content;cursor:pointer;padding:6px 0;font-size:13px}
+.practice-seed summary:focus-visible {outline:2px solid #ffe6aa;outline-offset:3px}
+.practice-seed .cw-seed-form {margin-top:4px}
+.lesson-hand {position:relative;flex:0 0 52px;height:60px}
+.lesson-hand .parlor-card {font-size:22px}
+.grimoire-lesson p {margin:4px 0 0;color:#eadfea}
 .in-parlor .cw-x {min-width:38px;min-height:38px}
 .in-parlor:has([data-page="lobby"]) {padding:0;background:#150e20}
 .cw-dialog[data-page="lobby"] {
@@ -36,6 +54,12 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
   background:linear-gradient(90deg,#0e081a88,transparent 59%),linear-gradient(0deg,#100a1efa,transparent 24%);
 }
 .dealer-window {position:absolute;left:59.5%;top:39%;width:20%;height:24%;overflow:hidden;filter:drop-shadow(0 2px 2px #160d22)}
+.dealer-window {border:0;padding:0;background:transparent;pointer-events:auto;cursor:pointer;border-radius:12%}
+.dealer-window:is(:hover,:focus-visible) .dealer-cat {filter:drop-shadow(0 0 3px #ffdc8c)}
+.dealer-call {position:absolute;left:60.5%;top:68%;translate:-50% 0;border:1px solid #cbac77;border-radius:3px;background:#24152ee8;color:#ffe3a6;padding:3px 9px;white-space:nowrap;font:700 clamp(11px,1vw,18px) var(--sans)}
+.dealer-call:empty {display:none}
+.trick-card {position:absolute;inset:0;transform-origin:50% 100%;animation:verdict-spread .44s ease-out both;animation-delay:calc(var(--order) * 45ms);transform:rotate(var(--fan))}
+.dealer-hand .trick-card .parlor-card {transform:none;translate:none}
 .dealer-cat {
   position:absolute;inset:auto 0 0;aspect-ratio:420/260;
   background:url("assets/moon-market.webp") 92.294% 49.603% / 365.715% 196.924%;
@@ -45,6 +69,13 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .parlor-lantern {position:absolute;left:52.5%;top:12%;width:12%;aspect-ratio:1;background:radial-gradient(closest-side,#ffbc555c,transparent);mix-blend-mode:screen;animation:lamp-breathe 4s ease-in-out infinite alternate}
 .parlor-dust i {position:absolute;left:var(--x);top:var(--y);width:4px;height:4px;background:#ffdfae;box-shadow:0 0 6px #ffc055;animation:parlor-mote 6.5s var(--delay) ease-in-out infinite}
 .dealer-hand {position:absolute;left:58%;top:49%;width:7%;aspect-ratio:5/6;filter:drop-shadow(0 6px 6px #170e2b99);animation:levitate 4.8s ease-in-out infinite}
+.dealer-hand .amethyst {animation:dealer-toss 16s ease-in-out infinite}
+@keyframes dealer-toss {
+  0%,20%,62%,100% {transform:rotate(-5deg)}
+  35% {transform:translate(22%,-38%) rotate(12deg)}
+  46% {transform:translate(11%,-65%) rotate(-14deg)}
+  54% {transform:translate(-5%,-18%) rotate(-9deg)}
+}
 .parlor-card {
   --angle:0deg;position:absolute;left:15%;top:0;width:67%;height:84%;display:grid;place-items:center;
   background:linear-gradient(130deg,#fff3d3,#eacfa1);border:2px solid #b89868;
@@ -125,11 +156,24 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .verdict-hand .parlor-card {font-size:38px}
 .verdict-hand .omen {--angle:-5deg;color:var(--omen);border-color:var(--trim);background:radial-gradient(ellipse at 50% 28%,#594261,#29203c 68%);box-shadow:inset 0 0 0 2px #39253e,inset 0 0 0 3px var(--trim),0 4px #23162b}
 .verdict-hand .omen span {font-size:1.25em;text-shadow:0 0 10px var(--aura)}
+.verdict-halo {position:absolute;left:50%;top:50%;width:min(70%,275px);aspect-ratio:1;translate:-50% -50%;pointer-events:none}
+[data-page="won"] .verdict-halo {background:repeating-conic-gradient(from 3deg,transparent 0deg 12deg,#f7c06790 13deg,transparent 15deg 22deg);mask-image:radial-gradient(closest-side,transparent 36%,#0008 54%,transparent 94%);animation:omen-orbit 56s linear infinite}
+[data-page="lost"] .verdict-halo {width:96px;border-radius:50%;height:96px;background:#32243f;box-shadow:-7px 1px 0 #dbbfdf, -12px 1px 25px #d29bdf51;translate:-83% -57%}
+[data-page="lost"] .verdict-orbit {opacity:.24}
+[data-page="lost"] .verdict-hand {animation:none;rotate:-4deg}
+.verdict-leaf {position:absolute;inset:0;transform:rotate(var(--fan));transform-origin:50% 118%;animation:verdict-spread .68s cubic-bezier(.22,.8,.25,1) both;animation-delay:calc(var(--order) * 55ms)}
+.verdict-leaf .parlor-card {transform:none;translate:none;width:62%;height:84%;left:19%;font-size:clamp(22px,3vw,40px)}
+.verdict-leaf .stone {background:linear-gradient(130deg,#bdb7be,#867e93);color:#544958}
+@keyframes verdict-spread {from{opacity:0;transform:translateY(12%) rotate(0)} to{opacity:1;transform:rotate(var(--fan))}}
 .verdict-stars {position:absolute;inset:20% 18% 0;color:var(--omen);display:flex;align-items:flex-start;justify-content:space-between;font-size:18px;animation:twinkle 3s ease-in-out infinite alternate}
 .verdict-stars i {align-self:flex-end;font-style:normal}
 .verdict-summary p {font:italic 19px/1.3 Georgia;color:#eddbed;margin:0 0 6px}
 .verdict-summary>div {font:15px var(--mono);color:#cebfcf}
 .verdict-summary b {color:#fff0d5}
+.verdict-summary .last-cast {font:10px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;margin:6px 0 11px}
+.last-cast strong {margin-left:4px;color:var(--omen)}
+.verdict-meter {width:min(215px,88%);height:5px;margin:10px auto 6px;background:#100d1b;border:1px solid #79647f;border-radius:4px;overflow:hidden}
+.verdict-meter i {display:block;height:100%;background:var(--omen)}
 .verdict-stats {margin:19px 0 0;padding:13px 0;border-block:1px solid #ac886a57;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 .verdict-stats .cw-stat {min-width:0;display:grid;gap:4px;border:0;border-radius:0;background:none;text-align:center;padding:0 3px}
 .verdict-stats .cw-stat+.cw-stat {border-left:1px solid #967c804f}
@@ -140,6 +184,17 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .at-verdict .cw-footer .verdict-endless {flex:0 0 100%;background:transparent;border:0;box-shadow:none;color:#eed396;min-height:36px}
 @keyframes omen-orbit {to{rotate:360deg}}
 @keyframes verdict-deal {from{opacity:.2;transform:translateY(30px) rotate(-2deg) scale(.94)}to{opacity:1;transform:none}}
+/* Victory mounts the winning hand in a gilt frame. Loss keeps the last table in view. */
+.at-verdict [data-page="won"] .verdict-art {background:radial-gradient(ellipse at 50% 125%,#c9944d52,transparent 68%),linear-gradient(120deg,#3d283f,#312038 65%,#473045);border:1px solid #ad875b;border-radius:50% 50% 4px 4px / 24% 24% 4px 4px}
+.at-verdict [data-page="won"] .verdict-art::after {content:"";position:absolute;inset:5px;border:1px solid #d2ab6e61;border-radius:inherit;pointer-events:none}
+@media (min-width:760px) and (min-height:500px) {
+  .at-verdict .cw-dialog[data-page="won"] {width:min(720px,90vw);padding:16px 24px 8px}
+  .at-verdict [data-page="won"] .cw-body {display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1fr);align-items:center;column-gap:28px;padding:14px 15px 6px}
+  .at-verdict [data-page="won"] .verdict-art {grid-row:span 2;height:200px;margin:0}
+  .at-verdict [data-page="won"] .verdict-hand {top:26%;height:59%}
+  .at-verdict [data-page="won"] .verdict-summary {align-self:end}
+  .at-verdict [data-page="won"] .verdict-stats {align-self:start;margin-top:16px}
+}
 @media(max-width:700px) and (min-height:480px), (max-aspect-ratio:4/5) {
   .cw-dialog[data-page="lobby"] .cw-body {display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(0deg,#160e22,#26152e 51%,transparent 72%)}
   .parlor-scene {bottom:auto;height:57%;width:100%;z-index:-1}

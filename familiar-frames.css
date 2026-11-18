@@ -1,0 +1,56 @@
+/* The trim shares the portrait's hit area and keeps the existing card controls above it. */
+[data-familiar-frame] {
+  position:relative;
+  isolation:isolate;
+}
+.cw-familiar-trim {
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:1;
+}
+[data-familiar-frame=daybreak_minnow] {--frame-edge:#8bd5d1;--frame-dark:#24434f;}
+[data-familiar-frame=tin_echo] {--frame-edge:#cbd2c1;--frame-dark:#3a494c;}
+[data-familiar-frame=copper_plover] {--frame-edge:#e4a474;--frame-dark:#56372e;}
+[data-familiar-frame=linen_sprite] {--frame-edge:#ddcf9e;--frame-dark:#574a3b;}
+[data-familiar-frame=fox_in_ink] {--frame-edge:#cf9576;--frame-dark:#442733;}
+[data-familiar-frame=second_shadow] {--frame-edge:#aaa7c0;--frame-dark:#2d293c;}
+.grimoire-card[data-familiar-frame] {
+  border-color:var(--frame-dark);
+  background:linear-gradient(135deg,var(--frame-edge),var(--frame-dark) 12%,var(--frame-dark) 86%,var(--frame-edge));
+  box-shadow:0 3px 6px #160e1be6;
+}
+.grimoire-card[data-familiar-frame] .cw-owned-emblem[data-family] {
+  inset:3% 3% 13%;
+  border:1px solid var(--frame-dark);
+  border-radius:8% 8% 15% 15%;
+}
+.grimoire-card[data-familiar-frame] .grimoire-name {
+  z-index:2;
+  inset-inline:7%;
+  border-color:var(--frame-edge);
+  background:linear-gradient(var(--frame-dark),color-mix(in srgb,var(--frame-dark) 75%,#100c18));
+}
+.grimoire-card[data-familiar-frame] .grimoire-jewel {display:block;z-index:2;width:6%;bottom:2.5%;left:47%;}
+[data-familiar-frame] > :is(b,.type-badge,.familiar-stack,.item-mark) {z-index:3;}
+.frame-ink-mark {fill:#634347;}
+.frame-ink-mark.charged {fill:#ff927f;stroke:#ffc18e;stroke-width:.5;}
+
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) [data-proc-active] .frame-waterline {animation:frame-tide .42s ease-out;}
+  body:not(.still) [data-proc-active] .frame-bell {transform-origin:50% 3%;animation:frame-chime .36s ease-out;}
+  body:not(.still) [data-proc-active] .frame-stamp {transform-box:fill-box;transform-origin:center;animation:frame-strike .36s ease-out;}
+  body:not(.still) [data-proc-active] .frame-thread {stroke-dasharray:12 4;animation:frame-spool .4s linear;}
+  body:not(.still) [data-proc-active] .frame-ink-brush {transform-origin:top;transform-box:fill-box;animation:frame-dip .38s ease-in-out;}
+  body:not(.still) [data-proc-active] .frame-shadow-notch {animation:frame-shadow-slip .38s ease-out;}
+}
+@keyframes frame-tide {40% {stroke:#fffddd;stroke-width:3.5;transform:translateY(-2px);}}
+@keyframes frame-chime {25% {transform:rotate(5deg);}65% {transform:rotate(-3deg);}}
+@keyframes frame-strike {45% {transform:translateY(2px) scale(.82);filter:brightness(1.6);}}
+@keyframes frame-spool {from {stroke-dashoffset:32;}to {stroke-dashoffset:0;}}
+@keyframes frame-dip {45% {transform:translateY(3px) rotate(-8deg);}}
+@keyframes frame-shadow-slip {40% {transform:translateX(4px);fill:#ded5ff;}}

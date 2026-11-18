@@ -117,28 +117,21 @@
   display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));align-content:start;
   gap:8px; padding:8px;flex:1;
 }
-.moon-item,.moon-sold {
+.moon-sold {
   min-width:0;border:1px solid #544456;border-radius:6px;background:#241e2d;
 }
 .moon-item {
-  display:flex;flex-direction:column;overflow:hidden;position:relative;
-  box-shadow:0 3px 5px #130d1b3d;--glow:#cba3e4;
+  min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:6px 0 8px;
 }
-.moon-item[data-stock-type="pack"] { --glow:#84c3da; }
-.moon-item[data-stock-type="voucher"] { --glow:#debc7f; }
-.moon-item:is(:hover,:focus-within) { border-color:var(--trim); }
 .moon-art {
-  position:relative;isolation:isolate;display:grid;place-items:center;height:clamp(92px,14vh,154px);min-height:80px;padding:6px;
-  background:
-    radial-gradient(circle at 20% 25%,#f7dead85 0 .7px,transparent 1.4px),
-    radial-gradient(circle at 81% 43%,#ffe1b37a 0 1px,transparent 1.7px),
-    radial-gradient(circle at 77% 19%,#ffe1b34d 0 1px,transparent 1.7px),
-    radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--glow) 22%,#241e2c),transparent 85%),#27202f;
-  border-bottom:1px solid #78637740;
+  display:grid;place-items:center;position:relative;isolation:isolate;
+  width:100%;height:clamp(124px,19vh,205px);padding:6px;
+  color:inherit;background:transparent;border:0;border-radius:6px;
 }
-.moon-art::before {
-  content:"";position:absolute;z-index:-1; width:80px;height:80px;border:1px solid #c0a2aa26;
-  border-radius:50%;box-shadow:0 0 0 6px #9a84a009,0 0 0 7px #baa2bf14;
+.moon-art:focus-visible {outline:2px solid #ecc985;outline-offset:-2px;}
+.moon-art:is(:hover,:focus-visible)>* {scale:1.035;}
+@media(prefers-reduced-motion:no-preference) {
+  .moon-art>* {transition:scale .14s ease-out;}
 }
 .moon-art>.cw-item-image[data-family], .moon-art .card-display { 
   width:auto;height:100%;max-width:95%;min-height:0;aspect-ratio:3/4;padding:0;border:0;border-radius:4px;background:none;
@@ -146,20 +139,14 @@
 }
 .moon-art .cw-item-image img { width:100%; height:100%;object-fit:contain;image-rendering:pixelated;display:block; }
 .moon-art .type-badge { display:none; }
-.moon-copy { padding:9px 10px 6px;flex:1; }
-.moon-copy small { color:var(--accent);font-size:9px; }
-.moon-copy h4 { margin:3px 0 5px;color:#fff1dc;font:600 clamp(16px,1.34vw,21px)/1.1 Georgia,serif; }
-.moon-copy p { margin:0;color:#e2d7e4;font-size:13px;line-height:1.36; }
-.moon-actions { display:flex;flex-wrap:wrap;gap:5px; padding:4px 8px 9px; }
 .cw-dialog[data-page="shop"] .moon-buy {
-  display:flex;align-items:center;justify-content:space-between;gap:4px;width:100%;padding:5px 8px;
+  display:flex;align-items:center;justify-content:center;gap:5px;max-width:100%;width:auto;padding:5px 13px;
   min-height:32px;border:1px solid #a28764;border-radius:5px;color:#fff1d4;background:#504033;
   box-shadow:inset 0 1px #eee0b616,0 2px #120e19;font-size:13px;
 }
 .cw-dialog[data-page="shop"] .moon-buy:hover:enabled { color:#33211c;background:#f1cf89; border-color:#ffe3a4; }
 .cw-dialog[data-page="shop"] .moon-buy:disabled { opacity:1;color:#c9bdcb;border-color:#514452;background:#332b37; font-size:12px; }
 .moon-price { display:inline-flex;align-items:center;gap:3px;font-weight:800;white-space:nowrap;}
-.cw-dialog[data-page="shop"] .moon-cast { width:100%;min-height:25px;padding:2px;font-size:12px; }
 .moon-sold {display:grid;align-content:center;justify-items:center;min-height:158px;gap:8px;color:#c3acc4;border-style:dashed;font-family:Georgia,serif;}
 .moon-sold span {font-size:35px;color:#8b728d;}
 /* Crimped foil booster wrappers and the merchant's stamped voucher. */
@@ -204,12 +191,7 @@
   .moon-shelves {grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
   .moon-stock {grid-column:1/-1;}
   .moon-stock .moon-goods {grid-template-columns:repeat(auto-fit,minmax(min(100%,195px),1fr));}
-  .moon-stock .moon-item {display:grid;grid-template-columns:minmax(65px,29%) 1fr;grid-template-rows:1fr auto;}
-  .moon-stock .moon-art {grid-row:span 2;height:100%;min-height:98px;max-height:190px;border-bottom:0;}
-  .moon-stock .moon-art>.cw-item-image {height:auto;width:min(100%,100px);}
-  .moon-stock .moon-copy {padding-block:7px 4px;}
   .moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
-  .moon-vouchers .moon-art {height:94px;}
   .moon-roost {margin-bottom:10px;}
 }
 @media(max-width:650px) {
@@ -230,15 +212,8 @@
   .moon-shelves {grid-template-columns:1fr;gap:9px;}
   .moon-stock {grid-column:auto;}
   .moon-stock .moon-goods,.moon-packs .moon-goods {grid-template-columns:repeat(2,minmax(0,1fr));}
-  .moon-stock .moon-item {display:flex;}
-  .moon-stock .moon-art,.moon-art {height:86px;min-height:86px;max-height:none;}
-  .moon-stock .moon-art>.cw-item-image {height:100%;width:auto;}
-  .moon-copy {padding:7px;}
-  .moon-copy p {font-size:12px;}
   .moon-goods {gap:5px;padding:5px;}
   .moon-shelf>header {min-height:34px;}
-  .moon-vouchers .moon-item {display:grid;grid-template-columns:27% 1fr;grid-template-rows:1fr auto;}
-  .moon-vouchers .moon-art {height:100%;min-height:92px;grid-row:span 2;}
   .moon-vouchers .moon-warrant {height:45px;}
   .moon-vouchers .moon-warrant i {font-size:10px;}
   .cw-backdrop .cw-dialog[data-page="shop"] .cw-footer {padding:7px;gap:4px;}
@@ -276,8 +251,25 @@
 .moon-roost .moon-roost-title,.moon-spell-title {display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 9px;align-self:end}
 .moon-roost .moon-roost-title {grid-area:familiar-title}
 .moon-roost .companion-slots {
-  grid-area:familiars;align-self:start;align-items:center;gap:8px;
-  --card-width:min(clamp(80px,8.5vw,122px),calc((100% - 32px) / 5));
+  grid-area:familiars;align-self:start;display:grid;grid-template-columns:minmax(0,1fr);
+  justify-content:stretch;justify-items:start;gap:0;min-width:0;padding:12px 8px 14px;
+  isolation:isolate;--card-width:min(100%,clamp(78px,9.5vw,134px));
+}
+.moon-roost .moon-companion,.moon-roost .moon-empty-slot {grid-area:1 / 1;}
+.moon-roost .moon-companion {
+  position:relative;left:calc(var(--slot) * min(var(--card-width) * var(--spread), (100% - var(--card-width)) / var(--intervals)));
+  transform:none;
+}
+.moon-companion>.grimoire-card {
+  transform:translateY(var(--drop)) rotate(var(--tilt));transform-origin:50% 84%;
+}
+.moon-roost .moon-companion:is(:hover,:focus-visible,[aria-expanded="true"]) {z-index:1;transform:none;}
+.moon-roost .moon-companion:is(:hover,:focus-visible)>.grimoire-card {
+  transform:translateY(-7px) scale(1.045);
+  outline:2px solid #edc981;outline-offset:2px;
+}
+@media(prefers-reduced-motion:no-preference) {
+  .moon-companion>.grimoire-card {transition:transform .15s ease-out;}
 }
 .moon-roost .roost-purse {grid-area:purse}
 .moon-spell-title {grid-area:spell-title}
@@ -354,7 +346,6 @@
     grid-template-areas:"familiar-title familiar-title" "familiars familiars" "spell-title purse" "spells purse";
     gap:6px 12px;
   }
-  .moon-roost .companion-slots {--card-width:min(82px,calc((100% - 20px) / 5));gap:5px}
   .moon-spell-title {padding-top:4px}
   .moon-spell-title h3 {font-size:17px}
   .moon-spell-card,.moon-spell-empty {width:min(60px,calc((100% - 7px) / 2))}
