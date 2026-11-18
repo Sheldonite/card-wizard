@@ -108,7 +108,6 @@
 }
 .item-card[data-familiar-edition=negative] > :is(.item-mark,.type-badge),
 .cw-owned-emblem[data-familiar-edition=negative] > .type-badge { display:none; }
-.pack-negative-label { color:#b0f3fa;font-weight:700;white-space:nowrap; }
 [data-familiar-frame=alabaster_finch] {--frame-edge:#e6dfd3;--frame-dark:#615d69;}
 [data-familiar-frame=dustfin] {--frame-edge:#aad7d9;--frame-dark:#335760;}
 [data-familiar-frame=glimmer_orca] {--frame-edge:#d3e4dd;--frame-dark:#233a51;}

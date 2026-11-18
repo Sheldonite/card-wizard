@@ -363,8 +363,51 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
   width:100%;height:100dvh;max-height:none;border:0;border-radius:0;
   background:radial-gradient(ellipse at 50% 40%,#503a60 0%,#352c49 39%,#1b192c 78%);
 }
-[data-page="pack"] .cw-body {display:flex;flex-direction:column;align-items:center;padding:clamp(16px,4vw,60px);isolation:isolate}
+[data-page="pack"] .cw-body {flex:1;display:flex;flex-direction:column;align-items:center;padding:clamp(16px,4vw,60px);isolation:isolate}
 [data-page="pack"] .cw-head,[data-page="pack"] .cw-footer {padding-inline:max(5vw,18px);background:#171425b5;border-color:#aa8b603b}
+[data-page="pack"] .cw-footer {
+  --card-width:clamp(46px,min(9vw,10.8dvh),88px);
+  flex:none;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;
+  gap:6px clamp(10px,2vw,32px);padding-block:9px 5px;
+  background:linear-gradient(#282034,#1a1626);box-shadow:0 -4px 18px #100d192b;
+}
+.pack-inventory-group {--accent:#e9c58f;min-width:0}
+.pack-inventory-group[data-group="consumables"] {--accent:#d4b7ef}
+.pack-inventory-group h3 {
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin:0;color:var(--accent);font:600 clamp(13px,1.4vw,18px)/1.1 Georgia,serif;
+}
+.pack-inventory-group h3 svg {width:1em;height:1em}
+.pack-inventory-group h3 small {color:#d2c6d7;font:600 11px/1.2 var(--sans,Arial,sans-serif);white-space:nowrap}
+.pack-fan-scroll {overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#6b5876 transparent}
+.pack-inventory-fan {
+  display:grid;grid-template:1fr / minmax(0,1fr);justify-items:start;isolation:isolate;
+  width:min(100%,calc(28px + var(--card-width) * (1 + .67 * var(--gaps))));
+  min-width:calc(28px + var(--card-width) + 24px * var(--gaps));
+  margin-inline:auto;padding:11px 14px 15px;
+}
+.pack-fan-card,.pack-fan-empty {
+  grid-area:1 / 1;width:var(--card-width);aspect-ratio:5 / 7;
+  padding:0;border:0;border-radius:7px;background:transparent;
+}
+.pack-fan-card {position:relative;left:calc(var(--slot) * (100% - var(--card-width)) / max(1,var(--gaps)))}
+.pack-fan-card > :first-child {
+  width:100%;height:100%;transform-origin:50% 88%;transform:translateY(var(--drop)) rotate(var(--tilt));
+}
+.pack-fan-card .grimoire-name,.pack-fan-card .moon-spell-name {font-size:clamp(9px,1.35dvh,13px)}
+.pack-fan-card:is(:hover,:focus-visible,[aria-expanded="true"]) {z-index:1;outline:0}
+.pack-fan-card:is(:hover,:focus-visible,[aria-expanded="true"]) > :first-child {
+  transform:translateY(-6px);outline:2px solid var(--accent);outline-offset:1px;
+}
+.pack-fan-empty {display:grid;place-items:center;border:1px dashed #67596e;background:#1e1927}
+.pack-fan-empty svg {width:32%;color:var(--accent);opacity:.45}
+@media(prefers-reduced-motion:no-preference) {
+  body:not(.still) .pack-fan-card > :first-child {transition:transform .15s ease-out}
+}
+@media(max-width:580px) {
+  [data-page="pack"] .cw-footer {grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:0 6px;padding:7px 5px}
+  [data-page="pack"] .cw-footer > .cw-btn {grid-column:1 / -1;justify-self:center;min-height:30px;padding:4px 14px}
+}
 .pack-remaining {background:#352c44;color:#ffe4a3;padding:7px 13px;border:1px solid #9c8057;border-radius:5px}
 .pack-status {display:flex;align-items:center;gap:clamp(4px,1vw,12px);white-space:nowrap}
 .pack-status .pack-purse {
@@ -2330,7 +2373,6 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 }
 .item-card[data-familiar-edition=negative] > :is(.item-mark,.type-badge),
 .cw-owned-emblem[data-familiar-edition=negative] > .type-badge { display:none; }
-.pack-negative-label { color:#b0f3fa;font-weight:700;white-space:nowrap; }
 [data-familiar-frame=alabaster_finch] {--frame-edge:#e6dfd3;--frame-dark:#615d69;}
 [data-familiar-frame=dustfin] {--frame-edge:#aad7d9;--frame-dark:#335760;}
 [data-familiar-frame=glimmer_orca] {--frame-edge:#d3e4dd;--frame-dark:#233a51;}
@@ -8014,7 +8056,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       if (!s.consumables[i]) return '<span class="moon-spell-empty" aria-hidden="true"><svg viewBox="0 0 24 24">'+global.CWContent.cardTypes.spell[1]+'</svg></span>';
       const d=ownedItem(s,'consumables',i);
       return '<button type="button" class="moon-spell-card" aria-expanded="false" data-owned-category="consumables" data-slot="'+i+'"'+cardTip(d)+
-        ' aria-label="'+esc('Inspect '+d.name)+'">'+picture(d,true)+'<span class="moon-spell-name">'+esc(d.name)+'</span></button>';
+        ' aria-label="'+esc('Inspect '+d.name)+'">'+spellCardFace(d)+'</button>';
     }).join('');
     return '<section class="companion-rail moon-roost" aria-label="Shop inventory">'+
       '<div class="moon-roost-title"><h3>Your familiars</h3><small class="moon-capacity" aria-label="'+count+' of '+cap.familiars+' familiar slots occupied">'+count+' / '+cap.familiars+'</small></div>'+
@@ -8030,6 +8072,9 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function marketFamiliar(d) {
     const frame = global.CWFamiliarFrames;
     return '<span class="grimoire-card"'+(frame?.attribute(d) || '')+' data-rarity="'+esc(d.rarity || 'Common')+'">'+picture(d.bossMuted ? {...d,bossMuted:false} : d,true,null)+(frame?.ornament(d) || '')+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i>'+(d.bossMuted?global.CWCardTip.cross:'')+'</span>';
+  }
+  function spellCardFace(d) {
+    return picture(d,true)+'<span class="moon-spell-name">'+esc(d.name)+'</span>';
   }
   function marketObject(d) {
     if (d.kind==='familiar') return marketFamiliar(d);
@@ -8114,6 +8159,24 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const footer=button('show-menu','Menu')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary moon-next');
     return result('Shop · Ante '+s.ante,'Moonlit Market',rewards+marketInventory(s,cap)+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
   }
+  function packInventoryFan(s,category,capacity) {
+    const familiar=category==='familiars';
+    const label=familiar?'Familiars':'Spells';
+    const icon='<svg aria-hidden="true" viewBox="0 0 24 24">'+global.CWContent.cardTypes[familiar?'familiar':'spell'][1]+'</svg>';
+    const count=s[category].length;
+    const gaps=Math.max(0,count-1);
+    const cards=s[category].map((_,i)=>{
+      const d=ownedItem(s,category,i);
+      const tilt=(i-gaps/2)*Math.min(7,22/Math.max(1,gaps));
+      const pose='--slot:'+i+';--tilt:'+tilt+'deg;--drop:'+(tilt*tilt/17)+'px';
+      const face=familiar?marketFamiliar(d):'<span class="moon-spell-card">'+spellCardFace(d)+'</span>';
+      return '<button type="button" class="pack-fan-card" style="'+pose+'" data-owned-category="'+category+'" data-slot="'+i+
+        '" aria-expanded="false" aria-label="'+esc('Inspect '+d.name)+'"'+cardTip(d)+'>'+face+'</button>';
+    }).join('');
+    return '<section class="pack-inventory-group" data-group="'+category+'" aria-labelledby="pack-'+category+'"><h3 id="pack-'+category+'">'+icon+label+
+      ' <small>'+count+' / '+capacity+'</small></h3><div class="pack-fan-scroll"><div class="pack-inventory-fan" style="--gaps:'+gaps+'">'+
+      (cards || '<span class="pack-fan-empty" aria-hidden="true">'+icon+'</span>')+'</div></div></section>';
+  }
   let lastPack, dealStart;
   function packView(s) {
     if (lastPack !== s.pack) { lastPack=s.pack; dealStart=performance.now(); }
@@ -8147,11 +8210,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       '<div class="pack-playing-cards">'+handCards+'</div>'+
       (d?button('pick-cast','Cast '+d.name,'cw-primary',active,!valid):'')+'</div>':'';
     const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
-    const ownedCards=['familiars','consumables'].flatMap(category=>s[category].map((id,i)=>{
-      const d=ownedItem(s,category,i);
-      const mark=d.kind==='familiar' && d.edition==='negative'?' <small class="pack-negative-label">Negative +1</small>':'';
-      return '<button type="button" data-owned-category="'+category+'" data-slot="'+i+'" aria-expanded="false"'+cardTip(d)+'>'+esc(d.name)+mark+'</button>';
-    })).join('');
+    const ownedCards=packInventoryFan(s,'familiars',cap.familiars)+packInventoryFan(s,'consumables',cap.consumables);
     const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,ownedCards+button('close-pack','Skip remaining'));
     view.headerEnd='<div class="pack-status">'+marketPurse(s.money,true)+'<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong></div>';
     return view;

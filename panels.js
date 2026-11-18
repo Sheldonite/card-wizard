@@ -745,7 +745,7 @@
       if (!s.consumables[i]) return '<span class="moon-spell-empty" aria-hidden="true"><svg viewBox="0 0 24 24">'+global.CWContent.cardTypes.spell[1]+'</svg></span>';
       const d=ownedItem(s,'consumables',i);
       return '<button type="button" class="moon-spell-card" aria-expanded="false" data-owned-category="consumables" data-slot="'+i+'"'+cardTip(d)+
-        ' aria-label="'+esc('Inspect '+d.name)+'">'+picture(d,true)+'<span class="moon-spell-name">'+esc(d.name)+'</span></button>';
+        ' aria-label="'+esc('Inspect '+d.name)+'">'+spellCardFace(d)+'</button>';
     }).join('');
     return '<section class="companion-rail moon-roost" aria-label="Shop inventory">'+
       '<div class="moon-roost-title"><h3>Your familiars</h3><small class="moon-capacity" aria-label="'+count+' of '+cap.familiars+' familiar slots occupied">'+count+' / '+cap.familiars+'</small></div>'+
@@ -761,6 +761,9 @@
   function marketFamiliar(d) {
     const frame = global.CWFamiliarFrames;
     return '<span class="grimoire-card"'+(frame?.attribute(d) || '')+' data-rarity="'+esc(d.rarity || 'Common')+'">'+picture(d.bossMuted ? {...d,bossMuted:false} : d,true,null)+(frame?.ornament(d) || '')+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i>'+(d.bossMuted?global.CWCardTip.cross:'')+'</span>';
+  }
+  function spellCardFace(d) {
+    return picture(d,true)+'<span class="moon-spell-name">'+esc(d.name)+'</span>';
   }
   function marketObject(d) {
     if (d.kind==='familiar') return marketFamiliar(d);
@@ -845,6 +848,24 @@
     const footer=button('show-menu','Menu')+button('open','Deck','','deck')+button('open','Hand guide','','guide')+button('leave-shop','Next blind →','cw-primary moon-next');
     return result('Shop · Ante '+s.ante,'Moonlit Market',rewards+marketInventory(s,cap)+'<div class="moon-shelves">'+stock+packs+voucher+'</div>',footer);
   }
+  function packInventoryFan(s,category,capacity) {
+    const familiar=category==='familiars';
+    const label=familiar?'Familiars':'Spells';
+    const icon='<svg aria-hidden="true" viewBox="0 0 24 24">'+global.CWContent.cardTypes[familiar?'familiar':'spell'][1]+'</svg>';
+    const count=s[category].length;
+    const gaps=Math.max(0,count-1);
+    const cards=s[category].map((_,i)=>{
+      const d=ownedItem(s,category,i);
+      const tilt=(i-gaps/2)*Math.min(7,22/Math.max(1,gaps));
+      const pose='--slot:'+i+';--tilt:'+tilt+'deg;--drop:'+(tilt*tilt/17)+'px';
+      const face=familiar?marketFamiliar(d):'<span class="moon-spell-card">'+spellCardFace(d)+'</span>';
+      return '<button type="button" class="pack-fan-card" style="'+pose+'" data-owned-category="'+category+'" data-slot="'+i+
+        '" aria-expanded="false" aria-label="'+esc('Inspect '+d.name)+'"'+cardTip(d)+'>'+face+'</button>';
+    }).join('');
+    return '<section class="pack-inventory-group" data-group="'+category+'" aria-labelledby="pack-'+category+'"><h3 id="pack-'+category+'">'+icon+label+
+      ' <small>'+count+' / '+capacity+'</small></h3><div class="pack-fan-scroll"><div class="pack-inventory-fan" style="--gaps:'+gaps+'">'+
+      (cards || '<span class="pack-fan-empty" aria-hidden="true">'+icon+'</span>')+'</div></div></section>';
+  }
   let lastPack, dealStart;
   function packView(s) {
     if (lastPack !== s.pack) { lastPack=s.pack; dealStart=performance.now(); }
@@ -878,11 +899,7 @@
       '<div class="pack-playing-cards">'+handCards+'</div>'+
       (d?button('pick-cast','Cast '+d.name,'cw-primary',active,!valid):'')+'</div>':'';
     const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
-    const ownedCards=['familiars','consumables'].flatMap(category=>s[category].map((id,i)=>{
-      const d=ownedItem(s,category,i);
-      const mark=d.kind==='familiar' && d.edition==='negative'?' <small class="pack-negative-label">Negative +1</small>':'';
-      return '<button type="button" data-owned-category="'+category+'" data-slot="'+i+'" aria-expanded="false"'+cardTip(d)+'>'+esc(d.name)+mark+'</button>';
-    })).join('');
+    const ownedCards=packInventoryFan(s,'familiars',cap.familiars)+packInventoryFan(s,'consumables',cap.consumables);
     const view=result('Booster pack',s.pack.name,'<div class="pack-spread">'+wrapper+cards+'</div>'+dealt,ownedCards+button('close-pack','Skip remaining'));
     view.headerEnd='<div class="pack-status">'+marketPurse(s.money,true)+'<strong class="pack-remaining">'+num(s.pack.remaining)+(s.pack.remaining===1?' pick left':' picks left')+'</strong></div>';
     return view;
