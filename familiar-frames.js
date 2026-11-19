@@ -161,10 +161,15 @@
     const id = item.baseId || item.id;
     return Object.hasOwn(frames, id) ? id : '';
   }
+  function rarityAttribute(item) {
+    if (item?.kind !== 'familiar') return '';
+    const rarity = /^[a-z]+$/i.test(item.rarity || '') ? item.rarity : 'Common';
+    return ' data-rarity="' + rarity + '"';
+  }
   function attribute(item) {
     const id = baseId(item);
     const frame = id ? ' data-familiar-frame="' + id + '"' : '';
-    return frame + (item?.kind === 'familiar' && item.edition === 'negative' ? ' data-familiar-edition="negative"' : '');
+    return rarityAttribute(item) + frame + (item?.kind === 'familiar' && item.edition === 'negative' ? ' data-familiar-edition="negative"' : '');
   }
   const progressScales = {
     mire_printer: {base:28, step:15, marks:6},
@@ -217,5 +222,5 @@
       '<path d="M12.8 3.9a6.1 6.1 0 1 0 3.1 9.6 5.2 5.2 0 0 1-3.1-9.6Z" fill="#b3f9ff"/><path d="m15 4 .8 1.8 1.9.7-1.9.7L15 9l-.7-1.8-1.8-.7 1.8-.7Z" fill="#e8ccff"/>' +
       '<path d="M20 10h7m-3.5-3.5v7m5-5.5 3.5-2v9m-3 0h6" fill="none" stroke="#fff0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
-  window.CWFamiliarFrames = {attribute, ornament};
+  window.CWFamiliarFrames = {attribute, ornament, rarityAttribute};
 })();

@@ -103,6 +103,24 @@
 }
 .item-card[data-familiar-edition=negative] > :is(.item-mark,.type-badge),
 .cw-owned-emblem[data-familiar-edition=negative] > .type-badge { display:none; }
+
+/* The outer rim and jewel identify rarity. Ornaments and edition finishes sit inside it. */
+[data-rarity="Common" i] { --rarity-color:#ba86ff; }
+[data-rarity="Uncommon" i] { --rarity-color:#85edbd; }
+[data-rarity="Rare" i] { --rarity-color:#76c9ff; }
+[data-rarity="Legendary" i] { --rarity-color:#ffc14d; }
+.grimoire-card[data-rarity], .cw-offer[data-rarity],
+:is(.cw-item-image,.cw-owned-emblem,.item-card)[data-family=familiar][data-rarity] {
+  border:3px solid var(--rarity-color);
+}
+.proc-witness-portrait[data-rarity], img[data-rarity] {
+  border:2px solid var(--rarity-color);
+  border-radius:4px;
+}
+.cw-offer[data-rarity] > .cw-item-type { color:var(--rarity-color); }
+:is(.cw-owned-emblem,.cw-item-image)[data-rarity] { outline-offset:-5px; }
+[data-rarity] > .edition-finish { inset:0; }
+
 [data-familiar-frame=alabaster_finch] {--frame-edge:#e6dfd3;--frame-dark:#615d69;}
 [data-familiar-frame=dustfin] {--frame-edge:#aad7d9;--frame-dark:#335760;}
 [data-familiar-frame=glimmer_orca] {--frame-edge:#d3e4dd;--frame-dark:#233a51;}

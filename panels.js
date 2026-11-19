@@ -691,7 +691,7 @@
     const starters = api().startingFamiliars(deck,profile.unlocked.familiars,challenge);
     const companions = starters.map(id => {
       const d = item(id);
-      return '<span><img alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
+      return '<span><img'+global.CWFamiliarFrames.rarityAttribute(d)+' alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
     }).join('');
     const trialOptions = Object.entries(challenges).map(([id,d]) => {
       const locked = !profile.unlocked.challenges.includes(id);
@@ -756,7 +756,7 @@
     const cards = Object.keys(global.CWPlaytest.deals).map(id => {
       const familiar = item(id);
       return '<button type="button" class="practice-choice" data-cw="start-practice" data-value="'+id+'"'+(mobile?cardTip(familiar)+' aria-haspopup="dialog"':'')+'>'+
-        '<img alt="" src="'+esc(global.CWContent.portrait(familiar.art))+'"><span><strong>'+esc(familiar.name)+'</strong>'+
+        '<img'+global.CWFamiliarFrames.rarityAttribute(familiar)+' alt="" src="'+esc(global.CWContent.portrait(familiar.art))+'"><span><strong>'+esc(familiar.name)+'</strong>'+
         '<small>'+esc(familiar.description)+'</small></span></button>';
     }).join('');
     return result('Practice table','Familiar playtest','<p class="practice-note">Choose a familiar for a preset deal. Your run stays saved.</p>'+
@@ -991,7 +991,7 @@
     const family=global.CWContent.cardType(d);
     const rarity=d.rarity && ![family,'booster'].includes(d.rarity.toLowerCase())?'<div class="cw-item-type">'+esc(d.rarity)+'</div>':'';
     const finish = d.kind === 'card' ? '' : global.CWContent.cardFinish(d,d.upgradeAge);
-    return '<article class="cw-offer"'+cardTip(d,true)+'>'+picture(d,false,{includeFinish:false})+finish+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
+    return '<article class="cw-offer"'+global.CWFamiliarFrames.rarityAttribute(d)+cardTip(d,true)+'>'+picture(d,false,{includeFinish:false})+finish+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
   }
   function inspectPackChoice(offer) {
     const control=offer.querySelector('[data-cw]');
@@ -1042,7 +1042,7 @@
   function marketFamiliar(d) {
     const frame = global.CWFamiliarFrames;
     const portrait = picture(d.bossMuted ? {...d,bossMuted:false} : d,true,{frame:null,includeFinish:false});
-    return '<span class="grimoire-card"'+(frame?.attribute(d) || '')+' data-rarity="'+esc(d.rarity || 'Common')+'">'+portrait+(frame?.ornament(d) || '')+global.CWContent.cardFinish(d,d.upgradeAge)+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i>'+(d.bossMuted?global.CWCardTip.cross:'')+'</span>';
+    return '<span class="grimoire-card"'+(frame?.attribute(d) || '')+'>'+portrait+(frame?.ornament(d) || '')+global.CWContent.cardFinish(d,d.upgradeAge)+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i>'+(d.bossMuted?global.CWCardTip.cross:'')+'</span>';
   }
   function spellCardFace(d) {
     return picture(d,true,{includeFinish:false})+global.CWContent.cardFinish(d)+'<span class="moon-spell-name">'+esc(d.name)+'</span>';

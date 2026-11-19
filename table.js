@@ -147,7 +147,7 @@
   function showUnlock(){
     if(unlockTimer || !unlockQueue.length)return;
     const reward=unlockQueue.shift(), notice=$('familiar-unlock');
-    notice.innerHTML='<img alt="" src="'+esc(CWContent.portrait(reward.art))+'"><div><small>'+esc(reward.title)+'</small><b>'+esc(reward.name)+'</b><span>'+esc(reward.hint)+'</span></div>';
+    notice.innerHTML='<img'+CWFamiliarFrames.rarityAttribute(reward)+' alt="" src="'+esc(CWContent.portrait(reward.art))+'"><div><small>'+esc(reward.title)+'</small><b>'+esc(reward.name)+'</b><span>'+esc(reward.hint)+'</span></div>';
     notice.hidden=false;
     unlockTimer=setTimeout(()=>{
       notice.hidden=true;
@@ -158,7 +158,7 @@
   function announceUnlocks(){
     for(const id of profileStore.takeFamiliarUnlocks()){
       const f=CW.item(id);
-      unlockQueue.push({title:'Familiar unlocked',name:f.name,art:f.art,hint:f.unlock});
+      unlockQueue.push({...f,title:'Familiar unlocked',hint:f.unlock});
     }
     for(const style of profileStore.takeCardStyleUnlocks()){
       unlockQueue.push({title:'Card back unlocked',name:style.name,art:style.art,hint:style.goal});
@@ -491,6 +491,7 @@
       portrait.alt='';
       icon.append(portrait);
       if(item.kind==='familiar'){
+        icon.dataset.rarity=item.rarity;
         icon.setAttribute('data-familiar-frame',CWMarket.splitVariant(item.id).id);
         if(item.edition)icon.setAttribute('data-familiar-edition',item.edition);
         icon.insertAdjacentHTML('beforeend',CWFamiliarFrames.ornament(item));

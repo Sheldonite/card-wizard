@@ -1608,14 +1608,11 @@ body.still .potion-eruption .vessel-drops {opacity:0}
 .cw-dialog[data-page="shop"] .moon-reroll.moon-free-roll {border-color:#e7c981;color:#ffe4a0;}
 .cw-dialog[data-page="leave-rewards"] {max-width:560px;}
 .grimoire-card {
-  --gem:#ba86ff;position:relative;display:block;width:100%;height:100%;box-sizing:border-box;
+  position:relative;display:block;width:100%;height:100%;box-sizing:border-box;
   isolation:isolate;border:2px solid #d0a067;border-radius:10px;
   background:linear-gradient(135deg,#f8dc91,#754223 19%,#b68048 24%,#342139 29%,#644662 62%,#be904d 76%,#533328 83%,#e4bb71);
   box-shadow:inset 0 0 0 2px #382231,inset 0 0 0 3px #bb925b,0 4px 7px #120c1db3;
 }
-.grimoire-card[data-rarity="Rare" i] {--gem:#76c9ff;}
-.grimoire-card[data-rarity="Uncommon" i] {--gem:#85edbd;}
-.grimoire-card[data-rarity="Legendary" i] {--gem:#ffc14d;}
 .grimoire-card .cw-owned-emblem[data-family] {
   position:absolute;inset:5% 6% 19%;width:auto;height:auto;box-sizing:border-box;margin:0;
   overflow:hidden;border:3px ridge #e5bd7c;border-radius:48% 48% 33% 33%;
@@ -1629,7 +1626,7 @@ body.still .potion-eruption .vessel-drops {opacity:0}
   color:#fff1ca;text-align:center;font:700 clamp(12px,1.1vw,16px)/1.02 Georgia,serif;
   text-shadow:0 1px 2px #160c1b;box-shadow:0 2px 3px #160d1c;
 }
-.grimoire-jewel {position:absolute;bottom:2%;left:46%;width:8%;aspect-ratio:1;transform:rotate(45deg);border:1px solid #ffe0a5;background:linear-gradient(120deg,white,var(--gem) 45%,#432a59);box-shadow:1px 1px 2px #201322;}
+.grimoire-jewel {position:absolute;bottom:2%;left:46%;width:8%;aspect-ratio:1;transform:rotate(45deg);border:1px solid #ffe0a5;background:linear-gradient(120deg,white,var(--rarity-color) 45%,#432a59);box-shadow:1px 1px 2px #201322;}
 .moon-art>.grimoire-card {height:94%;width:auto;max-width:96%;aspect-ratio:.72;}
 .moon-art .grimoire-name {font-size:12px;}
 @media(max-width:850px) {
@@ -2446,6 +2443,24 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 }
 .item-card[data-familiar-edition=negative] > :is(.item-mark,.type-badge),
 .cw-owned-emblem[data-familiar-edition=negative] > .type-badge { display:none; }
+
+/* The outer rim and jewel identify rarity. Ornaments and edition finishes sit inside it. */
+[data-rarity="Common" i] { --rarity-color:#ba86ff; }
+[data-rarity="Uncommon" i] { --rarity-color:#85edbd; }
+[data-rarity="Rare" i] { --rarity-color:#76c9ff; }
+[data-rarity="Legendary" i] { --rarity-color:#ffc14d; }
+.grimoire-card[data-rarity], .cw-offer[data-rarity],
+:is(.cw-item-image,.cw-owned-emblem,.item-card)[data-family=familiar][data-rarity] {
+  border:3px solid var(--rarity-color);
+}
+.proc-witness-portrait[data-rarity], img[data-rarity] {
+  border:2px solid var(--rarity-color);
+  border-radius:4px;
+}
+.cw-offer[data-rarity] > .cw-item-type { color:var(--rarity-color); }
+:is(.cw-owned-emblem,.cw-item-image)[data-rarity] { outline-offset:-5px; }
+[data-rarity] > .edition-finish { inset:0; }
+
 [data-familiar-frame=alabaster_finch] {--frame-edge:#e6dfd3;--frame-dark:#615d69;}
 [data-familiar-frame=dustfin] {--frame-edge:#aad7d9;--frame-dark:#335760;}
 [data-familiar-frame=glimmer_orca] {--frame-edge:#d3e4dd;--frame-dark:#233a51;}
@@ -7125,10 +7140,15 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const id = item.baseId || item.id;
     return Object.hasOwn(frames, id) ? id : '';
   }
+  function rarityAttribute(item) {
+    if (item?.kind !== 'familiar') return '';
+    const rarity = /^[a-z]+$/i.test(item.rarity || '') ? item.rarity : 'Common';
+    return ' data-rarity="' + rarity + '"';
+  }
   function attribute(item) {
     const id = baseId(item);
     const frame = id ? ' data-familiar-frame="' + id + '"' : '';
-    return frame + (item?.kind === 'familiar' && item.edition === 'negative' ? ' data-familiar-edition="negative"' : '');
+    return rarityAttribute(item) + frame + (item?.kind === 'familiar' && item.edition === 'negative' ? ' data-familiar-edition="negative"' : '');
   }
   const progressScales = {
     mire_printer: {base:28, step:15, marks:6},
@@ -7181,7 +7201,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       '<path d="M12.8 3.9a6.1 6.1 0 1 0 3.1 9.6 5.2 5.2 0 0 1-3.1-9.6Z" fill="#b3f9ff"/><path d="m15 4 .8 1.8 1.9.7-1.9.7L15 9l-.7-1.8-1.8-.7 1.8-.7Z" fill="#e8ccff"/>' +
       '<path d="M20 10h7m-3.5-3.5v7m5-5.5 3.5-2v9m-3 0h6" fill="none" stroke="#fff0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
-  window.CWFamiliarFrames = {attribute, ornament};
+  window.CWFamiliarFrames = {attribute, ornament, rarityAttribute};
 })();
 
 ;
@@ -9368,7 +9388,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const starters = api().startingFamiliars(deck,profile.unlocked.familiars,challenge);
     const companions = starters.map(id => {
       const d = item(id);
-      return '<span><img alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
+      return '<span><img'+global.CWFamiliarFrames.rarityAttribute(d)+' alt="" src="'+esc(global.CWContent.portrait(d.art))+'">'+esc(d.name)+'</span>';
     }).join('');
     const trialOptions = Object.entries(challenges).map(([id,d]) => {
       const locked = !profile.unlocked.challenges.includes(id);
@@ -9433,7 +9453,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const cards = Object.keys(global.CWPlaytest.deals).map(id => {
       const familiar = item(id);
       return '<button type="button" class="practice-choice" data-cw="start-practice" data-value="'+id+'"'+(mobile?cardTip(familiar)+' aria-haspopup="dialog"':'')+'>'+
-        '<img alt="" src="'+esc(global.CWContent.portrait(familiar.art))+'"><span><strong>'+esc(familiar.name)+'</strong>'+
+        '<img'+global.CWFamiliarFrames.rarityAttribute(familiar)+' alt="" src="'+esc(global.CWContent.portrait(familiar.art))+'"><span><strong>'+esc(familiar.name)+'</strong>'+
         '<small>'+esc(familiar.description)+'</small></span></button>';
     }).join('');
     return result('Practice table','Familiar playtest','<p class="practice-note">Choose a familiar for a preset deal. Your run stays saved.</p>'+
@@ -9668,7 +9688,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const family=global.CWContent.cardType(d);
     const rarity=d.rarity && ![family,'booster'].includes(d.rarity.toLowerCase())?'<div class="cw-item-type">'+esc(d.rarity)+'</div>':'';
     const finish = d.kind === 'card' ? '' : global.CWContent.cardFinish(d,d.upgradeAge);
-    return '<article class="cw-offer"'+cardTip(d,true)+'>'+picture(d,false,{includeFinish:false})+finish+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
+    return '<article class="cw-offer"'+global.CWFamiliarFrames.rarityAttribute(d)+cardTip(d,true)+'>'+picture(d,false,{includeFinish:false})+finish+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
   }
   function inspectPackChoice(offer) {
     const control=offer.querySelector('[data-cw]');
@@ -9719,7 +9739,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function marketFamiliar(d) {
     const frame = global.CWFamiliarFrames;
     const portrait = picture(d.bossMuted ? {...d,bossMuted:false} : d,true,{frame:null,includeFinish:false});
-    return '<span class="grimoire-card"'+(frame?.attribute(d) || '')+' data-rarity="'+esc(d.rarity || 'Common')+'">'+portrait+(frame?.ornament(d) || '')+global.CWContent.cardFinish(d,d.upgradeAge)+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i>'+(d.bossMuted?global.CWCardTip.cross:'')+'</span>';
+    return '<span class="grimoire-card"'+(frame?.attribute(d) || '')+'>'+portrait+(frame?.ornament(d) || '')+global.CWContent.cardFinish(d,d.upgradeAge)+'<span class="grimoire-name">'+esc(d.name)+'</span><i class="grimoire-jewel" aria-hidden="true"></i>'+(d.bossMuted?global.CWCardTip.cross:'')+'</span>';
   }
   function spellCardFace(d) {
     return picture(d,true,{includeFinish:false})+global.CWContent.cardFinish(d)+'<span class="moon-spell-name">'+esc(d.name)+'</span>';
@@ -10366,7 +10386,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function showUnlock(){
     if(unlockTimer || !unlockQueue.length)return;
     const reward=unlockQueue.shift(), notice=$('familiar-unlock');
-    notice.innerHTML='<img alt="" src="'+esc(CWContent.portrait(reward.art))+'"><div><small>'+esc(reward.title)+'</small><b>'+esc(reward.name)+'</b><span>'+esc(reward.hint)+'</span></div>';
+    notice.innerHTML='<img'+CWFamiliarFrames.rarityAttribute(reward)+' alt="" src="'+esc(CWContent.portrait(reward.art))+'"><div><small>'+esc(reward.title)+'</small><b>'+esc(reward.name)+'</b><span>'+esc(reward.hint)+'</span></div>';
     notice.hidden=false;
     unlockTimer=setTimeout(()=>{
       notice.hidden=true;
@@ -10377,7 +10397,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function announceUnlocks(){
     for(const id of profileStore.takeFamiliarUnlocks()){
       const f=CW.item(id);
-      unlockQueue.push({title:'Familiar unlocked',name:f.name,art:f.art,hint:f.unlock});
+      unlockQueue.push({...f,title:'Familiar unlocked',hint:f.unlock});
     }
     for(const style of profileStore.takeCardStyleUnlocks()){
       unlockQueue.push({title:'Card back unlocked',name:style.name,art:style.art,hint:style.goal});
@@ -10710,6 +10730,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       portrait.alt='';
       icon.append(portrait);
       if(item.kind==='familiar'){
+        icon.dataset.rarity=item.rarity;
         icon.setAttribute('data-familiar-frame',CWMarket.splitVariant(item.id).id);
         if(item.edition)icon.setAttribute('data-familiar-edition',item.edition);
         icon.insertAdjacentHTML('beforeend',CWFamiliarFrames.ornament(item));
