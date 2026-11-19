@@ -9,6 +9,7 @@
   let message = '';
   let guideTab = 'hands';
   let deckTab = 'draw';
+  let styleTab = 'backs';
   let targets = [];
   let castSourceRect;
   let casting = false;
@@ -395,8 +396,8 @@
     const s = state();
     const names = {codex:'guide',info:'run',options:'settings'};
     next = names[next] || next;
-    if (!['menu','guide','deck','run','settings','restart','spell','shop-spell','leave-rewards','lobby','career','collection','profiles','playtest','card-styles'].includes(next)) return;
-    if (!s && !['menu','lobby','settings','restart','career','collection','profiles','card-styles'].includes(next)) return;
+    if (!['menu','guide','deck','run','settings','restart','spell','shop-spell','leave-rewards','lobby','career','collection','profiles','playtest','card-styles','style-preview'].includes(next)) return;
+    if (!s && !['menu','lobby','settings','restart','career','collection','profiles','card-styles','style-preview'].includes(next)) return;
     if (page === next && value === detail) return;
     if (page !== next && page) backStack.push([page,detail]);
     if (next === 'restart') {
@@ -451,6 +452,7 @@
     const selection = !reset && document.activeElement?.tagName === 'INPUT' ? [document.activeElement.selectionStart,document.activeElement.selectionEnd] : null;
     const views = {menu:menuView,guide:guideView,deck:deckView,run:runView,settings:settingsView,restart:restartView,spell:spellView,'shop-spell':spellView,'leave-rewards':leaveRewardsView,shop:shopView,pack:packView,payout:payoutView,select:selectView,won:endView,lost:endView,lobby:lobbyView,career:careerView,collection:collectionView,profiles:profilesView};
     views['card-styles'] = cardStylesView;
+    views['style-preview'] = stylePreviewView;
     views.playtest = playtestView;
     views['playtest-end'] = playtestEndView;
     const view = views[page]?.(s);
@@ -473,6 +475,7 @@
     layer.querySelector('.cw-message').textContent = message;
     global.CWContent.colorStats(layer.querySelector('.cw-head'));
     body.innerHTML = view.body;
+    if (page === 'lobby') global.CWParlorCat?.mount(body);
     for (const id of openSections) {
       const section = document.getElementById(id);
       if (section) section.open = true;
@@ -575,10 +578,10 @@
     const rows = suitOrder.map(suit => {
       const cards = s.deck.filter(c=>c.suit===suit).sort((a,b)=>b.rank-a.rank);
       const count = remaining ? cards.filter(c=>remaining.has(c.id)).length : cards.length;
-      const faces = cards.map(c=>{
+      const faces = cards.map((c,i)=>{
         const drawn = remaining && !remaining.has(c.id);
         const slot = drawn ? 'class="cw-deck-slot cw-drawn" aria-label="Already drawn"' : 'class="cw-deck-slot"';
-        return '<li '+slot+'>'+options.cardPreview(c)+'</li>';
+        return '<li '+slot+'>'+options.cardPreview(c,null,{index:i,total:cards.length})+'</li>';
       }).join('');
       return '<section class="cw-deck-row" aria-label="'+suitNames[suit]+'"><div class="cw-deck-count'+red(suit)+'" aria-hidden="true">'+
         '<span>'+suits[suit]+'</span><b>'+count+'</b></div><ul class="cw-deck-cards" aria-label="'+count+' '+suitNames[suit]+(remaining?' remaining':'')+'">'+faces+'</ul></section>';
@@ -716,7 +719,7 @@
   function parlorScene() {
     return '<div class="parlor-scene"><div class="parlor-painting">'+
       '<span class="parlor-lantern" aria-hidden="true"></span>'+
-      '<button type="button" class="dealer-window" data-cw="deal-trick" aria-label="Ask the market cat to deal a poker hand"><span class="dealer-cat"></span></button>'+
+      '<button type="button" class="dealer-window" data-cw="deal-trick" aria-label="Ask the market cat to deal a poker hand"><canvas class="dealer-cat-canvas" width="420" height="320" aria-hidden="true"></canvas></button>'+
       '<div class="dealer-hand" aria-hidden="true"></div>'+
       '<output class="dealer-call" aria-live="polite"></output></div></div>';
   }
@@ -731,6 +734,7 @@
       return '<span class="trick-card" style="--fan:'+angle+'deg;--order:'+i+'">'+parlorCard(card.slice(0,-1),suits[suit],red(suit)?'ruby':'jade')+'</span>';
     }).join('');
     layer.querySelector('.dealer-call').textContent=name;
+    global.CWParlorCat?.react();
     options.playSound?.('select');
   }
   function lobbyView(s) {
@@ -767,26 +771,70 @@
       button('start-practice','Retry deal','cw-primary',s.playtest)+button('open','Switch familiar','','playtest')+button('show-menu','Exit playtest'));
   }
   function cardStylesView() {
-    const data=progress(), styles=data.cardStyles;
-    const equipped=data.equippedCardStyle;
-    const preview=styles.find(s=>s.id===detail) || styles.find(s=>s.id===equipped) || styles[0];
-    const picture=style=>esc(global.CWContent.portrait(style.art));
-    const tiles=styles.map(style=>{
-      const selected=style.id===preview.id, worn=style.id===equipped;
-      const status=worn?'Equipped':style.earned?'Unlocked':'Locked';
-      return '<button type="button" class="style-swatch" data-cw="preview-style" data-value="'+style.id+
-        '" aria-pressed="'+selected+'" aria-label="'+esc(style.name+', '+status)+'" title="'+esc(style.name+', '+status)+'">'+
-        '<img alt="" src="'+picture(style)+'">'+(worn?'<span aria-hidden="true">&#10003;</span>':'')+'</button>';
+    const data=progress(), isSets=styleTab==='sets';
+    const items=isSets?(data.cardSets || []):(data.cardStyles || []);
+    const equipped=isSets?(data.equippedCardSet || 'classic'):(data.equippedCardStyle || 'classic');
+    const preview=items.find(s=>s.id===detail) || items.find(s=>s.id===equipped) || items[0];
+    const picture=item=>esc(global.CWContent.portrait(item.art));
+    const tabs='<div class="cw-tabs style-tabs">'+
+      tab('style-tab','backs','Card backs · '+(data.cardStyles || []).filter(s=>s.earned).length+'/'+(data.cardStyles || []).length,styleTab)+
+      tab('style-tab','sets','Card sets · '+(data.cardSets || []).filter(s=>s.earned).length+'/'+(data.cardSets || []).length,styleTab)+
+      '</div>';
+    const tiles=items.map(item=>{
+      const selected=item.id===preview.id, worn=item.id===equipped;
+      const status=worn?'Equipped':item.earned?'Unlocked':'Locked';
+      const previewKey=(isSets?'set:':'back:')+item.id;
+      return '<div class="style-swatch-wrap"><button type="button" class="style-swatch" data-cw="preview-style" data-value="'+item.id+
+        '" aria-pressed="'+selected+'" aria-label="'+esc(item.name+', '+status)+'" title="'+esc(item.name+', '+status)+'">'+
+        '<img alt="" src="'+picture(item)+'">'+(worn?'<span aria-hidden="true">&#10003;</span>':'')+'</button>'+
+        '<button type="button" class="swatch-preview-btn" data-cw="preview-deck" data-value="'+esc(previewKey)+'" aria-label="Preview full deck with '+esc(item.name)+'">Preview</button></div>';
     }).join('');
     const worn=preview.id===equipped;
-    const action=button('equip-style',worn?'Equipped':preview.earned?'Equip style':'Locked',
-      'cw-primary',preview.id,worn || !preview.earned);
-    const hero='<figure class="style-print"><img alt="'+esc(preview.name+' card illustration')+'" src="'+picture(preview)+'"></figure>';
-    const controls='<section class="style-options"><div class="style-titles"><h3>'+esc(preview.name)+'</h3><p>'+
-      esc(preview.goal)+'</p></div>'+action+'<div class="style-picks"><p>'+styles.filter(s=>s.earned).length+
-      ' / '+styles.length+' unlocked</p><div class="style-swatches" role="group" aria-label="Preview a card style">'+tiles+'</div></div></section>';
-    const footer=button('close','Back')+button('equip-style','Use classic cards','','classic',equipped==='classic');
-    return result('','Card styles','<div class="style-gallery">'+hero+controls+'</div>',footer);
+    const equipAction=isSets?'equip-set':'equip-style';
+    const previewKey=(isSets?'set:':'back:')+preview.id;
+    const action='<div class="style-actions">'+
+      button(equipAction,worn?'Equipped':preview.earned?(isSets?'Equip card set':'Equip card back'):'Locked','cw-primary',preview.id,worn || !preview.earned)+
+      button('preview-deck','Preview full deck','',previewKey)+'</div>';
+    const hero='<figure class="style-print"><img alt="'+esc(preview.name+(isSets?' card set illustration':' card illustration'))+'" src="'+picture(preview)+'"></figure>';
+    const tagline=preview.tagline?'<p class="style-tagline">'+esc(preview.tagline)+'</p>':'';
+    const goal='<p class="style-goal"><strong>'+esc(preview.achievementName || 'Achievement')+':</strong> '+esc(preview.goal)+'</p>';
+    const controls='<section class="style-options"><div class="style-titles"><h3>'+esc(preview.name)+'</h3>'+
+      tagline+goal+'</div>'+action+'<div class="style-picks"><p>'+items.filter(s=>s.earned).length+
+      ' / '+items.length+' unlocked</p><div class="style-swatches" role="group" aria-label="Preview a '+(isSets?'card set':'card back')+'">'+tiles+'</div></div></section>';
+    const footer=button('close','Back')+button(equipAction,isSets?'Use classic faces':'Use classic backs','','classic',equipped==='classic');
+    return result('','Card styles',tabs+'<div class="style-gallery">'+hero+controls+'</div>',footer);
+  }
+  function stylePreviewView() {
+    const data=progress();
+    const isSet=String(detail || '').startsWith('set:');
+    const id=String(detail || '').replace(/^(?:set|back):/,'');
+    const items=isSet?(data.cardSets || []):(data.cardStyles || []);
+    const item=items.find(entry=>entry.id===id) || items[0];
+    if(!item) return cardStylesView();
+    const equipped=isSet?(data.equippedCardSet || 'classic'):(data.equippedCardStyle || 'classic');
+    const worn=item.id===equipped;
+    const equipAction=isSet?'equip-set':'equip-style';
+    const artUrl=global.CWContent.portrait(item.art);
+    const theme=isSet?{cardStyle:null,cardSet:item}:{cardStyle:item,cardSet:null};
+    const scopeAttrs=isSet
+      ? 'data-card-set="'+esc(item.id)+'" style="--card-set-ink:'+esc(item.color)+';--card-set-art:url(&quot;'+esc(artUrl)+'&quot;)"'
+      : 'data-card-style="'+esc(item.id)+'" data-card-set="classic" style="--card-style-ink:'+esc(item.color)+';--card-style-art:url(&quot;'+esc(artUrl)+'&quot;)"';
+    const ranks=[14,13,12,11,10,9,8,7,6,5,4,3,2];
+    const rows=suitOrder.map(suit=>{
+      const faces=ranks.map((rank,i)=>{
+        const card={id:'preview_'+suit+'_'+rank,rank,suit};
+        return '<li class="cw-deck-slot">'+options.cardPreview(card,null,{index:i,total:ranks.length,theme})+'</li>';
+      }).join('');
+      return '<section class="cw-deck-row" aria-label="'+suitNames[suit]+'"><div class="cw-deck-count'+red(suit)+'" aria-hidden="true">'+
+        '<span>'+suits[suit]+'</span><b>13</b></div><ul class="cw-deck-cards" aria-label="13 '+suitNames[suit]+'">'+faces+'</ul></section>';
+    }).join('');
+    const banner='<div class="style-preview-banner"><img class="style-preview-thumb" alt="'+esc(item.name)+'" src="'+esc(artUrl)+'"><div>'+
+      (item.tagline?'<p class="style-tagline">'+esc(item.tagline)+'</p>':'')+
+      '<p class="style-goal"><strong>'+esc(item.achievementName || 'Achievement')+':</strong> '+esc(item.goal)+'</p>'+
+      '<p class="style-preview-note">Hover over any suit row to fan out and inspect all 52 cards.</p></div></div>';
+    const body='<div class="cw-style-scope" '+scopeAttrs+'>'+banner+'<div class="cw-deck-rows">'+rows+'</div></div>';
+    const footer=button('close','Back to gallery')+button(equipAction,worn?'Equipped':item.earned?(isSet?'Equip card set':'Equip card back'):'Locked','cw-primary',item.id,worn || !item.earned);
+    return result(isSet?'Card set deck preview':'Card back deck preview',item.name,body,footer);
   }
   function menuView() {
     const entries=[['collection','Collection','orb'],['card-styles','Card styles','king'],['career','Career','blind'],['settings','Settings','key'],['profiles','Profile','owl']];
@@ -813,11 +861,14 @@
     const earnedRewards=rewards.filter(a=>a.earned).length;
     const familiarRows=rewards.map(a=>'<div class="cw-achievement'+(a.earned?' unlocked':'')+'"><span aria-hidden="true">'+(a.earned?'&#10003;':'&#9671;')+'</span><div><b>'+esc(a.earned?a.name:'Locked Familiar')+'</b><small>'+esc(a.description)+(!a.earned && a.target?' &middot; '+num(a.current)+' / '+num(a.target):'')+'</small></div></div>').join('');
     const familiarSection='<details id="career-familiars" class="career-familiars"><summary>Familiar unlocks &middot; '+earnedRewards+' / '+rewards.length+'</summary><div class="cw-achievements">'+familiarRows+'</div></details>';
-    const styleRewards=new Map((data.cardStyles || []).map(style=>[style.achievement,style]));
+    const styleRewards=new Map([
+      ...(data.cardStyles || []).map(style=>[style.achievement,{...style,action:'view-style',label:'Card back'}]),
+      ...(data.cardSets || []).map(set=>[set.achievement,{...set,action:'view-set',label:'Card set'}])
+    ]);
     const milestones=(data.achievements || []).map(a=>{
       const style=styleRewards.get(a.id);
-      const reward=style ? '<button class="career-style-link" type="button" data-cw="view-style" data-value="'+style.id+'">'+
-        '<img alt="" src="'+esc(global.CWContent.portrait(style.art))+'">'+esc(style.name)+'</button>' : '';
+      const reward=style ? '<button class="career-style-link" type="button" data-cw="'+style.action+'" data-value="'+style.id+'">'+
+        '<img alt="" src="'+esc(global.CWContent.portrait(style.art))+'">'+esc(style.name)+' <small>('+style.label+')</small></button>' : '';
       return '<div class="cw-achievement'+(a.earned?' unlocked':'')+'"><span aria-label="'+(a.earned?'Earned':'Locked')+'">'+
         (a.earned?'&#10003;':'&#9671;')+'</span><div><b>'+esc(a.name)+'</b><small>'+esc(a.description)+'</small>'+reward+'</div></div>';
     }).join('');
@@ -1331,15 +1382,27 @@
       return inspect(control,actions,{text:details.join('\n'),type:d.kind==='familiar'?'':type,reason});
     }
     if(name==='close') return close();
-    if(name==='view-style')return open('card-styles',value);
+    if(name==='view-style'){styleTab='backs';return open('card-styles',value);}
+    if(name==='view-set'){styleTab='sets';return open('card-styles',value);}
+    if(name==='preview-deck')return open('style-preview',value);
+    if(name==='style-tab' && page==='card-styles'){
+      styleTab=value==='sets'?'sets':'backs';
+      detail='';
+      message='';
+      return paint(false);
+    }
     if(name==='preview-style' && page==='card-styles'){
       detail=value;
       message='';
       return paint(false);
     }
-    if(name==='equip-style' && page==='card-styles'){
+    if(name==='equip-style' && (page==='card-styles' || page==='style-preview')){
       if(!options.equipCardStyle?.(value))return;
-      return announce(value==='classic'?'Classic cards equipped.':'Card style equipped.');
+      return announce(value==='classic'?'Classic card backs equipped.':'Card back equipped.');
+    }
+    if(name==='equip-set' && (page==='card-styles' || page==='style-preview')){
+      if(!options.equipCardSet?.(value))return;
+      return announce(value==='classic'?'Classic card faces equipped.':'Card set equipped.');
     }
     if(name==='start-practice' && global.CWPlaytest.deals[value]) {
       backStack.length=0;

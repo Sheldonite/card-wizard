@@ -83,7 +83,7 @@
   const styleUrls = new Map();
   function portrait(name) {
     const embedded = root.CWEmbeddedArt?.[name];
-    if (!name.startsWith("card-styles/")) return embedded || "art/" + name + ".png";
+    if (!name.startsWith("card-styles/") && !name.startsWith("card-sets/")) return embedded || "art/" + name + ".png";
     if (!embedded) return "art/" + name + ".jpg";
     if (typeof Blob === "undefined" || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") return embedded;
     // Reuse one short URL per illustration whenever gallery panels repaint.

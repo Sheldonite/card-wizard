@@ -119,18 +119,15 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
   content:"";position:absolute;inset:0;
   background:linear-gradient(90deg,#130c20ed 0%,#1a1024b8 26%,#160d2140 52%,transparent 72%),linear-gradient(0deg,#130d20b5,transparent 32%);
 }
-.dealer-window {position:absolute;left:59.5%;top:39%;width:20%;height:24%;overflow:hidden;filter:drop-shadow(0 2px 2px #160d22)}
+.dealer-window {position:absolute;left:57.416268%;top:36.131775%;width:25.119617%;height:34.006376%;overflow:visible;filter:drop-shadow(0 2px 2px #160d22)}
 .dealer-window {border:0;padding:0;background:transparent;pointer-events:auto;cursor:pointer;border-radius:12%}
-.dealer-window:is(:hover,:focus-visible) .dealer-cat {filter:drop-shadow(0 0 3px #ffdc8c)}
+.dealer-window:is(:hover,:focus-visible) .dealer-cat-canvas {filter:drop-shadow(0 0 4px #ffdc8c)}
 .dealer-call {position:absolute;left:60.5%;top:68%;translate:-50% 0;border:1px solid #cbac77;border-radius:3px;background:#24152ee8;color:#ffe3a6;padding:3px 9px;white-space:nowrap;font:700 clamp(11px,1vw,18px) var(--sans)}
 .dealer-call:empty {display:none}
 .trick-card {position:absolute;inset:0;transform-origin:50% 100%;animation:verdict-spread .44s ease-out both;animation-delay:calc(var(--order) * 45ms);transform:rotate(var(--fan))}
 .dealer-hand .trick-card .parlor-card {transform:none;translate:none}
-.dealer-cat {
-  position:absolute;inset:auto 0 0;aspect-ratio:420/260;
-  background:var(--art-market) 92.294% 49.603% / 365.715% 196.924%;
-  clip-path:polygon(6% 84%,9% 76%,16% 65%,22% 57%,18% 55%,14% 53%,10% 48%,8% 42%,7% 33%,14% 28%,21% 21%,22% 12%,23.5% 1%,26% 2%,39% 13%,41% 15%,46% 11%,51% 11%,53% 15%,61% 9%,66% 8%,69% 10%,75% 21%,74% 27%,72% 34%,73% 38%,76% 35%,76% 40%,73% 44%,69% 43%,68% 39%,70% 30%,64% 34%,61% 45%,67% 54%,70% 57%,69% 61%,65% 65%,60% 66%,61% 70%,68% 75%,70% 69%,71% 58%,74% 50%,79% 44%,84% 42%,89% 43%,93% 48%,94% 55%,91% 63%,85% 61%,82% 64%,78% 76%,78% 81%,73% 87%,73% 90%,28% 90%,24% 88%,20% 85%);
-  transform-origin:45% 88%;animation:dealer-peek 16s ease-in-out infinite;
+.dealer-cat-canvas {
+  display:block;width:100%;height:100%;pointer-events:none;
 }
 .parlor-lantern {position:absolute;left:52.5%;top:12%;width:12%;aspect-ratio:1;background:radial-gradient(closest-side,#ffbc555c,transparent);mix-blend-mode:screen;animation:lamp-breathe 4s ease-in-out infinite alternate}
 .dealer-hand {position:absolute;left:58%;top:49%;width:7%;aspect-ratio:5/6;filter:drop-shadow(0 6px 6px #170e2b99)}
@@ -178,7 +175,6 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .parlor-directory button:has(small)::after {margin-left:0}
 .in-parlor button:focus-visible,.at-verdict button:focus-visible {outline:3px solid #fff0ab;outline-offset:3px}
 @keyframes lamp-breathe {to{opacity:.45;scale:.9}}
-@keyframes dealer-peek {0%,30%,100%{transform:translateY(0) rotate(-2deg)} 42%,52%{transform:translate(4%,8%) rotate(4deg)} 69%,76%{transform:translate(3%,82%) rotate(6deg)} 82%,86%{transform:translate(-3%,45%) rotate(-6deg)} 92%{transform:translateY(-2%) rotate(-3deg)}}
 @keyframes levitate {0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-10%) rotate(3deg)}}
 @keyframes twinkle {from{opacity:.25;scale:.65}to{opacity:1;scale:1.12}}
 

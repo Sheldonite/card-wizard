@@ -25,6 +25,16 @@ for (const file of readdirSync(join(project, 'art', 'familiars'))) {
 for (const file of readdirSync(join(project, 'art', 'card-styles'))) {
   if (file.endsWith('.jpg')) portraits['card-styles/' + file.slice(0, -4)] = embed('art/card-styles/' + file);
 }
+if (existsSync(join(project, 'art', 'card-sets'))) {
+  for (const file of readdirSync(join(project, 'art', 'card-sets'))) {
+    if (file.endsWith('.jpg')) portraits['card-sets/' + file.slice(0, -4)] = embed('art/card-sets/' + file);
+  }
+}
+if (existsSync(join(project, 'art', 'card-set-courts'))) {
+  for (const file of readdirSync(join(project, 'art', 'card-set-courts'))) {
+    if (file.endsWith('.png')) portraits['card-set-courts/' + file.slice(0, -4)] = embed('art/card-set-courts/' + file);
+  }
+}
 const scripts = ['window.CWEmbeddedArt = ' + JSON.stringify(portraits) + ';'];
 const soundtrack = { play: 'table.mp3', menu: 'rewards.wav', boss: 'boss.mp3' };
 if (embedMusic) {

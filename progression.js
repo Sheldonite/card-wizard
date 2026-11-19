@@ -6,7 +6,8 @@
   const key = "card-wizard.profiles.1";
   const legacyKey = "card-wizard.run.1";
   const counterKeys = ["handsPlayed", "discardsUsed", "roundsWon", "skipped",
-    "purchases", "moneyEarned", "packsOpened", "bossesWon", "spellsCast"];
+    "purchases", "moneyEarned", "packsOpened", "bossesWon", "spellsCast",
+    "oneShotBoss", "enchantedFive"];
   const initialDecks = ["arcane", "alchemist", "oracle"];
   const higherStakeWins = stats => Object.entries(stats.stakeWins)
     .filter(([id]) => id !== "ember").reduce((sum, [, wins]) => sum + wins, 0);
@@ -41,7 +42,12 @@
     ["last_stake", "The Last Ember", "Win at the highest stake.", s => Boolean(s.stakeWins.blackstar)],
     ["trial_circle", "The Trial Circle", "Win 10 different challenges.", s => Object.keys(s.challengeWins).length >= 10],
     ["trial_master", "The Trial Crown", "Win all 20 challenges.", s => Object.keys(s.challengeWins).length >= 20],
-    ["collector", "Cabinet of Wonders", "Discover 75 different items.", (_, discovered) => Object.keys(discovered).length >= 75]
+    ["collector", "Cabinet of Wonders", "Discover 75 different items.", (_, discovered) => Object.keys(discovered).length >= 75],
+    ["fun_flush_trio", "Flush of the Forest", "Play 3 Flushes in a single blind.", s => s.bestFlushesInBlind >= 3],
+    ["fun_constellation_trio", "Stargazer's Pact", "Level up any poker hand to Level 4 in a single run.", s => s.bestHandLevel >= 4],
+    ["fun_one_shot_boss", "One-Shot Wonder", "Defeat a Boss Blind in a single hand.", s => s.oneShotBoss >= 1],
+    ["fun_enchanted_hand", "Master Brewer", "Play a 5-card hand where every card is enhanced, sealed, or has an edition.", s => s.enchantedFive >= 1],
+    ["fun_golden_goose", "Honk of Fortune", "Hold $150 or more at once during a run.", s => s.peakMoney >= 150]
   ];
 
   const cardStyleDefinitions = [
@@ -57,6 +63,19 @@
     ["eclipse-sovereign", "Eclipse Sovereign", "first_victory", "#6a6094"]
   ].map(([id,name,achievement,color]) => ({id,name,achievement,color,art:"card-styles/" + id}));
 
+  const cardSetDefinitions = [
+    ["toadstool-coven", "Toadstool Coven", "fun_flush_trio", "#3d6e4e",
+      "Moss-parchment faces with woodland toadstool pips and forest wizard filigree."],
+    ["owl-observatory", "Owl Observatory", "fun_constellation_trio", "#354b84",
+      "Starlight-vellum faces with celestial moon & star pips and brass astrolabe borders."],
+    ["teacup-dragons", "Teacup Dragons", "fun_one_shot_boss", "#b44732",
+      "Gilded porcelain faces with ember-flame pips and cozy dragon-tea court frames."],
+    ["badger-alchemists", "Badger Alchemists", "fun_enchanted_hand", "#683c7a",
+      "Apothecary-vellum faces with potion-flask pips and emerald-copper borders."],
+    ["goose-archmages", "Goose Archmages", "fun_golden_goose", "#3c4f94",
+      "Royal arcane-parchment faces with pointy-hat & wand pips and mischievous wizard runes."]
+  ].map(([id,name,achievement,color,tagline]) => ({id,name,achievement,color,tagline,art:"card-sets/" + id}));
+
   function cardStyles(achievements) {
     const byId = new Map(achievements.map(a => [a.id,a]));
     return cardStyleDefinitions.map(style => {
@@ -64,11 +83,24 @@
       return {...style, earned:achievement.earned, goal:achievement.description, achievementName:achievement.name};
     });
   }
+  function cardSets(achievements) {
+    const byId = new Map(achievements.map(a => [a.id,a]));
+    return cardSetDefinitions.map(set => {
+      const achievement = byId.get(set.achievement);
+      return {...set, earned:achievement.earned, goal:achievement.description, achievementName:achievement.name};
+    });
+  }
   function profileStyles(profile) {
     return cardStyles(earnedAchievements(savedStats(profile),profile.discovered));
   }
+  function profileCardSets(profile) {
+    return cardSets(earnedAchievements(savedStats(profile),profile.discovered));
+  }
   function equippedStyle(profile, styles) {
     return styles.find(style => style.id === profile.cardStyle && style.earned) || null;
+  }
+  function equippedCardSet(profile, sets) {
+    return sets.find(set => set.id === profile.cardSet && set.earned) || null;
   }
 
   const copy = value => JSON.parse(JSON.stringify(value));
@@ -85,6 +117,7 @@
     return {
       runsStarted: 0, runsFinished: 0, runsAbandoned: 0, wins: 0, losses: 0,
       practiceRuns: 0, challengeVictories: 0, bestScore: 0, bestHand: "", bestAnte: 0,
+      bestFlushesInBlind: 0, bestHandLevel: 1, peakMoney: 0,
       ...Object.fromEntries(counterKeys.map(id => [id, 0])),
       deckWins: {}, stakeWins: {}, deckStakeWins: {}, challengeWins: {}, itemUses: {}
     };
@@ -317,6 +350,10 @@
       stats.bestHand = run.stats.bestHand || "";
     }
     stats.bestAnte = Math.max(stats.bestAnte, count(run.ante));
+    stats.bestFlushesInBlind = Math.max(count(stats.bestFlushesInBlind), count(run.stats.bestFlushesInBlind));
+    const topLevel = Math.max(1, ...Object.values(run.levels || {}).map(count));
+    stats.bestHandLevel = Math.max(count(stats.bestHandLevel) || 1, topLevel);
+    stats.peakMoney = Math.max(count(stats.peakMoney), count(run.money));
 
     const discoveries = discoveryIds(run, game);
     trackFamiliarCareer(career, tracking, run, game, discoveries);
@@ -404,6 +441,7 @@
 
     let notifications = [];
     let styleNotifications = [];
+    let setNotifications = [];
     let data = read(key);
     if (data?.version !== 1 || !Array.isArray(data.profiles) || !data.profiles.length) {
       const profile = newProfile("apprentice", "Apprentice");
@@ -452,6 +490,7 @@
         activeId = data.activeId = profile.id;
         notifications = [];
         styleNotifications = [];
+        setNotifications = [];
         persist();
         return summarize(profile);
       },
@@ -463,6 +502,7 @@
         data.profiles.push(profile);
         notifications = [];
         styleNotifications = [];
+        setNotifications = [];
         activeId = data.activeId = profile.id;
         persist();
         return summarize(profile);
@@ -492,6 +532,22 @@
       takeCardStyleUnlocks() {
         return styleNotifications.splice(0);
       },
+      getEquippedCardSet() {
+        refresh();
+        const profile = active();
+        return equippedCardSet(profile, profileCardSets(profile));
+      },
+      equipCardSet(id) {
+        refresh();
+        const profile = active();
+        if (id !== "classic" && !profileCardSets(profile).some(set => set.id === id && set.earned)) return false;
+        profile.cardSet = id;
+        persist();
+        return true;
+      },
+      takeCardSetUnlocks() {
+        return setNotifications.splice(0);
+      },
       setDeckDifficulty(deckId, stakeId) {
         const game = dataForGame();
         if (!own(game.decks, deckId) || !own(game.stakes, stakeId)) return false;
@@ -511,9 +567,13 @@
         const career = familiarCareer(profile, game);
         const previous = {...career.earned};
         const previousStyles = new Set(profileStyles(profile).filter(style => style.earned).map(style => style.id));
+        const previousSets = new Set(profileCardSets(profile).filter(set => set.earned).map(set => set.id));
         trackRun(profile, snapshot);
         for (const style of profileStyles(profile)) {
           if (style.earned && !previousStyles.has(style.id)) styleNotifications.push(style);
+        }
+        for (const set of profileCardSets(profile)) {
+          if (set.earned && !previousSets.has(set.id)) setNotifications.push(set);
         }
         const available = availableFamiliars(game, career);
         snapshot.unlocks = {...snapshot.unlocks, familiars:available};
@@ -563,9 +623,11 @@
         });
         const collection = buildCollection(game, discovered, availability);
         const styles = cardStyles(achievements);
+        const sets = cardSets(achievements);
         return { profile: summarize(profile), deckDifficulties: { ...profile.deckDifficulties },
           stats, discovered, ...availability, achievements, familiarAchievements, collection,
-          cardStyles:styles, equippedCardStyle:equippedStyle(profile,styles)?.id || "classic" };
+          cardStyles:styles, equippedCardStyle:equippedStyle(profile,styles)?.id || "classic",
+          cardSets:sets, equippedCardSet:equippedCardSet(profile,sets)?.id || "classic" };
       }
     };
   }

@@ -130,18 +130,34 @@
 .cw-deck-count b { color:var(--cw-muted); font:700 12px/1.2 var(--mono,monospace); }
 .cw-deck-count.cw-red-suit span { color:#f29d9e; }
 .cw-deck-cards {
-  display:flex; align-items:center; list-style:none; margin:0; padding:10px 8px 9px 4px;
-  min-height:calc(var(--face) * 99 / 70 + 19px); overflow-x:auto; scrollbar-width:thin;
+  display:flex; align-items:center; list-style:none; margin:0; padding:18px 14px 14px 8px;
+  min-height:calc(var(--face) * 99 / 70 + 34px); overflow-x:auto; overflow-y:visible; scrollbar-width:thin;
   scrollbar-color:#72607c transparent;
 }
-.cw-deck-slot { flex:0 1 calc(var(--face) + 3px); min-width:22px; }
+.cw-deck-slot {
+  position:relative; flex:0 1 calc(var(--face) + 2px); min-width:22px;
+  transition:flex-basis .18s ease, transform .18s ease, margin .18s ease;
+}
 .cw-deck-slot:last-child { flex:0 0 var(--face); }
-.cw-deck-slot .playing-card { display:block; width:var(--face); max-height:none; border-radius:5px; cursor:help; }
+.cw-deck-slot .playing-card {
+  display:block; width:var(--face); max-height:none; border-radius:5px; cursor:pointer;
+  transform:translateY(calc(var(--arc, 0px) - var(--lift, 0px))) rotate(var(--rot, 0deg));
+  transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.cw-deck-cards:hover .cw-deck-slot { flex-basis:calc(var(--face) + 5px); }
+.cw-deck-slot:is(:hover,:focus-within) { z-index:8; }
+.cw-deck-slot:is(:hover,:focus-within) .playing-card {
+  --lift:14px;
+  transform:translateY(calc(var(--arc, 0px) - var(--lift, 0px))) rotate(calc(var(--rot, 0deg) * .25)) scale(1.08);
+  box-shadow:0 12px 22px #0b0712c0, 0 0 0 1.5px #f4d486aa;
+  z-index:8;
+}
+.cw-deck-slot:is(:hover,:focus-within) + .cw-deck-slot { transform:translateX(8px); }
+.cw-deck-slot:has(+ .cw-deck-slot:is(:hover,:focus-within)) { transform:translateX(-6px); }
 .cw-deck-slot .corner-rank { font-size:calc(var(--face) * .26); gap:1px; }
 .cw-deck-slot .card-enhance b { display:none; }
 .cw-deck-slot .boss-cross { font-size:calc(var(--face) * .36); }
 .cw-deck-slot.cw-drawn .playing-card { filter:grayscale(1) brightness(.54); }
-.cw-deck-slot .playing-card:is(:hover,:focus-visible) { --lift:4px; z-index:4; }
 .cw-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(102px,1fr)); gap:8px; }
 .cw-stat { border:1px solid #4b4057; background:#292433; padding:10px 12px; border-radius:6px; }
 .cw-stat span { display:block; color:var(--cw-muted); font-size:11px; }

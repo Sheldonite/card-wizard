@@ -38,9 +38,48 @@
     C:{name:'Clubs',color:'#27483e',path:'M10 1.2a4.5 4.5 0 0 1 3.5 7.2c3.3-2 6.6.7 5.2 4.5-1.2 3.7-5.4 4.4-8 1.2.5 2.4 1.4 4 3.4 5.1H5.9c2-1.1 2.9-2.7 3.4-5.1-2.6 3.2-6.8 2.5-8-1.2-1.4-3.8 1.9-6.5 5.2-4.5A4.5 4.5 0 0 1 10 1.2Z',etch:'M7.5 5.4c0-1.3 1.3-2.3 2.6-2.2M3.3 12c0-1.2.7-2.1 1.9-2.2'},
     D:{name:'Diamonds',color:'#a13e30',path:'M10 0 18.4 10 10 20 1.6 10Z',etch:'m10 3 3.7 7-3.7 6.8L6.2 10z'}
   };
-  function pip(suit,attr='') {return '<svg viewBox="0 0 20 20" aria-hidden="true" '+attr+'><path fill="currentColor" d="'+suits[suit].path+'"/></svg>';}
-  function stampedPip(suit,x,y,style='') {
-    return '<svg viewBox="0 0 20 20" aria-hidden="true" class="pip '+style+'" style="left:'+x+'%;top:'+y+'%"><path fill="currentColor" d="'+suits[suit].path+'"/><path class="pip-etch" d="'+suits[suit].etch+'"/></svg>';
+  const cardSetThemes = {
+    'toadstool-coven': {
+      S:{color:'#2f5e42',path:'M10 1.4C4.2 1.8 1.4 6.6 1.8 10.6c.3 2.5 3.1 2.7 6.3 2.3-.3 2.5-1 4.1-2.7 5.7h9.2c-1.7-1.6-2.4-3.2-2.7-5.7 3.2.4 6 .2 6.3-2.3.4-4-2.4-8.8-8.2-9.2Z',etch:'M6.2 6.2a1.1 1.1 0 1 0 .1 0M13.2 5.4a1 1 0 1 0 .1 0M10.2 8.8a1.2 1.2 0 1 0 .1 0'},
+      H:{color:'#b44032',path:'M10 18.8C7.8 16.4 1.2 11.4 1.2 6.5c0-4.6 5.6-6.2 8.8-1.9 3.2-4.3 8.8-2.7 8.8 1.9 0 4.9-6.6 9.9-8.8 12.3Z',etch:'M5.4 6.6a1 1 0 1 0 .1 0M14.2 6.8a1 1 0 1 0 .1 0M10 11.8a1.1 1.1 0 1 0 .1 0'},
+      C:{color:'#24563b',path:'M10 1.4c3 0 5 2.4 4.2 5.4 2.8-1.4 5.6 1 4.6 4.4-1 3.3-4.6 4-7.4 1.6.4 2.3 1.2 4.1 3 5.8H5.6c1.8-1.7 2.6-3.5 3-5.8-2.8 2.4-6.4 1.7-7.4-1.6-1-3.4 1.8-5.8 4.6-4.4C5 3.8 7 1.4 10 1.4Z',etch:'M10 4.8v6.2M6.2 9.6 10 11l3.8-1.4'},
+      D:{color:'#b06a26',path:'M10 .8C13.6 4.4 17.8 7.8 18 11c-.2 3.2-4.4 5.8-8 8.4C6.4 16.8 2.2 14.2 2 11c.2-3.2 4.4-6.6 8-10.2Z',etch:'M4.6 9.2c3.2 1.8 7.6 1.8 10.8 0M10 3.2v4.8'}
+    },
+    'owl-observatory': {
+      S:{color:'#2a3a74',path:'M10 .8c-2 4-8 7.4-8 11.4 0 3.8 4.3 4.8 7 1.9-.4 2.2-1.2 3.6-3 4.9h8c-1.8-1.3-2.6-2.7-3-4.9 2.7 2.9 7 1.9 7-1.9 0-4-6-7.4-8-11.4Z',etch:'M10 4.6l1 2.7 2.8 1-2.8 1-1 2.7-1-2.7-2.8-1 2.8-1Z'},
+      H:{color:'#a33a5e',path:'M10 18.8C8 16.6 1.2 11.4 1.2 6.4 1.2 1.3 7.1.3 10 4.8 12.9.3 18.8 1.3 18.8 6.4c0 5-6.8 10.2-8.8 12.4Z',etch:'M10 7.2l.8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8Z'},
+      C:{color:'#2b5d68',path:'M10 1.2a4.3 4.3 0 0 1 3.4 7c3.2-1.8 6.4.8 5 4.4-1.1 3.4-5.1 4.1-7.6 1.1.4 2.3 1.3 4 3.2 5.2H6c1.9-1.2 2.8-2.9 3.2-5.2-2.5 3-6.5 2.3-7.6-1.1-1.4-3.6 1.8-6.2 5-4.4a4.3 4.3 0 0 1 3.4-7Z',etch:'M10 4.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4M6.2 10.6a1.4 1.4 0 1 0 0 2.8M13.8 10.6a1.4 1.4 0 1 0 0 2.8'},
+      D:{color:'#b57924',path:'M10 .4 13 7l6.6 3-6.6 3-3 6.6L7 13 .4 10 7 7Z',etch:'M10 4.5 11.5 8.5 15.5 10 11.5 11.5 10 15.5 8.5 11.5 4.5 10 8.5 8.5Z'}
+    },
+    'teacup-dragons': {
+      S:{color:'#2c5d63',path:'M10.4.8C7.6 4.4 2 7.4 2 11.8c0 4 4.4 5.2 7.1 2.2-.4 2.2-1.2 3.7-3 5h7.8c-1.8-1.3-2.6-2.8-3-5 2.7 3 7.1 1.8 7.1-2.2 0-3.2-2.4-5.6-4.2-7.8.2 2.2-.8 3.2-1.8 2.4C12.4 4.2 11.8 2.2 10.4.8Z',etch:'M8 12.2c-.4-2.2 1.2-4 2.8-5.4'},
+      H:{color:'#b83a2c',path:'M10 18.8C7.8 16.4 1.4 11.6 1.4 6.6c0-4.4 5.4-5.8 8.6-1.8 3.2-4 8.6-2.6 8.6 1.8 0 5-6.4 9.8-8.6 12.2Z',etch:'M10 13.8c-2-1.6-3-3.6-1.8-5.6.8 1.2 1.8.8 2.2-.8 1.6 1.8 1.8 4.4-.4 6.4'},
+      C:{color:'#3b6944',path:'M10 1.4c2.8 1.4 4.2 4.2 3.2 6.8 3-1.4 5.8.6 5.2 3.8-.6 3.2-4.6 4.4-7.6 1.8.4 2.2 1.2 3.9 3.1 5.2H6.1c1.9-1.3 2.7-3 3.1-5.2-3 2.6-7 1.4-7.6-1.8-.6-3.2 2.2-5.2 5.2-3.8-1-2.6.4-5.4 3.2-6.8Z',etch:'M10 4v7.6M5.4 10.8 10 11.6l4.6-.8'},
+      D:{color:'#bd6b24',path:'M10 .6 18 10 10 19.4 2 10Z',etch:'M10 4c2.2 2 3.4 4 3.4 6S12.2 14 10 16c-2.2-2-3.4-4-3.4-6S7.8 6 10 4Z'}
+    },
+    'badger-alchemists': {
+      S:{color:'#5a346e',path:'M7.4 1.4h5.2v2.4h-1v2.6c3.8 1.6 6.4 4.4 6.4 7.4 0 3-3.4 5-8 5s-8-2-8-5c0-3 2.6-5.8 6.4-7.4V3.8h-1V1.4Z',etch:'M5.4 13.2c2.4-1.2 6.8 1.2 9.2 0M8.6 10.2a1 1 0 1 0 .1 0'},
+      H:{color:'#a8375a',path:'M10 18.8C8 16.6 1.2 11.6 1.2 6.5 1.2 1.2 7.2.2 10 4.8 12.8.2 18.8 1.2 18.8 6.5c0 5.1-6.8 10.1-8.8 12.3Z',etch:'M5.6 9.8c2.6-.8 6.2.8 8.8 0M7.4 6.4a.9.9 0 1 0 .1 0'},
+      C:{color:'#276953',path:'M10 1.4a4.2 4.2 0 0 1 3.3 6.8c3.2-1.8 6.3.8 5 4.4-1.2 3.4-5.1 4.2-7.6 1.3.4 2.2 1.3 3.9 3.2 5.1H6.1c1.9-1.2 2.8-2.9 3.2-5.1-2.5 2.9-6.4 2.1-7.6-1.3-1.3-3.6 1.8-6.2 5-4.4a4.2 4.2 0 0 1 3.3-6.8Z',etch:'M7.8 5.2a1.3 1.3 0 1 0 2.4 0M5.2 11.4a1.1 1.1 0 1 0 2 0M12.8 11.4a1.1 1.1 0 1 0 2 0'},
+      D:{color:'#b46b28',path:'M10 .6 17.6 7.4 15.2 16 10 19.6 4.8 16 2.4 7.4Z',etch:'M10 1.6v17M3.4 8l6.6 2.4L16.6 8'}
+    },
+    'goose-archmages': {
+      S:{color:'#2e4484',path:'M10.8.8 4.4 12.4c-1.8.6-2.8 1.6-2.8 2.6 0 2 3.8 3.6 8.4 3.6s8.4-1.6 8.4-3.6c0-1-1-2-2.8-2.6L10.8.8Z',etch:'M6.2 13.6c2.2.8 5.4.8 7.6 0M10.4 7.2l.7 1.6 1.7.7-1.7.7-.7 1.6-.7-1.6-1.7-.7 1.7-.7Z'},
+      H:{color:'#a82f4e',path:'M10 18.8C8 16.6 1.2 11.6 1.2 6.6c0-4.8 5.8-6 8.8-1.6 3-4.4 8.8-3.2 8.8 1.6 0 5-6.8 10-8.8 12.2Z',etch:'M6.4 7.8 7.6 5.2 10 7l2.4-1.8 1.2 2.6Z'},
+      C:{color:'#3c5234',path:'M10 1.2a4.4 4.4 0 0 1 3.4 7c3.3-1.9 6.5.8 5.1 4.5-1.2 3.5-5.2 4.2-7.8 1.2.4 2.3 1.4 4 3.3 5.1H6c1.9-1.1 2.9-2.8 3.3-5.1-2.6 3-6.6 2.3-7.8-1.2-1.4-3.7 1.8-6.4 5.1-4.5a4.4 4.4 0 0 1 3.4-7Z',etch:'M10 3.8v11.4M7.2 7.4h5.6'},
+      D:{color:'#b07822',path:'M10 .6 18.2 10 10 19.4 1.8 10Z',etch:'M10 4.6 14 10 10 15.4 6 10ZM10 7.6v4.8'}
+    }
+  };
+  let cardStyle, cardSet;
+  function suitSpec(suit,setOverride){
+    const activeSet=setOverride===undefined?cardSet:setOverride;
+    const custom=activeSet && cardSetThemes[activeSet.id]?.[suit];
+    return custom ? {...suits[suit],...custom} : suits[suit];
+  }
+  function pip(suit,attr='',setOverride) {return '<svg viewBox="0 0 20 20" aria-hidden="true" '+attr+'><path fill="currentColor" d="'+suitSpec(suit,setOverride).path+'"/></svg>';}
+  function stampedPip(suit,x,y,style='',setOverride) {
+    const s=suitSpec(suit,setOverride);
+    return '<svg viewBox="0 0 20 20" aria-hidden="true" class="pip '+style+'" style="left:'+x+'%;top:'+y+'%"><path fill="currentColor" d="'+s.path+'"/><path class="pip-etch" d="'+s.etch+'"/></svg>';
   }
   const left=25, right=75, center=50, top=15, bottom=85;
   const pairRows=ys=>ys.flatMap(y=>[[left,y],[right,y]]);
@@ -61,9 +100,9 @@
   function read(key) {try{return JSON.parse(localStorage.getItem(key));}catch{return null;}}
   function store(key,value) {try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}
   const profileStore=CWProgress.createStore();
-  let cardStyle;
   function applyCardStyle(){
     cardStyle=profileStore.getEquippedCardStyle();
+    cardSet=profileStore.getEquippedCardSet();
     const root=document.documentElement;
     if(cardStyle){
       root.dataset.cardStyle=cardStyle.id;
@@ -73,6 +112,15 @@
       delete root.dataset.cardStyle;
       root.style.removeProperty('--card-style-ink');
       root.style.removeProperty('--card-style-art');
+    }
+    if(cardSet){
+      root.dataset.cardSet=cardSet.id;
+      root.style.setProperty('--card-set-ink',cardSet.color);
+      root.style.setProperty('--card-set-art','url("'+CWContent.portrait(cardSet.art)+'")');
+    }else{
+      delete root.dataset.cardSet;
+      root.style.removeProperty('--card-set-ink');
+      root.style.removeProperty('--card-set-art');
     }
   }
   applyCardStyle();
@@ -113,7 +161,10 @@
       unlockQueue.push({title:'Familiar unlocked',name:f.name,art:f.art,hint:f.unlock});
     }
     for(const style of profileStore.takeCardStyleUnlocks()){
-      unlockQueue.push({title:'Card style unlocked',name:style.name,art:style.art,hint:style.goal});
+      unlockQueue.push({title:'Card back unlocked',name:style.name,art:style.art,hint:style.goal});
+    }
+    for(const set of profileStore.takeCardSetUnlocks()){
+      unlockQueue.push({title:'Card set unlocked',name:set.name,art:set.art,hint:set.goal});
     }
     showUnlock();
   }
@@ -133,6 +184,7 @@
     audio.setMuted(prefs.muted);
     document.body.classList.toggle('still',!!prefs.reducedMotion);
     window.CWShopCat?.syncMotion?.();
+    window.CWParlorCat?.syncMotion?.();
     document.body.classList.toggle('high-contrast',!!prefs.highContrast);
     const mute=$('sound-btn');
     mute.innerHTML='<i data-icon="sound">'+icon(prefs.muted?'mute':'sound')+'</i>';
@@ -156,33 +208,37 @@
       return sort==='suit'?suit || rank:rank || suit;
     });
   }
-  function art(card){
+  function art(card,themeOverride){
+    const activeStyle=themeOverride && 'cardStyle' in themeOverride ? themeOverride.cardStyle : cardStyle;
+    const activeSet=themeOverride && 'cardSet' in themeOverride ? themeOverride.cardSet : cardSet;
     const wildInk=card.enhancement==='wild'?'<span class="wild-ink" aria-hidden="true"></span>':'';
     if(card.rank>=11 && card.rank<=13){
-      const portrait=window.CWContent.portrait(faceNames[card.rank].toLowerCase());
+      const face=faceNames[card.rank].toLowerCase();
+      const portrait=window.CWContent.portrait(activeSet ? 'card-set-courts/'+activeSet.id+'-'+face : face);
       const suitsBand=wildInk?'<span class="court-suits" aria-hidden="true">'+
-        Object.keys(suits).map(suit=>pip(suit,'style="color:'+suits[suit].color+'"')).join('')+'</span>':'';
+        Object.keys(suits).map(suit=>pip(suit,'style="color:'+suitSpec(suit,activeSet).color+'"',activeSet)).join('')+'</span>':'';
       return '<span class="court-window" aria-hidden="true"></span>'+wildInk+
         '<img alt="" class="court" src="'+portrait+'">'+suitsBand;
     }
-    if(cardStyle && card.rank===14){
+    if(activeStyle && card.rank===14){
       return wildInk+'<span class="illustrated-ace" aria-hidden="true"></span>';
     }
     if(wildInk) return wildInk;
-    if(card.rank===14) return '<div class="pips ace-orbit">'+stampedPip(card.suit,50,50,'ace')+'<svg class="ace-spark" viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="m5 0 1.2 3.7L10 5 6.2 6.3 5 10 3.8 6.3 0 5l3.8-1.3z"/></svg></div>';
-    return '<div class="pips">'+spots[card.rank].map(([x,y])=>stampedPip(card.suit,x,y,y>50?'invert':'')).join('')+'</div>';
+    if(card.rank===14) return '<div class="pips ace-orbit">'+stampedPip(card.suit,50,50,'ace',activeSet)+'<svg class="ace-spark" viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="m5 0 1.2 3.7L10 5 6.2 6.3 5 10 3.8 6.3 0 5l3.8-1.3z"/></svg></div>';
+    return '<div class="pips">'+spots[card.rank].map(([x,y])=>stampedPip(card.suit,x,y,y>50?'invert':'',activeSet)).join('')+'</div>';
   }
   const enhancementIcons={bonus:'chip',mult:'mult',wild:'stars',glass:'diamond',steel:'steel',stone:'diamond',gold:'coin',lucky:'lucky'};
   const sealIcons={red:'repeat',gold:'coin',blue:'stars',purple:'scroll'};
-  function cardMarkup(c,i,n,preview=false,packTarget=null){
+  function cardMarkup(c,i,n,preview=false,packTarget=null,themeOverride=null){
+    const activeSet=themeOverride && 'cardSet' in themeOverride ? themeOverride.cardSet : cardSet;
     const offset=i-(n-1)/2, rot=offset*Math.min(1.7,11/(n-1 || 1));
-    const rank=rankText(c.rank)+pip(c.suit), debuffed=run.phase==='play' && CW.debuffed(run,c);
+    const rank=rankText(c.rank)+pip(c.suit,'',activeSet), debuffed=!themeOverride && run.phase==='play' && CW.debuffed(run,c);
     const bonus=Object.hasOwn(enhancementIcons,c.enhancement)?c.enhancement:'';
     const tally=c.tallyChips>0?'<span class="card-tally" aria-hidden="true">'+icon('chip')+'+'+esc(num(c.tallyChips))+'</span>':'';
     const label=[bonus==='stone'?'Stone card':cardName(c),bonus==='stone'?'':bonus,c.edition,c.seal && (c.seal+' seal'),tally && ('+'+num(c.tallyChips)+' permanent Chips'),debuffed && 'debuffed'].filter(Boolean).join(', ');
     const seal=c.seal?'<span class="wax-seal '+esc(c.seal)+'" aria-hidden="true">'+icon(sealIcons[c.seal])+'</span>':'';
     const face=bonus==='stone'?'<span class="stone-face" aria-hidden="true">'+icon('diamond')+'</span>':
-      '<span class="corner-rank">'+rank+'</span>'+art(c)+'<span class="corner-rank flipped">'+rank+'</span>';
+      '<span class="corner-rank">'+rank+'</span>'+art(c,themeOverride)+'<span class="corner-rank flipped">'+rank+'</span>';
     const badge=bonus?'<span class="card-enhance" aria-hidden="true">'+icon(enhancementIcons[bonus])+'<b>'+esc(bonus)+'</b></span>':'';
     const finish=window.CWContent.cardFinish(c);
     const foilStamp=c.edition==='foil'?'<span class="foil-stamp" aria-hidden="true">'+icon('spark')+'</span>':'';
@@ -190,7 +246,7 @@
     const controls=packTarget
       ? 'type="button" data-cw="'+(packTarget.action==='target'?'target':'pack-target')+'" data-value="'+esc(c.id)+'" aria-pressed="'+packTarget.selected+'"'+(packTarget.disabled?' disabled':'')
       : preview?(CWCardTip.mobile?'type="button" aria-haspopup="dialog"':'role="img" tabindex="0"'):'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
-    return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" '+CWCardTip.attribute(CWCardTip.details(c,debuffed))+' style="--suit:'+suits[c.suit].color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+foilStamp+seal+badge+tally+(debuffed?CWCardTip.cross:'')+'</'+element+'>';
+    return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" '+CWCardTip.attribute(CWCardTip.details(c,debuffed))+' style="--suit:'+suitSpec(c.suit,activeSet).color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+foilStamp+seal+badge+tally+(debuffed?CWCardTip.cross:'')+'</'+element+'>';
   }
   function describeFamiliar(id){
     const i=run.familiars.indexOf(id);
@@ -1118,13 +1174,19 @@
   }
   window.addEventListener('gamepadconnected',()=>{if(!pollHandle)pollGamepad();});
   CWP.configure({
-    cardPreview:(c,packTarget)=>cardMarkup(c,0,1,true,packTarget),
+    cardPreview:(c,packTarget,layout)=>cardMarkup(c,layout?.index ?? 0,layout?.total ?? 1,true,packTarget,layout?.theme || null),
     getState:()=>run,
     getSelection:spell=>['rankCopy','suitCopy'].includes(spell?.effect) ? [...selected] : selectedInPlayOrder(),
     getSettings:()=>({...prefs}),
     getProgress:()=>profileStore.getProgress(),
     equipCardStyle:id=>{
       if(!profileStore.equipCardStyle(id))return false;
+      applyCardStyle();
+      render(false);
+      return true;
+    },
+    equipCardSet:id=>{
+      if(!profileStore.equipCardSet(id))return false;
       applyCardStyle();
       render(false);
       return true;

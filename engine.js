@@ -273,6 +273,7 @@
     s.handCounts = {};
     s.lastType = "";
     s.playedCount = 0;
+    s.flushesThisBlind = 0;
     familiarUnlocks.state(s).playedCards = {};
     s.discardCount = 0;
     s.lastScore = null;
@@ -745,7 +746,10 @@
   function clearBlind(s,result,heldCards) {
     s.stats.roundsWon++;
     familiarUnlocks.roundWon(s,result.name);
-    if (s.blind === 2) s.stats.bossesWon++;
+    if (s.blind === 2) {
+      s.stats.bossesWon++;
+      if (s.playedCount === 1 && s.score >= s.target) s.stats.oneShotBoss = (s.stats.oneShotBoss || 0) + 1;
+    }
     dispatch(s,"roundEnd",{name:result.name,held:heldCards,succeeded:true});
     const mimes = s.familiars.filter(ref=>jokerOf(resolvedOwner(s,ref)) === "Mime").length;
     for (const card of heldCards) {
@@ -787,6 +791,13 @@
       s.handCounts[result.name] = (s.handCounts[result.name] || 0) + 1;
       s.seenHands[result.name] = (s.seenHands[result.name] || 0) + 1;
       s.lastType = result.name;
+      if (["Flush","Straight Flush","Flush House","Flush Five"].includes(result.name)) {
+        s.flushesThisBlind = (s.flushesThisBlind || 0) + 1;
+        s.stats.bestFlushesInBlind = Math.max(s.stats.bestFlushesInBlind || 0, s.flushesThisBlind);
+      }
+      if (used.length === 5 && used.every(c => c.enhancement || c.seal || c.edition)) {
+        s.stats.enchantedFive = (s.stats.enchantedFive || 0) + 1;
+      }
     }
     s.playedCount++;
     s.stats.handsPlayed++;
