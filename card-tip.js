@@ -38,19 +38,23 @@
   tip.setAttribute('role','tooltip');
   tip.hidden = true;
   document.body.append(tip);
-  let active;
+  let active, activeContent, tipWidth = 0, tipHeight = 0;
+  const observer = new MutationObserver(()=>{if(active && !active.isConnected) hide();});
   function hide() {
     if (active?.getAttribute('aria-describedby') === tip.id) active.removeAttribute('aria-describedby');
     active = null;
+    activeContent = '';
     tip.hidden = true;
+    observer.disconnect();
   }
   function show(node, x, y) {
     if (mobile) return;
     const content = node?.dataset.cardTip;
     if (!content) { hide(); return; }
-    if (active !== node) {
+    if (active !== node || activeContent !== content) {
       hide();
       active = node;
+      activeContent = content;
       const [name,...lines] = content.split('\n');
       const heading = document.createElement('b');
       heading.textContent = name;
@@ -63,10 +67,12 @@
       root.CWContent.colorStats(tip);
       node.setAttribute('aria-describedby',tip.id);
       tip.hidden = false;
+      tipWidth = tip.offsetWidth;
+      tipHeight = tip.offsetHeight;
+      observer.observe(document.body,{childList:true,subtree:true});
     }
-    const width = tip.offsetWidth, height = tip.offsetHeight;
-    tip.style.left = Math.max(6, Math.min(x+14, innerWidth-width-6))+'px';
-    tip.style.top = Math.max(6, y+height+20 <= innerHeight ? y+14 : y-height-10)+'px';
+    tip.style.left = Math.max(6, Math.min(x+14, innerWidth-tipWidth-6))+'px';
+    tip.style.top = Math.max(6, y+tipHeight+20 <= innerHeight ? y+14 : y-tipHeight-10)+'px';
   }
   const selector = '[data-card-tip]';
   function pointer(e) {
@@ -84,5 +90,4 @@
   document.addEventListener('pointerdown',hide,true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape') hide();},true);
   window.addEventListener('blur',hide);
-  new MutationObserver(()=>{if(active && !active.isConnected) hide();}).observe(document.body,{childList:true,subtree:true});
 })(window);

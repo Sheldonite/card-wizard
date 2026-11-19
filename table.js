@@ -132,6 +132,7 @@
     audio.setVolumes(prefs.musicVolume,prefs.effectVolume);
     audio.setMuted(prefs.muted);
     document.body.classList.toggle('still',!!prefs.reducedMotion);
+    window.CWShopCat?.syncMotion?.();
     document.body.classList.toggle('high-contrast',!!prefs.highContrast);
     const mute=$('sound-btn');
     mute.innerHTML='<i data-icon="sound">'+icon(prefs.muted?'mute':'sound')+'</i>';
@@ -239,8 +240,20 @@
   }
   function renderSelection(){
     const view=selected.size?CW.preview(run,selectedInPlayOrder()):null;
-    $('chips').textContent=$('mult').textContent='\u2014';
-    for(const id of ['chips','mult']) $(id).style.removeProperty('--score-digits');
+    const baseHand=view && CW.HANDS?.[view.name];
+    const baseLv=view ? Math.max(1,view.level ?? run.levels?.[view.name] ?? 1) : 1;
+    const baseChips=view ? (view.baseChips ?? (baseHand ? baseHand.chips + (baseLv - 1) * baseHand.chipStep : null)) : null;
+    const baseMult=view ? (view.baseMult ?? (baseHand ? baseHand.mult + (baseLv - 1) * baseHand.multStep : null)) : null;
+    if(baseChips!=null && baseMult!=null){
+      const chipsText=compact(baseChips), multText=compact(baseMult);
+      $('chips').textContent=chipsText;
+      $('mult').textContent=multText;
+      $('chips').style.setProperty('--score-digits',chipsText.length);
+      $('mult').style.setProperty('--score-digits',multText.length);
+    }else{
+      $('chips').textContent=$('mult').textContent='\u2014';
+      for(const id of ['chips','mult']) $(id).style.removeProperty('--score-digits');
+    }
     $('selected-count').innerHTML=Array.from({length:5},(_,i)=>'<i class="pick-slot'+(i<selected.size?' filled':'')+'" aria-hidden="true"></i>').join('')+'<span class="visually-hidden">'+selected.size+' of 5 selected</span>';
     const area=$('cast-prompt');
     area.classList.remove('scoring');
@@ -662,7 +675,7 @@
       }
       const cleared=run.phase==='payout' || run.phase==='won';
       const singleHandClear=cleared && result.total>=blindTarget;
-      const rewardsHoldMs=2000;
+      const rewardsHoldMs=moving?2000:450;
       const count=(chips,mult)=>{
         chipText.textContent=$('chips').textContent=compact(chips);
         multText.textContent=$('mult').textContent=compact(mult);
@@ -782,7 +795,7 @@
         if(singleHandClear){
           if(moving)fireworks=showHandFireworks();
           for(const group of [equation,counters]){
-            group.style.setProperty('--brew-cycle',rewardsHoldMs+'ms');
+            group.style.setProperty('--brew-cycle',fxTime(rewardsHoldMs)+'ms');
             group.classList.add('potion-eruption');
           }
         }
@@ -808,7 +821,7 @@
       if(cleared)audio.event('win');
       if(run.phase==='lost')audio.event('lose');
       const toRewards=moving && run.phase==='payout';
-      if(cleared)await new Promise(resolve=>setTimeout(resolve,rewardsHoldMs));
+      if(cleared)await wait(rewardsHoldMs);
       else await wait(moving?380:160);
       if(toRewards)revealRewards=await dimTableForRewards();
     }finally{
@@ -915,13 +928,28 @@
     }
   });
   // Capture the pointer so overlapping cards and gaps remain valid drop positions.
-  let drag=null, suppressClick=false;
+  let drag=null, longPress=null, suppressClick=false;
   const movable='#hand [data-card], #familiars [data-item], .companion-slots [data-companion]';
+  function clearLongPress(){if(longPress){clearTimeout(longPress.timer);longPress=null;}}
   document.addEventListener('dragstart',e=>{if(e.target.closest(movable))e.preventDefault();});
+  document.addEventListener('contextmenu',e=>{if(CWCardTip.mobile && e.target.closest('#hand [data-card]'))e.preventDefault();});
   document.addEventListener('pointerdown',e=>{
     suppressClick=false;
+    clearLongPress();
     const card=e.target.closest(movable);
     if(!card || busy || !e.isPrimary || e.button!==0 || drag)return;
+    if((CWCardTip.mobile || e.pointerType==='touch') && card.dataset.card!==undefined){
+      const id=e.pointerId, x=e.clientX, y=e.clientY;
+      longPress={id,x,y,timer:setTimeout(()=>{
+        longPress=null;
+        if(busy || CWP.isOpen() || !card.isConnected)return;
+        if(drag && !drag.active && drag.card===card)drag=null;
+        const handCard=currentHand.find(c=>String(c.id)===card.dataset.card);
+        if(!handCard)return;
+        suppressClick=true;
+        CWP.inspectSelection(card,()=>toggle(handCard),selected.size>=5 && !selected.has(handCard.id));
+      },450)};
+    }
     const cards=[...card.parentElement.children].filter(el=>el.matches(movable));
     if(cards.length<2)return;
     const slots=cards.map(el=>({
@@ -933,9 +961,11 @@
     card.setPointerCapture(e.pointerId);
   });
   document.addEventListener('pointermove',e=>{
+    if(longPress && longPress.id===e.pointerId && Math.hypot(e.clientX-longPress.x,e.clientY-longPress.y)>=6)clearLongPress();
     if(!drag || drag.id!==e.pointerId)return;
     const {card,cards,slots,from}=drag, dx=e.clientX-drag.x, dy=e.clientY-drag.y;
     if(!drag.active && Math.hypot(dx,dy)<6)return;
+    clearLongPress();
     drag.active=true;
     card.classList.add('lifted');
     card.style.translate=dx+'px '+dy+'px';
@@ -955,6 +985,7 @@
     });
   });
   function endDrag(e){
+    if(longPress && longPress.id===e.pointerId)clearLongPress();
     if(!drag || drag.id!==e.pointerId)return;
     const {card,cards,slots,from,to,active}=drag;
     drag=null;
@@ -979,7 +1010,6 @@
     const button=e.target.closest('button');if(!button || button.disabled)return;
     if(button.dataset.card!==undefined){
       const card=currentHand.find(c=>String(c.id)===button.dataset.card);
-      if(CWCardTip.mobile && !busy && card) return CWP.inspectSelection(button,()=>toggle(card),selected.size>=5 && !selected.has(card.id));
       return toggle(card);
     }
     if(button.dataset.move){

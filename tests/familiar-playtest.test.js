@@ -54,7 +54,7 @@ test('Wayfinder allows multiple one-rank gaps with either Ace and can complete a
     const run = practice.start('wayfinder');
     if (disabled === 'expired') {
       run.familiars[0] = market.withVariant('wayfinder','foil','perishable');
-      run.familiarMemory.wayfinder = {age:5};
+      run.jokerMemory.wayfinder = {age:5};
     } else if (disabled === 'boss') {
       run.blind = 2;
       run.bossId = 'hollow_crown';

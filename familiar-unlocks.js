@@ -94,7 +94,7 @@
   function discarded(s, cards, hand) {
     if (!eligible(s)) return;
     if (cards.length === 5 && cards.every(c => c.rank === 11 && c.enhancement !== "stone")) award(s, "Hit the Road");
-    if (hand.name === "Straight Flush" && hand.scoring.every(c => c.rank >= 10 && c.enhancement !== "stone")) award(s, "Brainstorm");
+    if (hand.name === "Straight Flush" && [10, 11, 12, 13, 14].every(rank => hand.scoring.some(c => c.rank === rank && c.enhancement !== "stone"))) award(s, "Brainstorm");
   }
   function roundWon(s, hand) {
     if (!eligible(s)) return;

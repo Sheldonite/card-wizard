@@ -144,7 +144,7 @@
     card.setAttribute('aria-expanded','true');
     sellTab = document.createElement('div');
     sellTab.className = 'owned-action-tab';
-    sellTab.popover = 'manual';
+    if (typeof sellTab.showPopover === 'function') sellTab.popover = 'manual';
     for (const {label,disabled,run} of actions) {
       const button=document.createElement('button');
       button.type='button';
@@ -161,7 +161,11 @@
     }
     card.after(sellTab);
     global.CWContent.colorStats(sellTab);
-    sellTab.showPopover?.();
+    if (typeof sellTab.showPopover === 'function') {
+      try { sellTab.showPopover(); } catch { sellTab.classList.add('is-open'); }
+    } else {
+      sellTab.classList.add('is-open');
+    }
     positionSell();
   }
   document.addEventListener('pointerdown',event=>{
@@ -238,20 +242,45 @@
     const observer = new ResizeObserver(fitTrials);
     observer.observe(layer);
     observer.observe(dialog());
-    let swipe;
+    let swipe, targetHold = null, suppressTargetClick = false;
+    const clearTargetHold = () => { if (targetHold) { clearTimeout(targetHold.timer); targetHold = null; } };
+    layer.addEventListener('contextmenu', event => {
+      if (mobile && event.target.closest('[data-cw="target"],[data-cw="pack-target"]')) event.preventDefault();
+    });
     layer.addEventListener('pointerdown', event => {
+      suppressTargetClick = false;
+      clearTargetHold();
+      const targetCard = (mobile || event.pointerType === 'touch') && event.isPrimary && event.button === 0
+        ? event.target.closest('[data-cw="target"],[data-cw="pack-target"]') : null;
+      if (targetCard) {
+        const id = event.pointerId, x = event.clientX, y = event.clientY;
+        targetHold = {id, x, y, timer: setTimeout(() => {
+          targetHold = null;
+          if (!targetCard.isConnected || casting) return;
+          suppressTargetClick = true;
+          const action = targetCard.dataset.cw;
+          inspectSelection(targetCard, () => act(action, targetCard.dataset.value ?? '', targetCard), targetCard.disabled);
+        }, 450)};
+      }
       const card = event.target.closest('.deck-slide');
       if (!card || card.dataset.fixed || !event.isPrimary || event.button !== 0) return;
       swipe = {id:event.pointerId, x:event.clientX, y:event.clientY};
       card.setPointerCapture(event.pointerId);
     });
+    layer.addEventListener('pointermove', event => {
+      if (targetHold && targetHold.id === event.pointerId && Math.hypot(event.clientX - targetHold.x, event.clientY - targetHold.y) >= 6) {
+        clearTargetHold();
+      }
+    });
     layer.addEventListener('pointerup', event => {
+      if (targetHold && targetHold.id === event.pointerId) clearTargetHold();
       if (swipe?.id !== event.pointerId) return;
       const dx = event.clientX - swipe.x, dy = event.clientY - swipe.y;
       swipe = null;
       if (Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy) * 1.3) stepDeck(dx < 0 ? 1 : -1);
     });
-    layer.addEventListener('lostpointercapture', () => { swipe = null; });
+    layer.addEventListener('pointercancel', clearTargetHold);
+    layer.addEventListener('lostpointercapture', () => { swipe = null; clearTargetHold(); });
     layer.addEventListener('input', event => {
       if (event.target.id === 'cw-run-seed') {
         restartSeed = event.target.value;
@@ -289,7 +318,11 @@
         if (offer && page==='pack') return inspectPackChoice(offer);
         const action=b?.dataset.cw;
         const activate=()=>act(action,b.dataset.value ?? '',b);
-        if (action==='target' || action==='pack-target') return inspectSelection(b,activate,b.disabled);
+        if (action==='target' || action==='pack-target') {
+          if (suppressTargetClick) { suppressTargetClick = false; return; }
+          if (!b.disabled) return activate();
+          return;
+        }
         if (b?.matches('.practice-choice')) return inspect(b,[{label:'Start playtest',run:activate}]);
         if (action==='reward-pack') {
           const s=state(), pack=item(s.rewardPacks[0]);
@@ -1026,6 +1059,8 @@
       const before=s.catSale && api().price(s,id,false);
       const oldPrice=before>price?'<del aria-hidden="true">'+cash(before)+'</del>':'';
       const priceTag='<span class="moon-price">'+oldPrice+'<span class="stat-money">'+cash(price)+'</span></span>';
+      const showTitle=!mobile && d.kind!=='familiar' && d.kind!=='card';
+      const titleTag=showTitle?'<span class="moon-title" aria-hidden="true">'+esc(d.name)+'</span>':'';
       let controls;
       if (mobile) {
         controls='<button type="button" class="moon-purchase" data-cw="inspect-offer" data-value="'+i+'" aria-haspopup="dialog" aria-label="'+esc('Inspect '+d.name)+'"'+(ok?'':' data-unavailable')+'>'+priceTag+'</button>';
@@ -1033,13 +1068,13 @@
         if (d.kind!=='familiar') details.splice(1,0,type);
         const tip=global.CWCardTip.attribute([...details,reason || 'Buy for '+cash(price)].join('\n'));
         const label=esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''));
-        controls='<button type="button" class="moon-purchase" '+(ok?'data-cw="buy"':'aria-disabled="true"')+' data-value="'+i+'" aria-label="'+label+'"'+tip+'>'+priceTag+'</button>';
+        controls='<button type="button" class="moon-purchase" '+(ok?'data-cw="buy"':'data-cw="buy-blocked" aria-disabled="true" data-reason="'+esc(reason)+'"')+' data-value="'+i+'" aria-label="'+label+'"'+tip+'>'+priceTag+'</button>';
         if (castable) controls+='<button type="button" class="moon-cast" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Buy and cast '+d.name+' for '+cash(price))+'">Buy &amp; cast</button>';
       }
       const tilt=(slot-(indices.length-1)/2)*Math.min(3,14/Math.max(1,indices.length-1));
       const pose='--slot:'+slot+';--tilt:'+tilt.toFixed(2)+'deg;--drop:'+Math.abs(tilt).toFixed(2)+'px';
       return '<article class="moon-item" data-stock-type="'+esc(family || d.kind)+'" style="'+pose+'"><div class="moon-display">'+
-        '<div class="moon-art" inert aria-hidden="true">'+marketObject(d)+'</div>'+controls+'</div></article>';
+        '<div class="moon-art" inert aria-hidden="true">'+marketObject(d)+'</div>'+titleTag+controls+'</div></article>';
     }
     const count=s.shopOfferCount ?? Math.max(0,s.offers.length-3);
     const shelf=(name,cls,indices,control='')=>{
@@ -1284,6 +1319,11 @@
     if (casting) return;
     const s=state() || {};
     const index=Number(value);
+    if (name==='buy-blocked') {
+      options.playSound?.('error');
+      options.toast?.(control?.dataset.reason || 'Unavailable');
+      return;
+    }
     if (name==='inspect-offer') {
       const {d,price,reason,castable,type,details}=shopOffer(s,index,api().capacity(s));
       const actions=[{label:'Buy '+cash(price),disabled:Boolean(reason),run:()=>act('buy',value,control)}];

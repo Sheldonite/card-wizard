@@ -42,7 +42,7 @@
     mirror: { name:"The Mirror", description:"Playing the same hand type twice in a row scores zero." },
     veil: { name:"The Veil", description:"Face cards count toward poker hands but score no chips or enchantments." },
     lock: { name:"The Lock", description:"Only hands of exactly five played cards can score." },
-    famine: { name:"The Famine", description:"Begin this blind with zero discards." },
+    famine: { name:"The Famine", description:"Begin this blind with zero discards.", minAnte:2 },
     moon: { name:"The Pale Moon", description:"Draw and hold one fewer card during this blind." },
     eclipse: { name:"The Eclipse", description:"The final blind demands three times the Small Blind score.", scale:3, final:true },
     prism: { name:"The Prism", description:"Diamonds count toward poker hands but score no chips or enchantments.", suit:"D" },
@@ -120,7 +120,8 @@
   }
   function blindInfo(s, index = s.blind) {
     const guard = BOSSES[s.bossId];
-    const base = s.ante <= 8 ? BASE_TARGETS[s.ante - 1] : Math.round(50000 * Math.pow(1.9, s.ante - 8));
+    const base = s.ante <= 8 ? BASE_TARGETS[s.ante - 1] : Math.round(50000 * Math.pow(2.4, Math.pow(s.ante - 8, 1.18)));
+    const stakeScale = s.ante === 1 ? (stake(s).ante1Scale || 1) : (stake(s).targetScale || 1);
     const kind = ["Small Blind","Big Blind","Boss Blind"][index];
     const reward = index < 2 ? TAGS[s.tags[index]] : null;
     let tag = reward?.description || reward;
@@ -134,7 +135,7 @@
     return {
       name: index === 2 ? guard.name : kind, kind,
       description: index === 2 ? (s.bossDisabled ? "Boss rule dispelled." : guard.description) : "Beat the target before you run out of hands.",
-      target: Math.floor(base * (stake(s).targetScale || 1) * (s.rules.targetScale || 1) *
+      target: Math.floor(base * stakeScale * (s.rules.targetScale || 1) *
         [1, 1.5, !s.bossDisabled && guard.scale || 2][index]),
       reward: Math.max(0,[3,4,5][index] - (index === 0 ? stake(s).rewardReduction || 0 : 0)),
       tag
@@ -178,7 +179,7 @@
       levels:{...Object.fromEntries(Object.keys(HANDS).map(name=>[name,1])),...rules.handLevels},
       seenHands:{}, offers:[], pack:null, lastScore:null, payout:null, tallyPerPlay:0,
       familiarProgress:familiarUnlocks.fresh(rules.starter.length),
-      jokerMemory:{}, startingDeckSize:0, familiarMemory:{}, nextBlind:{}, blindMods:{hands:0,discards:0,handSize:0},
+      jokerMemory:{}, startingDeckSize:0, nextBlind:{}, blindMods:{hands:0,discards:0,handSize:0},
       discovered:["deck_" + deckId,"stake_" + stakeId,...rules.starter,...(rules.startingConsumables || []),...(rules.startingVouchers || [])],
       stats:{handsPlayed:0,discardsUsed:0,bestHand:"",bestScore:0,roundsWon:0,skipped:0,
         moneyEarned:0,purchases:0,packsOpened:0,bossesWon:0,spellsCast:0}
@@ -213,8 +214,13 @@
     s.finalBosses ??= [];
     s.blindMods ??= {hands:0,discards:0,handSize:0};
     s.nextBlind ??= {};
-    s.familiarMemory ??= {};
     s.jokerMemory ??= {};
+    if (s.familiarMemory) {
+      for (const [key, value] of Object.entries(s.familiarMemory)) {
+        if (value && typeof value === "object") s.jokerMemory[key] = {...value, ...s.jokerMemory[key]};
+      }
+      delete s.familiarMemory;
+    }
     // Older runs could hold identical consumable references. Give every copy its own sell-value counter.
     for (const category of ["consumables","familiars"]) {
       const seen = new Set();
@@ -232,7 +238,7 @@
     if (s.phase === "shop" && s.shopRerolled == null) {
       // Older saves tracked paid rerolls only. A claimed free reroll from the
       // consecutive skips leading here also counts once its token is spent.
-      s.shopRerolled = Boolean(s.rerolls || s.familiarMemory.shopbell_sprite?.paid);
+      s.shopRerolled = Boolean(s.rerolls);
       for (let i = s.blind - 1; !s.shopRerolled && !s.freeReroll && s.skipReceipts?.[i]; i--) {
         s.shopRerolled = tagFamily(s.tags[i]) === "freeReroll";
       }
@@ -254,7 +260,9 @@
     if (s.phase !== "select") return false;
     s.phase = "play";
     if (s.blind === 2 && !s.rules.noFamiliarEffects && s.familiars.some(ref=>
-      jokerOf(ref) === "Chicot" && (market.splitVariant(ref).sticker !== "perishable" || (s.familiarMemory[memoryKey(ref)]?.age || 0)<5))) s.bossDisabled = true;
+      jokerOf(ref) === "Chicot" && (market.splitVariant(ref).sticker !== "perishable" || (s.jokerMemory[memoryKey(ref)]?.age || 0)<5))) s.bossDisabled = true;
+    const silenced = bossValue(s,"noJokers");
+    s.bossSilenced = silenced ? s.familiars.slice(0, silenced).map(memoryKey) : null;
     s.target = blindInfo(s).target;
     s.score = 0;
     s.blindMods = {hands:0,discards:0,handSize:0,...s.nextBlind};
@@ -370,6 +378,7 @@
     if (s.bossDisabled) return;
     const guard = boss(s);
     s.bossDisabled = true;
+    s.bossSilenced = null;
     s.target = blindInfo(s).target;
     if (guard && s.phase === "play") {
       if (guard.rule === "reduceHands") s.hands += guard.value;
@@ -377,6 +386,7 @@
         s.rules.discards + (stake(s).discards || 0) + power(s,"discards") + s.blindMods.discards +
         jokerCount(s,"Drunkard") + 3*jokerCount(s,"Merry Andy") - s.discardCount);
       refill(s);
+      if (s.score >= s.target) clearBlind(s, s.lastScore || {name: s.lastType || "High Card"}, s.hand);
     }
   }
   function matching(ids, min, max, source) {
@@ -449,13 +459,21 @@
     uses[key] = (uses[key] || 0) + 1;
   }
   const jokerOf = ref => content.familiars[baseId(ref)]?.joker;
-  const memoryKey = ref => String(ref).split("~")[3] || baseId(ref);
+  const memoryKey = ref => market.splitVariant(ref).instance || baseId(ref);
   const memoryOf = (s,ref) => s.jokerMemory[memoryKey(ref)] ??= {};
-  const bossSilences = (s,index) => s.phase === "play" && index < bossValue(s,"noJokers");
+  function bossSilences(s,index) {
+    if (s.phase !== "play") return false;
+    const count = bossValue(s,"noJokers");
+    if (!count) return false;
+    const ref = s.familiars[index];
+    if (!ref) return false;
+    if (Array.isArray(s.bossSilenced)) return s.bossSilenced.includes(memoryKey(ref));
+    return index < count;
+  }
   function activeFamiliar(s,index) {
     const ref = s.familiars[index];
     if (!ref || bossSilences(s,index) || s.rules.noFamiliarEffects) return false;
-    return market.splitVariant(ref).sticker !== "perishable" || (s.familiarMemory[memoryKey(ref)]?.age || 0) < 5;
+    return market.splitVariant(ref).sticker !== "perishable" || (s.jokerMemory[memoryKey(ref)]?.age || 0) < 5;
   }
   const jokerCount = (s,name) => s.familiars.filter((ref,i)=>jokerOf(ref) === name && activeFamiliar(s,i)).length;
   const hasJoker = (s,name) => jokerCount(s,name) > 0;
@@ -493,7 +511,6 @@
     if (index < 0 || eternal(ref)) return false;
     s.familiars.splice(index,1);
     delete s.jokerMemory[memoryKey(ref)];
-    delete s.familiarMemory[memoryKey(ref)];
     return true;
   }
   function destroyCards(s,cards) {
@@ -512,14 +529,13 @@
     s.familiars.push(copy);
     familiarUnlocks.inventory(s);
     s.jokerMemory[memoryKey(copy)] = {...memoryOf(s,source)};
-    s.familiarMemory[memoryKey(copy)] = {...s.familiarMemory[memoryKey(source)]};
   }
   function uniqueRef(s,ref) {
     const plain = market.splitVariant(ref);
     const canonical = market.withVariant(plain.id,plain.edition,plain.sticker);
     if (![...s.familiars,...s.consumables].some(r=>memoryKey(r) === plain.id)) return canonical;
     s.nextInstance = (s.nextInstance || 0) + 1;
-    return [plain.id,plain.edition || "",plain.sticker || "","i"+s.nextInstance].join("~");
+    return market.withVariant(plain.id,plain.edition,plain.sticker,"i"+s.nextInstance);
   }
   function eventContext(s,extra) {
     const smeared = hasJoker(s,"Smeared Joker");
@@ -589,6 +605,9 @@
     if (!cards) return null;
     const hand = classify(s,cards);
     const {name,contains,skippedRank} = hand;
+    const baseLevel = s.levels[name];
+    const baseChips = HANDS[name].chips + (baseLevel-1)*HANDS[name].chipStep;
+    const baseMult = HANDS[name].mult + (baseLevel-1)*HANDS[name].multStep;
     const scored = hasJoker(s,"Splash") ? cards : hand.scoring;
     const guard = boss(s);
     const previous = s.handCounts[name] || 0;
@@ -605,11 +624,23 @@
         (guard.rule === "firstHand" && !s.playedCount) || (guard.rule === "slowStart" && s.playedCount < 2) ||
         (guard.rule === "noEnhancements" && scored.slice(0,guard.value).some(c=>c.enhancement)))))};
     if (blocked) {
-      dispatch(s,"after",handEffects);
       let money = 0;
-      for (const ref of s.familiars) if (jokerOf(resolvedOwner(s,ref)) === "Matador") { earn(s,8); money+=8; countUse(s,ref); }
-      return {name,level:s.levels[name],chips:0,mult:0,total:0,money,scoring:[],blocked:true,
-        steps:[{label:guard.name,text:guard.description}],broken:cards.filter(c=>!s.deck.some(card=>card.id===c.id)).map(c=>c.id)};
+      const steps = [{label:guard.name,text:guard.description}];
+      for (const ref of s.familiars) {
+        const owner = resolvedOwner(s,ref);
+        if (jokerOf(owner) === "Matador") {
+          earn(s,8);
+          money += 8;
+          countUse(s,ref);
+          enqueueFamiliarEvent(s,{event:"hand",familiarId:ref,money:8});
+          const fact = {event:"hand",familiarId:ref,pass:0,...(owner!==ref && {copiedFrom:owner})};
+          const step = {label:item(ref).name,...fact,text:"+$8",chips:0,mult:0};
+          Object.defineProperty(step,"fact",{value:{...fact,money:8}});
+          steps.push(step);
+        }
+      }
+      return {name,level:baseLevel,baseChips,baseMult,chips:0,mult:0,total:0,money,scoring:[],blocked:true,
+        steps,broken:[]};
     }
     const balance = s.money;
     dispatch(s,"before",handEffects);
@@ -707,7 +738,7 @@
       i >= bossValue(s,"noEnhancements") && ctx.chance(4));
     dispatch(s,"after",handEffects);
     destroyCards(s,broken);
-    return {name,level,chips,mult,total:Math.floor(chips*mult),money,scoring:active.map(c=>c.id),suppressed,steps,
+    return {name,level,baseChips,baseMult,chips,mult,total:Math.floor(chips*mult),money,scoring:active.map(c=>c.id),suppressed,steps,
       broken:cards.filter(c=>!s.deck.some(card=>card.id===c.id)).map(c=>c.id)};
   }
 
@@ -727,18 +758,20 @@
       }
     }
     for (const ref of s.familiars) {
-      const {sticker} = market.splitVariant(ref);
-      if (sticker === "rental") s.money -= 3;
-      if (sticker === "perishable") {
-        const memory = s.familiarMemory[memoryKey(ref)] ??= {};
-        memory.age = (memory.age || 0) + 1;
-      }
+      if (market.splitVariant(ref).sticker === "rental") s.money -= 3;
     }
     dispatch(s,"cashBonus");
     const blind = blindInfo(s).reward;
     const interest = s.rules.noInterest ? 0 : (1+jokerCount(s,"To the Moon")) * Math.min(Math.floor(Math.max(0,s.money) / Math.max(2,5 - power(s,"interestDiscount"))),
       5 + power(s,"interestCap"));
+    for (const ref of s.familiars) {
+      if (market.splitVariant(ref).sticker === "perishable") {
+        const memory = memoryOf(s,ref);
+        memory.age = (memory.age || 0) + 1;
+      }
+    }
     const bonus = s.earnedBonus;
+    s.bossSilenced = null;
     s.payout = {blind,hands:s.hands,interest,bonus,total:blind + s.hands + interest + bonus};
     s.phase = "payout";
   }
@@ -750,13 +783,15 @@
     const result = scoreHand(s,ids);
     s.hands--;
     s.score += result.total;
-    s.handCounts[result.name] = (s.handCounts[result.name] || 0) + 1;
-    s.seenHands[result.name] = (s.seenHands[result.name] || 0) + 1;
-    s.lastType = result.name;
+    if (!result.blocked) {
+      s.handCounts[result.name] = (s.handCounts[result.name] || 0) + 1;
+      s.seenHands[result.name] = (s.seenHands[result.name] || 0) + 1;
+      s.lastType = result.name;
+    }
     s.playedCount++;
     s.stats.handsPlayed++;
     if (result.total > s.stats.bestScore) { s.stats.bestScore = result.total; s.stats.bestHand = result.name; }
-    if (s.tallyPerPlay) {
+    if (!result.blocked && s.tallyPerPlay) {
       for (const c of used) updateCard(s,c,{tallyChips:(c.tallyChips || 0) + s.tallyPerPlay});
     }
     const held = s.hand.filter(c=>!ids.includes(c.id));
@@ -827,18 +862,37 @@
       const memory = s.jokerMemory[memoryKey(ref)] || {};
       const target = s.jokerTargets;
       const rank = r => RANKS[r] || r;
+      const loyaltyLeft = 6 - (memory.turn || 0);
+      const seltzerLeft = Math.max(0, 10 - (memory.spent || 0));
+      const yorickMult = 1 + Math.floor((memory.discarded || 0) / 23);
+      const topHand = mostPlayed(s);
+      const topPlays = s.seenHands[topHand] || 0;
       const hints = {
         "The Idol":target && rank(target.idol.rank) + " of " + SUITS[target.idol.suit],
         "Ancient Joker":target && SUITS[target.ancient], "Castle":target && SUITS[target.castle],
         "To Do List":target?.hand, "Mail-In Rebate":target && rank(target.rank),
         "Invisible Joker":Math.min(2,memory.rounds || 0) + "/2 rounds",
-        "Loyalty Card":(6-(memory.turn || 0))+" hands to go",
-        "Yorick":((memory.discarded || 0)%23)+"/23 cards",
+        "Loyalty Card":loyaltyLeft + (loyaltyLeft === 1 ? " hand to go" : " hands to go"),
+        "Ice Cream":"+" + Math.max(0, 100 - 5 * (memory.spent || 0)) + " Chips",
+        "Popcorn":"+" + Math.max(0, 20 - 4 * (memory.spent || 0)) + " Mult",
+        "Seltzer":seltzerLeft + (seltzerLeft === 1 ? " hand left" : " hands left"),
+        "Turtle Bean":"+" + Math.max(0, 5 - (memory.spent || 0)) + " hand size",
+        "Ramen":"x" + Number(Math.max(1, 2 - (memory.discarded || 0) / 100).toFixed(2)) + " Mult",
+        "Rocket":"$" + (1 + (memory.bonus || 0)) + "/round",
+        "Yorick":"x" + yorickMult + " Mult, " + ((memory.discarded || 0) % 23) + "/23 cards",
+        "Driver's License":s.deck.filter(card=>card.enhancement).length + "/16 enhanced",
+        "Supernova":topPlays ? topHand + ": +" + topPlays + " Mult" : "0 hands played",
+        "Fortune Teller":"+" + (s.tarotsUsed || 0) + " Mult",
+        "Throwback":"x" + Number((1 + 0.25 * (s.stats.skipped || 0)).toFixed(2)) + " Mult",
+        "Erosion":"+" + (4 * Math.max(0, s.startingDeckSize - s.deck.length)) + " Mult",
+        "Bull":"+" + (2 * Math.max(0, s.money)) + " Chips",
+        "Bootstraps":"+" + (2 * Math.max(0, Math.floor(s.money / 5))) + " Mult",
         "Blueprint":resolvedOwner(s,ref) && item(resolvedOwner(s,ref)).name,
         "Brainstorm":resolvedOwner(s,ref) && item(resolvedOwner(s,ref)).name
       };
       const hint = hints[key];
       if (hint) def = {...def,description:def.description+" ("+hint+")"};
+      if (key === "Yorick" && yorickMult > 1) def = {...def,stackAmount:"x"+yorickMult,stackStat:"xmult"};
       if (memory.bonus != null && memory.bonus > 0 && key !== "Rocket") {
         const stat = ["Runner","Square Joker","Wee Joker","Castle"].includes(key) ? "chips" :
           ["Madness","Hologram","Vampire","Obelisk","Constellation","Glass Joker","Lucky Cat","Campfire","Canio","Hit the Road"].includes(key) ? "xmult" : "mult";
@@ -850,7 +904,7 @@
       }
     }
     if (def?.sticker !== "perishable") return def;
-    const remaining = Math.max(0,5 - (s.familiarMemory[memoryKey(s[category][index])]?.age || 0));
+    const remaining = Math.max(0,5 - (s.jokerMemory[memoryKey(s[category][index])]?.age || 0));
     return {...def,perishRounds:remaining,debuffed:!remaining};
   }
   const catSalePrice = (s,cost) => s.catSale ? Math.max(1,Math.floor(cost / 2)) : cost;
@@ -1159,7 +1213,6 @@
     }
     earn(s,value);
     delete s.jokerMemory[memoryKey(id)];
-    delete s.familiarMemory[memoryKey(id)];
     if (owner) callJoker(s,id,"sold",ctx,()=>{},owner);
     dispatch(s,"sell",{item:item(id)});
     return true;
@@ -1181,9 +1234,7 @@
     const target = choose(s,editionCandidates(s,value));
     if (!target) return false;
     const refs = value.kind === "familiar" ? s.familiars : s.consumables;
-    const instance = String(refs[target.index]).split("~")[3];
-    refs[target.index] = instance ? [target.id,value.edition,target.sticker || "",instance].join("~") :
-      market.withVariant(target.id,value.edition,target.sticker);
+    refs[target.index] = market.withVariant(target.id,value.edition,target.sticker,target.instance);
     familiarUnlocks.inventory(s);
     discover(s,"edition_" + value.edition);
     return refs[target.index];
@@ -1192,15 +1243,21 @@
     return card.enhancement !== "stone" || !["rankCopy","suitCopy","rank","suit"].includes(def.effect);
   }
   function canCast(s,def,ids,source,excluded) {
+    if (def.downside?.handSize && handSize(s) + def.downside.handSize < 1) return false;
     if (def.minTargets) {
       const targets = matching(ids,def.minTargets,def.maxTargets,source);
       if (!targets || !targets.every(card=>canTarget(def,card))) return false;
     }
-    if (def.effect === "inventoryEdition") return Boolean(editionCandidates(s,def.value,excluded).length);
+    if (def.effect === "inventoryEdition") return Boolean(editionCandidates(s,def.value,def.value.kind === "spell" ? excluded : undefined).length);
     if (def.effect === "remove") return ids.length < (s.phase === "play" ? s.hand.length + s.draw.length : s.deck.length);
     if (def.effect === "generate" && def.value.pool === "legendary") {
       return !s.rules.noFamiliars && s.familiars.length < capacity(s).familiars &&
         Object.values(content.familiars).some(f=>f.rarity === "Legendary" && (hasJoker(s,"Showman") || !s.familiars.some(ref=>baseId(ref) === f.id)));
+    }
+    if (def.effect === "generate" && def.value.pool === "spell") {
+      if (s.rules.noSpells) return false;
+      const freed = excluded != null && market.splitVariant(s.consumables[excluded]).edition !== "negative" ? 1 : 0;
+      return s.consumables.length - freed < capacity(s).consumables && spellPool(s,"spell").length > 0;
     }
     return true;
   }
@@ -1269,6 +1326,8 @@
           if (def.effect === "modify") updateCard(s,c,value);
         }
     }
+    if (def.downside?.money) s.money += def.downside.money;
+    if (def.downside?.handSize) s.rules.handSize = Math.max(1, s.rules.handSize + def.downside.handSize);
     dispatch(s,"cast",{item:def});
   }
   const useHand = s => s.pack?.hand || (s.phase === "play" ? s.hand : []);
@@ -1278,8 +1337,9 @@
     if (!def) return false;
     const source = useHand(s);
     if (ids === undefined && def.minTargets) return source.filter(card=>canTarget(def,card)).length >= def.minTargets &&
-      (def.effect !== "remove" || s.deck.length > def.minTargets);
-    return canCast(s,def,ids || [],source,def.effect === "inventoryEdition" && def.value.kind === "spell" ? index : undefined);
+      (def.effect !== "remove" || s.deck.length > def.minTargets) &&
+      (!def.downside?.handSize || handSize(s) + def.downside.handSize >= 1);
+    return canCast(s,def,ids || [],source,index);
   }
   function use(s,index,ids = []) {
     if (!canUse(s,index,ids)) return false;

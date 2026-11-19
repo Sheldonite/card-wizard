@@ -287,7 +287,10 @@
     const stats = profile.stats = savedStats(profile);
     const previous = profile.tracking;
     if (!previous || previous.id !== run.runId) {
-      if (previous && !previous.finished && !previous.practice) stats.runsAbandoned++;
+      if (previous && !previous.finished && !previous.practice) {
+        stats.runsAbandoned++;
+        career.totals.streak = 0;
+      }
       profile.tracking = {
         id: run.runId, practice: Boolean(run.seeded), finished: false,
         counters: {}, itemUses: {}, seen: {}
@@ -537,6 +540,8 @@
         const profile = active();
         if (profile.tracking && !profile.tracking.finished && !profile.tracking.practice) {
           profile.stats.runsAbandoned++;
+          const career = familiarCareer(profile, dataForGame());
+          career.totals.streak = 0;
         }
         profile.run = null;
         profile.tracking = null;

@@ -148,8 +148,7 @@
   score("Flower Pot","xmult",3,c => suitsCovered(c,["H","D","S","C"],c.scoringSet.filter(card=>card.enhancement !== "wild" || !c.debuffed(card))));
   growing("Wee Joker","chips","scoredCard",c => rankOf(c.card) === 2 ? 8 : 0);
   card("The Idol","xmult",2,c => rankOf(c.card) === c.s.jokerTargets.idol.rank && c.suited(c.card,c.s.jokerTargets.idol.suit));
-  score("Seeing Double","xmult",2,c => c.scoring.some(card=>card.enhancement !== "wild" && c.suited(card,"C") && c.suited(card,"S")) ||
-    ["S","H","D"].some(suit=>suitsCovered(c,["C",suit])));
+  score("Seeing Double","xmult",2,c => ["S","H","D"].some(suit=>suitsCovered(c,["C",suit])));
   score("Matador","money",8,c => c.bossTriggered);
   growing("Hit the Road","xmult","discard",c => 0.5 * c.cards.filter(card=>rankOf(card) === 11).length);
   on("Hit the Road","roundEnd",c => { if (!c.copied) c.memory.bonus = 0; });

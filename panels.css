@@ -162,7 +162,6 @@
 .cw-road-row b, .cw-road-row small { display:block; }
 .cw-road-row small { color:var(--cw-muted); }
 .cw-road-row > span:last-child { color:var(--cw-gold); margin-left:auto; text-align:right; font-weight:700; }
-.cw-market-summary { display:flex; gap:8px; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
 .cw-market-tools { display:flex; flex-wrap:wrap; gap:5px; }
 .cw-market-tools .cw-btn { min-height:32px; padding:5px 9px; font-size:12px; }
 .cw-guide-hint { color:var(--cw-muted); font-size:12px; margin:12px 0 0; }
@@ -178,7 +177,6 @@
 .cw-offer h3 { margin:3px 0 4px; font:bold 18px/1.1 Georgia,serif; }
 .cw-offer p { margin:0 0 10px; color:var(--cw-muted); font-size:12px; line-height:1.4; }
 .cw-offer .cw-btn { margin-top:auto; font-size:13px; }
-.cw-sold { display:grid; place-items:center; min-height:110px; color:var(--cw-muted); background:#272330; border:1px dashed #4d4256; border-radius:6px; font:italic 17px Georgia,serif; }
 .cw-owned-info { min-width:0; flex:1; }
 .cw-owned-controls { display:flex; flex-shrink:0; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:5px; }
 .cw-highlight-item { background: #393043; border-left:2px solid var(--cw-gold); padding-left:8px; padding-right:8px; border-radius:3px; }
@@ -265,7 +263,6 @@ button.cw-collection-item {color:inherit;text-align:left}
 .cw-dealt.cw-red-suit { color:#a93a4b; }
 .cw-boss-tools { display:flex; flex-wrap:wrap; justify-content:center; gap:5px; margin-top:6px; }
 .cw-rewards { margin:0 0 12px; }
-.cw-dialog[data-page="shop"] .shop-racks > .shop-shelf > div { display:grid; grid-template-columns:repeat(auto-fit,minmax(116px,1fr)); }
 
 @media(max-width:580px) {
  .cw-backdrop {padding:8px;}
@@ -285,7 +282,6 @@ button.cw-collection-item {color:inherit;text-align:left}
  .cw-dialog[data-page="lobby"] .cw-head {padding-block:18px 12px;}
  .cw-lobby-nav {margin-bottom:12px;}
  .cw-collection-items {grid-template-columns:repeat(auto-fit,minmax(145px,1fr));}
- .cw-dialog[data-page="shop"] .shop-racks > .shop-shelf > div {grid-template-columns:repeat(auto-fit,minmax(94px,1fr));}
 }
 @media(max-width:400px) {
  .cw-example-col {display:none;}
@@ -350,7 +346,7 @@ button.cw-collection-item {color:inherit;text-align:left}
 .pack-status {display:flex;align-items:center;gap:clamp(4px,1vw,12px);white-space:nowrap}
 .pack-status .pack-purse {
   display:block;position:relative;width:clamp(64px,8vw,82px);aspect-ratio:200/154;
-  background:url("assets/moneybag.svg") center/contain no-repeat
+  background:var(--art-moneybag) center/contain no-repeat
 }
 .pack-status .pack-purse strong.stat-money {font-size:clamp(13px,1.6vw,19px)}
 .cw-familiar-announcement.visually-hidden {

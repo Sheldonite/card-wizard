@@ -35,7 +35,7 @@
     spell("star_" + id, name, "orb", 3, "Permanently raise " + hand + " by one level this run.", "level", hand);
   }
 
-  spell("witch_tally", "Witch’s Tally", "grimoire", 5, "For this run, every card you play banks +5 Chips on itself. It pays its whole tally when it scores. Cast again to bank 5 more per play.", "tally", 5);
+  spell("witch_tally", "Witch’s Tally", "grimoire", 6, "For this run, every card you play banks +2 Chips on itself. It pays its whole tally when it scores. Cast again to bank 2 more per play.", "tally", 2);
   spell("blue_ink", "Sapphire Ink", "potion", 3, "Give up to 2 cards the Bonus enhancement (+30 Chips when scored).", "enhance", "bonus", 1, 2);
   spell("red_ink", "Crimson Ink", "potion", 3, "Give up to 2 cards the Mult enhancement (+4 Mult when scored).", "enhance", "mult", 1, 2);
   spell("glasswork", "Glasswork", "orb", 3, "Turn 1 card into Glass. It doubles your Mult when scored, then has a 1 in 4 chance to break after the hand.", "enhance", "glass", 1, 1);
@@ -49,16 +49,16 @@
   spell("unwrite", "Unwrite", "grimoire", 4, "Permanently remove up to 2 chosen cards from your deck.", "remove", null, 1, 2);
   spell("alchemy", "Alchemy", "potion", 4, "Double your money, gaining up to $20.", "money", 20);
 
-  function voucher(id, name, art, cost, description, value) {
-    definition(vouchers, "voucher", id, name, art, cost, "Voucher", description, { effect: id, value });
+  function voucher(id, name, art, cost, description, value, power) {
+    definition(vouchers, "voucher", id, name, art, cost, "Voucher", description, power ? { effect: id, value, power } : { effect: id, value });
   }
-  voucher("deep_pockets", "Treasury Seal", "key", 10, "Raise the maximum interest paid after a blind from $5 to $10.", 10);
+  voucher("deep_pockets", "Treasury Seal", "key", 10, "Raise the maximum interest paid after a blind from $5 to $8.", 8, { interestCap: 3 });
   voucher("long_sleeve", "Long Sleeve", "merlin", 10, "Draw and hold 1 additional card in every blind.", 1);
   voucher("second_wind", "Second Wind", "moth", 10, "Gain 1 additional discard every blind.", 1);
   voucher("extra_turn", "Borrowed Time", "orb", 10, "Gain 1 additional hand every blind.", 1);
   voucher("trade_route", "Merchant's Pass", "key", 10, "Start each shop at a $3 reroll price.", 3);
   voucher("silver_tongue", "Silver Tongue", "merlin", 10, "Take 20% off shop items, rounded down to the nearest dollar.", 0.8);
-  voucher("menagerie", "Menagerie", "owl", 12, "Equip 1 additional familiar.", 1);
+  voucher("menagerie", "Menagerie", "owl", 14, "Equip 1 additional familiar.", 1);
 
   function pack(id, name, art, cost, pool, description) {
     definition(packs, "pack", id, name, art, cost, "Booster", description, { pool, choices: 3, picks: 1 });
@@ -85,6 +85,7 @@
     const embedded = root.CWEmbeddedArt?.[name];
     if (!name.startsWith("card-styles/")) return embedded || "art/" + name + ".png";
     if (!embedded) return "art/" + name + ".jpg";
+    if (typeof Blob === "undefined" || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") return embedded;
     // Reuse one short URL per illustration whenever gallery panels repaint.
     if (!styleUrls.has(name)) {
       const binary = atob(embedded.slice(embedded.indexOf(",") + 1));
@@ -95,6 +96,7 @@
     return styleUrls.get(name);
   }
   function colorStats(container) {
+    if (typeof document === "undefined" || !container) return;
     const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);
     const nodes=[];
     while(walker.nextNode()) nodes.push(walker.currentNode);

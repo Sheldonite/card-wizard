@@ -120,7 +120,7 @@
     schedule();
   }
   function schedule() {
-    if (!scheduled && portrait && scene.isConnected) { scheduled=true;root.requestAnimationFrame(tick); }
+    if (!scheduled && portrait && scene?.isConnected) { scheduled=true;root.requestAnimationFrame(tick); }
   }
   function prepare() {
     const painting=scene.firstElementChild, image=new Image();
@@ -164,5 +164,5 @@
     } else { swipeStart=-Infinity;swipePending=false; }
     schedule();
   }
-  root.CWShopCat={mount};
+  root.CWShopCat={mount,syncMotion:schedule};
 })(window);

@@ -115,7 +115,7 @@
     },
     prism: {
       name: "Prism Archive",
-      description: "Gain +1 Mult per 30 Chips, up to +8. Each suit favors a different rank range. Play with 3 hands. Opal Owl replaces Merlin once unlocked.",
+      description: "Gain +1 Mult per 30 Chips, up to +8. Each suit favors a different rank range. Play with 3 hands and +8% blind targets. Opal Owl replaces Merlin once unlocked.",
       ...form(8, 3, 3, 4, ["opal_owl"], { composition: prism, chipToMult: 30, targetScale: 1.08 }),
       unlock: { wins: 3 }, unlockText: "Win 3 runs."
     }
@@ -124,35 +124,35 @@
   const stakes = {
     ember: {
       name: "Ember", description: "Standard scores and rewards.",
-      targetScale: 1, discards: 0, rewardReduction: 0, eternal: 0, perishable: 0, rental: 0
+      targetScale: 1, ante1Scale: 1, discards: 0, rewardReduction: 0, eternal: 0, perishable: 0, rental: 0
     },
     copper: {
-      name: "Copper", description: "Targets rise 6%. Small Blinds pay $1 less.",
-      targetScale: 1.06, discards: 0, rewardReduction: 1, eternal: 0, perishable: 0, rental: 0
+      name: "Copper", description: "Targets rise 6% (gentler in Ante 1). Small Blinds pay $1 less.",
+      targetScale: 1.06, ante1Scale: 1.02, discards: 0, rewardReduction: 1, eternal: 0, perishable: 0, rental: 0
     },
     verdigris: {
-      name: "Verdigris", description: "Targets rise 15%. Small Blinds pay $1 less.",
-      targetScale: 1.15, discards: 0, rewardReduction: 1, eternal: 0, perishable: 0, rental: 0
+      name: "Verdigris", description: "Targets rise 15% (gentler in Ante 1). Small Blinds pay $1 less.",
+      targetScale: 1.15, ante1Scale: 1.05, discards: 0, rewardReduction: 1, eternal: 0, perishable: 0, rental: 0
     },
     obsidian: {
-      name: "Obsidian", description: "Targets rise 24%. Small Blinds pay $1 less. Some shop Familiars are Eternal.",
-      targetScale: 1.24, discards: 0, rewardReduction: 1, eternal: 0.2, perishable: 0, rental: 0
+      name: "Obsidian", description: "Targets rise 24% (gentler in Ante 1). Small Blinds pay $1 less. Some shop Familiars are Eternal.",
+      targetScale: 1.24, ante1Scale: 1.08, discards: 0, rewardReduction: 1, eternal: 0.2, perishable: 0, rental: 0
     },
     cobalt: {
-      name: "Cobalt", description: "Targets rise 32%. Small Blinds pay $1 less. Eternal Familiars appear and each blind gives 1 fewer discard.",
-      targetScale: 1.32, discards: -1, rewardReduction: 1, eternal: 0.2, perishable: 0, rental: 0
+      name: "Cobalt", description: "Targets rise 32% (gentler in Ante 1). Small Blinds pay $1 less. Eternal Familiars appear and each blind gives 1 fewer discard.",
+      targetScale: 1.32, ante1Scale: 1.12, discards: -1, rewardReduction: 1, eternal: 0.2, perishable: 0, rental: 0
     },
     amethyst: {
-      name: "Amethyst", description: "Targets rise 48%. Small Blinds pay $2 less. Eternal and Perishable Familiars appear, with 1 fewer discard per blind.",
-      targetScale: 1.48, discards: -1, rewardReduction: 2, eternal: 0.2, perishable: 0.16, rental: 0
+      name: "Amethyst", description: "Targets rise 48% (gentler in Ante 1). Small Blinds pay $2 less. Eternal and Perishable Familiars appear, with 1 fewer discard per blind.",
+      targetScale: 1.48, ante1Scale: 1.18, discards: -1, rewardReduction: 2, eternal: 0.2, perishable: 0.16, rental: 0
     },
     amber: {
-      name: "Amber", description: "Targets rise 62%. Small Blinds pay $2 less. Eternal, Perishable and Rental Familiars appear, with 1 fewer discard per blind.",
-      targetScale: 1.62, discards: -1, rewardReduction: 2, eternal: 0.2, perishable: 0.16, rental: 0.14
+      name: "Amber", description: "Targets rise 62% (gentler in Ante 1). Small Blinds pay $2 less. Eternal, Perishable and Rental Familiars appear, with 1 fewer discard per blind.",
+      targetScale: 1.62, ante1Scale: 1.24, discards: -1, rewardReduction: 2, eternal: 0.2, perishable: 0.16, rental: 0.14
     },
     blackstar: {
-      name: "Blackstar", description: "Targets rise 80%. Small Blinds give no base payout. More Familiars have upkeep or restrictions, and each blind gives 1 fewer discard.",
-      targetScale: 1.8, discards: -1, rewardReduction: 3, eternal: 0.24, perishable: 0.2, rental: 0.2
+      name: "Blackstar", description: "Targets rise 80% (gentler in Ante 1). Small Blinds give no base payout. More Familiars have upkeep or restrictions, and each blind gives 1 fewer discard.",
+      targetScale: 1.8, ante1Scale: 1.3, discards: -1, rewardReduction: 3, eternal: 0.24, perishable: 0.2, rental: 0.2
     }
   };
 
@@ -180,7 +180,7 @@
     starwell: finale("The Starwell", "A larger target, with 1 fewer hand to reach it.", "reduceHands", 1, 2.3),
     braided_seal: finale("The Braided Seal", "Each hand type can score once this blind.", "uniqueHands", 1, 2.2),
     candle_eater: finale("The Candle Eater", "Your two leftmost Familiars fall silent.", "noJokers", 2, 2.1),
-    frost_refinery: finale("The Frost Refinery", "Each discard costs up to $4 from your wallet.", "taxDiscard", 4, 2.4)
+    frost_refinery: finale("The Frost Refinery", "Scoring cards lose their enhancement bonuses this blind.", "noEnhancements", 5, 2.3)
   };
 
   const reward = (name, description, effect, value) => ({ name, description, effect, value });
@@ -243,10 +243,10 @@
       { discards: 0, hands: 5, starter: ["merlin", "paper_king"], startingConsumables: ["unwrite"] }, "copper"),
     estate_sale: trial("Estate Sale", "Start with three Familiars, $1 and a cheaper shop. Interest is disabled.", "arcane",
       { starter: ["night_owl", "empty_inkwell", "folio"], money: 1, noInterest: true, startingVouchers: ["silver_tongue"] }, "obsidian", { wins: 1 }),
-    hearthwatch: trial("Hearthwatch", "Start with level 3 Flush and two Heart effects. Every blind must be played.", "cinder",
-      { noSkip: true, starter: ["ember_moth", "tidal_lens"], handLevels: { Flush: 3 }, familiarCap: 3 }, "cobalt", { wins: 1 }),
+    hearthwatch: trial("Hearthwatch", "Start with level 3 Flush, two Heart Familiars, and 3 Familiar slots. Every blind must be played.", "cinder",
+      { noSkip: true, starter: ["ember_moth", "carmine_crab"], handLevels: { Flush: 3 }, familiarCap: 3 }, "cobalt", { wins: 1 }),
     small_coven: trial("The Small Coven", "Start with The Coven filling one of just 2 Familiar slots. No rerolls, but use 5 hands.", "arcane",
-      { familiarCap: 2, noReroll: true, hands: 5, starter: ["coven", "pocket_grimoire"], money: 8 }, "obsidian", { wins: 1 }),
+      { familiarCap: 2, noReroll: true, hands: 5, starter: ["coven"], money: 8 }, "obsidian", { wins: 1 }),
     little_kingdom: trial("Little Kingdom", "Play with 46 cards and only 5 held cards. Start with level 4 Three of a Kind.", "forge",
       { handSize: 5, hands: 5, discards: 4, handLevels: { "Three of a Kind": 4 }, starter: ["paper_king", "many_minds"] }, "ember", { wins: 1 }),
     open_suit: trial("Open Suit", "Start with a Prism Archive and two suit-changing spells. Use at most 3 Familiars.", "prism",

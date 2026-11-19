@@ -15,8 +15,10 @@
     define(cards, "spell", id, name, art, 3, "Spell", description, {effect, value, minTargets, maxTargets, pool:"spell"});
   }
 
-  function spectral(id, name, art, description, effect, value, minTargets = 0, maxTargets = minTargets) {
-    define(cards, "spell", id, name, art, 5, "Spectral", description, {effect, value, minTargets, maxTargets, pool:"spectral"});
+  function spectral(id, name, art, description, effect, value, minTargets = 0, maxTargets = minTargets, downside = null) {
+    define(cards, "spell", id, name, art, 5, "Spectral", description,
+      downside ? {effect, value, minTargets, maxTargets, pool:"spectral", downside}
+        : {effect, value, minTargets, maxTargets, pool:"spectral"});
   }
 
   spell("prism_dye", "Prism Dye", "orb", "Make up to 2 cards Wild. Each can match any suit.", "enhance", "wild", 1, 2);
@@ -38,29 +40,29 @@
   spectral("shimmer_cut", "Shimmer Cut", "moth", "Make 1 card Holographic. It adds +10 Mult when scored.", "edition", "holographic", 1);
   spectral("dawn_fracture", "Dawn Fracture", "dragon", "Make 1 card Polychrome. It gives ×1.5 Mult when scored.", "edition", "polychrome", 1);
   spectral("old_name", "The Old Name", "merlin", "Summon a Legendary Familiar if you have room.", "generate", {pool:"legendary", count:1});
-  spectral("hollow_scroll", "Hollow Scroll", "grimoire", "Make another carried spell Negative. It opens one spell slot.", "inventoryEdition", {kind:"spell", edition:"negative"});
-  spectral("midnight_collar", "Midnight Collar", "dragon", "Make one eligible Familiar Negative. It opens one Familiar slot.", "inventoryEdition", {kind:"familiar", edition:"negative"});
+  spectral("hollow_scroll", "Hollow Scroll", "grimoire", "Make another carried spell Negative, opening one spell slot. Lose $5.", "inventoryEdition", {kind:"spell", edition:"negative"}, 0, 0, {money:-5});
+  spectral("midnight_collar", "Midnight Collar", "dragon", "Make one eligible Familiar Negative, opening one Familiar slot. Permanently lose 1 hand size.", "inventoryEdition", {kind:"familiar", edition:"negative"}, 0, 0, {handSize:-1});
   spectral("paper_swarm", "Paper Swarm", "moth", "Add 2 copies of a chosen card to your deck.", "copy", 2, 1);
   spectral("mantle_exchange", "Mantle Exchange", "grimoire", "Swap the enhancements, seals, and editions of 2 cards.", "swapModifiers", null, 2);
-  spectral("buried_tithe", "Buried Tithe", "key", "Gain $12.", "cash", 12);
+  spectral("buried_tithe", "Buried Tithe", "key", "Gain $18.", "cash", 18);
   spectral("cornerstone", "Cornerstone", "potion", "Turn 1 card into Stone with a Red Seal. It scores 50 Chips twice and has no rank or suit.", "modify", {enhancement:"stone", seal:"red"}, 1);
-  spectral("quiet_ash", "Quiet Ash", "potion", "Remove up to 3 cards from your deck.", "remove", null, 1, 3);
+  spectral("quiet_ash", "Quiet Ash", "potion", "Remove up to 3 chosen cards from your deck. Lose $6.", "remove", null, 1, 3, {money:-6});
   spectral("threefold_moon", "Threefold Moon", "orb", "Raise Pair, Three of a Kind, and Full House by one level each.", "levelMany", {hands:["Pair", "Three of a Kind", "Full House"], amount:1});
   spectral("silence_bell", "Silence Bell", "key", "Silence the current or upcoming boss's special rule.", "bossDisable", 1);
-  spectral("jackpot_comet", "Jackpot Comet", "dragon", "Turn 1 card into a Lucky Ace with a Purple Seal.", "modify", {rank:14, enhancement:"lucky", seal:"purple"}, 1);
+  spectral("jackpot_comet", "Jackpot Comet", "dragon", "Turn 1 card into a Lucky Ace with a Purple Seal. Lose $5.", "modify", {rank:14, enhancement:"lucky", seal:"purple"}, 1, 1, {money:-5});
 
-  function voucher(id, name, description, power, requires = null, unlock = null) {
-    define(upgrades, "voucher", id, name, "key", requires ? 13 : 9, "Voucher", description,
+  function voucher(id, name, description, power, requires = null, unlock = null, cost = requires ? 13 : 9) {
+    define(upgrades, "voucher", id, name, "key", cost, "Voucher", description,
       {effect:id, power, value:Object.values(power)[0], requires, unlock});
   }
 
-  voucher("sealed_reserve", "Sealed Reserve", "Raise your interest limit by another $5.", {interestCap:5}, "deep_pockets");
+  voucher("sealed_reserve", "Sealed Reserve", "Raise your interest limit by another $2.", {interestCap:2}, "deep_pockets");
   voucher("sky_sleeve", "Sky Sleeve", "Hold 1 more card every blind.", {handSize:1}, "long_sleeve");
   voucher("third_wind", "Third Wind", "Gain 1 more discard every blind.", {discards:1}, "second_wind");
   voucher("borrowed_tomorrow", "Borrowed Tomorrow", "Gain 1 more hand every blind.", {hands:1}, "extra_turn");
-  voucher("wayfarers_license", "Wayfarer's License", "First paid reroll costs $1 less.", {rerollDiscount:1}, "trade_route");
+  voucher("wayfarers_license", "Wayfarer's License", "Start each shop at a $1 reroll price (down from $3).", {rerollDiscount:2}, "trade_route", null, 12);
   voucher("moon_market", "Moon Market", "Bring your shop discount from 20% to 35%.", {discount:0.15}, "silver_tongue");
-  voucher("grand_menagerie", "Grand Menagerie", "Equip 1 more Familiar.", {familiarSlots:1}, "menagerie", "first_victory");
+  voucher("grand_menagerie", "Grand Menagerie", "Equip 1 more Familiar.", {familiarSlots:1}, "menagerie", "first_victory", 18);
   voucher("counter_extension", "Counter Extension", "Shops display 1 more card.", {shopSlots:1});
   voucher("night_bazaar", "Night Bazaar", "Shops display 1 more card.", {shopSlots:1}, "counter_extension");
   voucher("hidden_shelf", "Hidden Shelf", "Carry 1 more consumable.", {spellSlots:1});
@@ -73,10 +75,10 @@
   voucher("glass_observatory", "Glass Observatory", "Constellations show up even more often.", {stockStars:6}, "star_index");
   voucher("scroll_routes", "Scroll Routes", "Spells show up more often in the shop.", {stockSpells:4});
   voucher("ghost_routes", "Ghost Routes", "Spells are more common. Spectral cards can now appear in stock.", {stockSpells:4, stockSpectral:3}, "scroll_routes", "second_circle");
-  voucher("savings_bond", "Savings Bond", "Earn interest for every $4 held, down from $5.", {interestDiscount:1});
-  voucher("silver_ledger", "Silver Ledger", "Earn interest for every $3 held, down from $4.", {interestDiscount:1}, "savings_bond", "small_fortune");
-  voucher("lamplight", "Lamplight", "Editions show up more often on shop and pack cards.", {editionChance:0.05});
-  voucher("refraction_lens", "Refraction Lens", "Shop and pack editions become even more common.", {editionChance:0.08}, "lamplight");
+  voucher("savings_bond", "Savings Bond", "Earn interest for every $4 held, down from $5.", {interestDiscount:1}, null, null, 11);
+  voucher("silver_ledger", "Silver Ledger", "Earn interest for every $3 held, down from $4.", {interestDiscount:1}, "savings_bond", "small_fortune", 15);
+  voucher("lamplight", "Lamplight", "Editions show up much more often on shop and pack cards.", {editionChance:0.09});
+  voucher("refraction_lens", "Refraction Lens", "Shop and pack editions become far more common.", {editionChance:0.14}, "lamplight");
   voucher("loose_wrapping", "Loose Wrapping", "Opened booster packs show 1 more option.", {packOptions:1});
   voucher("open_crate", "Open Crate", "Packs show another option. Playing cards can appear in stock.", {packOptions:1, cardStock:3}, "loose_wrapping");
 
@@ -129,11 +131,12 @@
   };
 
   function splitVariant(ref) {
-    const [id, edition, sticker] = String(typeof ref === "object" ? ref?.id || "" : ref || "").split("~");
-    return {id, edition:edition || null, sticker:sticker || null};
+    const [id, edition, sticker, instance] = String(typeof ref === "object" ? ref?.id || "" : ref || "").split("~");
+    return {id, edition:edition || null, sticker:sticker || null, instance:instance || null};
   }
 
-  function withVariant(id, edition, sticker) {
+  function withVariant(id, edition, sticker, instance) {
+    if (instance) return [id, edition || "", sticker || "", instance].join("~");
     if (sticker) return id + "~" + (edition || "") + "~" + sticker;
     return edition ? id + "~" + edition : id;
   }
@@ -188,7 +191,7 @@
         }
       }
     }
-    return withVariant(data.id, data.edition, data.sticker);
+    return withVariant(data.id, data.edition, data.sticker, data.instance);
   }
 
   function cardRef(s, api, excluded = []) {

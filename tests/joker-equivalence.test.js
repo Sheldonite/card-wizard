@@ -288,7 +288,8 @@ test("balanced suits, Wild suits and all-scoring cards honor distinct cards",()=
   assert.equal(game.preview(smear,hearts).name,"Flush");
   assert.equal(game.preview(smear,hearts).mult,19);
   smear.familiars=[ids["Seeing Double"],ids["Smeared Joker"]];
-  assert.equal(game.preview(smear,deal(smear,"AS")).mult,2);
+  assert.equal(game.preview(smear,deal(smear,"AS")).mult,1,"single Spade with Smeared Joker does not trigger Seeing Double alone");
+  assert.equal(game.preview(smear,deal(smear,"AS AC")).mult,4,"two scoring black cards with Smeared Joker trigger Seeing Double");
 });
 
 test("Yorick grows every 23 discarded cards and Triboulet repeats on face-card retriggers",()=>{

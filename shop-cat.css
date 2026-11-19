@@ -8,7 +8,7 @@
 }
 .moon-stall-painting {
   position:absolute;right:0;top:50%;width:535cqh;aspect-ratio:3;transform:translateY(-50%);
-  background:url("assets/moon-market.webp") center/100% 100% no-repeat;
+  background:var(--art-market) center/100% 100% no-repeat;
   mask-image:linear-gradient(90deg,transparent,#000 15%);
 }
 .moon-stall-painting canvas {

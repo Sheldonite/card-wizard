@@ -1,7 +1,7 @@
 /* The painted room stays behind the menus that belong to the title screen. */
 body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflow:hidden}
 .cw-backdrop.in-parlor {
-  background:linear-gradient(#0e091e9c,#110a20c9), url("assets/midnight-parlor.webp") center/cover;
+  background:linear-gradient(#0e091e9c,#110a20c9), var(--art-parlor) center/cover;
   backdrop-filter:none;
 }
 .in-parlor .cw-dialog:not([data-page="lobby"]) {
@@ -52,7 +52,7 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .run-deck-art[data-deck="vault"],.run-deck-art[data-deck="forge"] {--deck-hue:146deg}
 .run-deck-art[data-deck="mosaic"],.run-deck-art[data-deck="prism"] {--deck-hue:37deg}
 .run-deck-art i {grid-area:1/1;display:grid;place-items:center;width:64%;aspect-ratio:94/132;border-radius:6%;position:relative;isolation:isolate;box-shadow:0 3px 5px #120b20a3;transform-origin:50% 82%}
-.run-deck-art i::before {content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:url("assets/cardback.svg") center/100% 100% no-repeat;filter:hue-rotate(var(--deck-hue,0deg))}
+.run-deck-art i::before {content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--art-cardback) center/100% 100% no-repeat;filter:hue-rotate(var(--deck-hue,0deg))}
 .run-deck-art i:first-child {transform:rotate(-10deg);filter:brightness(.8)}
 .run-deck-art i:nth-child(2) {transform:rotate(-4deg);filter:brightness(.88)}
 .run-deck-art i:last-child {transform:rotate(5deg)}
@@ -113,7 +113,7 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .parlor-scene {position:absolute;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
 .parlor-painting {
   position:absolute;width:max(100%,177.68dvh);aspect-ratio:1672/941;left:50%;top:50%;transform:translate(-50%,-50%);
-  background:url("assets/midnight-parlor.webp") center/100% 100%;
+  background:var(--art-parlor) center/100% 100%;
 }
 .parlor-scene::after {
   content:"";position:absolute;inset:0;
@@ -128,7 +128,7 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .dealer-hand .trick-card .parlor-card {transform:none;translate:none}
 .dealer-cat {
   position:absolute;inset:auto 0 0;aspect-ratio:420/260;
-  background:url("assets/moon-market.webp") 92.294% 49.603% / 365.715% 196.924%;
+  background:var(--art-market) 92.294% 49.603% / 365.715% 196.924%;
   clip-path:polygon(6% 84%,9% 76%,16% 65%,22% 57%,18% 55%,14% 53%,10% 48%,8% 42%,7% 33%,14% 28%,21% 21%,22% 12%,23.5% 1%,26% 2%,39% 13%,41% 15%,46% 11%,51% 11%,53% 15%,61% 9%,66% 8%,69% 10%,75% 21%,74% 27%,72% 34%,73% 38%,76% 35%,76% 40%,73% 44%,69% 43%,68% 39%,70% 30%,64% 34%,61% 45%,67% 54%,70% 57%,69% 61%,65% 65%,60% 66%,61% 70%,68% 75%,70% 69%,71% 58%,74% 50%,79% 44%,84% 42%,89% 43%,93% 48%,94% 55%,91% 63%,85% 61%,82% 64%,78% 76%,78% 81%,73% 87%,73% 90%,28% 90%,24% 88%,20% 85%);
   transform-origin:45% 88%;animation:dealer-peek 16s ease-in-out infinite;
 }
@@ -183,11 +183,11 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 @keyframes twinkle {from{opacity:.25;scale:.65}to{opacity:1;scale:1.12}}
 
 .cw-backdrop.at-verdict {background:radial-gradient(ellipse at 50% 37%,#3f294764,#120d20df);backdrop-filter:blur(3px)}
-.at-verdict:has([data-page="won"]) {background:linear-gradient(#1d0a3460,#170d29bc),url("assets/midnight-parlor.webp") center/cover}
+.at-verdict:has([data-page="won"]) {background:linear-gradient(#1d0a3460,#170d29bc),var(--art-parlor) center/cover}
 .at-verdict .cw-dialog {
   --omen:#d5b4f3;--trim:#947491;--aura:#bda2ea38;
   width:min(510px,100%);max-height:calc(100dvh - 32px);overflow:auto;text-align:center;
-  background:radial-gradient(ellipse at 50% 3%,var(--aura),transparent 47%),url("assets/grain.png"),#241b32;
+  background:radial-gradient(ellipse at 50% 3%,var(--aura),transparent 47%),var(--art-grain),#241b32;
   border:1px solid var(--trim);border-radius:12px;box-shadow:inset 0 0 0 4px #231729,inset 0 0 0 5px #ad8b7055,0 15px 70px #08050bb0;
   animation:verdict-deal .52s cubic-bezier(.16,.85,.24,1) both;
 }
@@ -199,7 +199,7 @@ body:has(.in-parlor:not([hidden])), body:has(.at-verdict:not([hidden])) {overflo
 .at-verdict .cw-body {padding:0 28px}
 .verdict-art {position:relative;width:100%;height:clamp(105px,18vh,165px);margin:10px 0 4px;isolation:isolate}
 .verdict-art::before {content:"";position:absolute;inset:0;background:radial-gradient(ellipse closest-side,var(--aura),transparent)}
-.verdict-orbit {position:absolute;top:4%;height:92%;aspect-ratio:1;left:50%;translate:-50% 0;background:url("art/seal.svg") center/contain no-repeat;opacity:.6;animation:omen-orbit 80s linear infinite}
+.verdict-orbit {position:absolute;top:4%;height:92%;aspect-ratio:1;left:50%;translate:-50% 0;background:var(--art-seal) center/contain no-repeat;opacity:.6;animation:omen-orbit 80s linear infinite}
 .verdict-hand {position:absolute;top:13%;left:50%;height:86%;aspect-ratio:.87;translate:-50% 0;animation:levitate 5s ease-in-out infinite}
 .verdict-hand .parlor-card {font-size:38px}
 .verdict-hand .omen {--angle:-5deg;color:var(--omen);border-color:var(--trim);background:radial-gradient(ellipse at 50% 28%,#594261,#29203c 68%);box-shadow:inset 0 0 0 2px #39253e,inset 0 0 0 3px var(--trim),0 4px #23162b}

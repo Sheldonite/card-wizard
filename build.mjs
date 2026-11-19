@@ -36,9 +36,14 @@ if (embedMusic) {
   scripts.push('window.CWEmbeddedMusic = ' + JSON.stringify(music) + ';');
 }
 let html = read('index.html').replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, name) => {
-  const css = read(name).replace(/url\("([^"]+)"\)/g, (_, path) => 'url("' + embed(path) + '")');
+  const css = read(name).replace(/url\(\s*(?:(["'])([^"']+)\1|([^)"'\s]+))\s*\)/g, (match, _, quoted, unquoted) => {
+    const path = quoted ?? unquoted;
+    if (/^(?:data:|https?:|\/\/|#)/i.test(path)) return match;
+    return 'url("' + embed(path) + '")';
+  });
   return '<style>\n' + css + '\n</style>';
-}).replace(/^[ \t]*<script defer src="([^"]+)"><\/script>\r?\n/gm, (_, name) => {
+}).replace(/[ \t]*<script\b[^>]*\bsrc=(["'])([^"']+)\1[^>]*><\/script>(?:\r?\n)?/gi, (match, _, name) => {
+  if (/^(?:https?:|\/\/)/i.test(name)) return match;
   scripts.push(read(name));
   return '';
 }).replace(/(src|href)="((?:art|assets)\/[^"]+)"/g, (_, attr, path) => attr + '="' + embed(path) + '"');
