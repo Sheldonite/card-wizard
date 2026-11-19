@@ -44,6 +44,33 @@
     ["collector", "Cabinet of Wonders", "Discover 75 different items.", (_, discovered) => Object.keys(discovered).length >= 75]
   ];
 
+  const cardStyleDefinitions = [
+    ["lantern-tabby", "Lantern Tabby", "clear_blind", "#b57534"],
+    ["verdigris-botanist", "Verdigris Botanist", "deckwright", "#477e65"],
+    ["koi-courier", "Koi Courier", "take_a_chance", "#b74f39"],
+    ["frostglass-lynx", "Frostglass Lynx", "big_hand", "#5385a7"],
+    ["velvet-oracle", "Velvet Oracle", "open_road", "#896196"],
+    ["clockwork-tuxedo", "Clockwork Tuxedo", "market_stroll", "#926a43"],
+    ["porcelain-admiral", "Porcelain Admiral", "candle_keeper", "#4f699e"],
+    ["cinder-smith", "Cinder Smith", "steel_lantern", "#a25440"],
+    ["gilded-sphinx", "Gilded Sphinx", "bigger_purse", "#a37a37"],
+    ["eclipse-sovereign", "Eclipse Sovereign", "first_victory", "#6a6094"]
+  ].map(([id,name,achievement,color]) => ({id,name,achievement,color,art:"card-styles/" + id}));
+
+  function cardStyles(achievements) {
+    const byId = new Map(achievements.map(a => [a.id,a]));
+    return cardStyleDefinitions.map(style => {
+      const achievement = byId.get(style.achievement);
+      return {...style, earned:achievement.earned, goal:achievement.description, achievementName:achievement.name};
+    });
+  }
+  function profileStyles(profile) {
+    return cardStyles(earnedAchievements(savedStats(profile),profile.discovered));
+  }
+  function equippedStyle(profile, styles) {
+    return styles.find(style => style.id === profile.cardStyle && style.earned) || null;
+  }
+
   const copy = value => JSON.parse(JSON.stringify(value));
   const count = value => Number.isFinite(value) && value > 0 ? value : 0;
   const own = (object, id) => Object.hasOwn(object, id) ? object[id] : undefined;
@@ -373,6 +400,7 @@
     }
 
     let notifications = [];
+    let styleNotifications = [];
     let data = read(key);
     if (data?.version !== 1 || !Array.isArray(data.profiles) || !data.profiles.length) {
       const profile = newProfile("apprentice", "Apprentice");
@@ -420,6 +448,7 @@
         if (!profile) return null;
         activeId = data.activeId = profile.id;
         notifications = [];
+        styleNotifications = [];
         persist();
         return summarize(profile);
       },
@@ -430,6 +459,7 @@
         const profile = newProfile(makeId(), label);
         data.profiles.push(profile);
         notifications = [];
+        styleNotifications = [];
         activeId = data.activeId = profile.id;
         persist();
         return summarize(profile);
@@ -442,6 +472,22 @@
         const game = dataForGame();
         run.unlocks = {...run.unlocks, familiars:availableFamiliars(game, familiarCareer(profile, game))};
         return run;
+      },
+      getEquippedCardStyle() {
+        refresh();
+        const profile = active();
+        return equippedStyle(profile, profileStyles(profile));
+      },
+      equipCardStyle(id) {
+        refresh();
+        const profile = active();
+        if (id !== "classic" && !profileStyles(profile).some(style => style.id === id && style.earned)) return false;
+        profile.cardStyle = id;
+        persist();
+        return true;
+      },
+      takeCardStyleUnlocks() {
+        return styleNotifications.splice(0);
       },
       setDeckDifficulty(deckId, stakeId) {
         const game = dataForGame();
@@ -461,7 +507,11 @@
         const game = dataForGame();
         const career = familiarCareer(profile, game);
         const previous = {...career.earned};
+        const previousStyles = new Set(profileStyles(profile).filter(style => style.earned).map(style => style.id));
         trackRun(profile, snapshot);
+        for (const style of profileStyles(profile)) {
+          if (style.earned && !previousStyles.has(style.id)) styleNotifications.push(style);
+        }
         const available = availableFamiliars(game, career);
         snapshot.unlocks = {...snapshot.unlocks, familiars:available};
         run.unlocks = {...run.unlocks, familiars:available};
@@ -507,8 +557,10 @@
             current:goal.metric ? Math.min(career.totals[goal.metric] || 0, goal.target) : undefined, target:goal.target};
         });
         const collection = buildCollection(game, discovered, availability);
+        const styles = cardStyles(achievements);
         return { profile: summarize(profile), deckDifficulties: { ...profile.deckDifficulties },
-          stats, discovered, ...availability, achievements, familiarAchievements, collection };
+          stats, discovered, ...availability, achievements, familiarAchievements, collection,
+          cardStyles:styles, equippedCardStyle:equippedStyle(profile,styles)?.id || "classic" };
       }
     };
   }

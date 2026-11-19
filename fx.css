@@ -207,10 +207,6 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
  .cw-dialog[data-page=shop] .cw-footer button {padding:5px 7px;font-size:12px}
  .blind-actions .cw-btn {white-space:normal}.blind-ticket header {font-size:14px}
 }
-@media(max-width:1250px) {
- .familiar-zone:focus-within,.familiar-zone:hover {position:relative;z-index:6}
- .familiar-zone:has(.item-card:is(:hover,:focus-visible)) .relic-readout {display:grid;position:absolute;top:100%;left:0;width:min(260px,84vw);max-width:none;background:#211a2b;border:1px solid #ae936f;border-radius:6px;padding:10px;pointer-events:none}
-}
 .term-familiar,.slot-title h2.term-familiar {color:#e5adff;font-weight:750}
 .term-constellation {color:#ffcf75;font-weight:750}
 .term-spell {color:#80f1cf}
@@ -234,7 +230,7 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .pack-odds i {color:#e9bd78}
 .trial-target {font:700 1.3rem var(--sans);color:#f1ceaa}
 .reward-coin {display:inline-grid;place-content:center;border-radius:50%;width:1.25em;height:1.25em;border:2px solid #f0c05b;background:#976424;color:#fff0b6;font-size:.75em;vertical-align:middle}
-/* Material is the face, edition is the rim, and wax sits above both. */
+/* Enhancements supply the paper and engraving beneath the edition finish. */
 .playing-card[data-enhanced=false][data-edition=""] {
   border-color:#c1a886;
   background-color:#f7ebd7;
@@ -322,14 +318,6 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 .playing-card .wax-seal {width:25%;border-radius:46% 52% 44% 39%;right:5%;top:5%;z-index:1;border:2px solid currentColor;filter:drop-shadow(1px 2px 1px #402b3a66)}
 .playing-card .wax-seal svg {stroke-width:2.3}
 .playing-card[data-debuffed=true]::after {top:36%;right:4%;z-index:2}
-.edition-frame {position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--finish);padding:4px;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;background-size:200% 200%;box-sizing:border-box}
-[data-edition=foil] {
-  --finish:repeating-linear-gradient(118deg,#743d19 0 5%,#f8c461 9%,#fff5b7 12%,#b56b34 16%,#edada7 19%,#ffe6a3 23%);
-}
-.playing-card[data-edition=foil][data-enhanced=false] {
-  background-image:repeating-linear-gradient(122deg,#fff0cd 0 15%,#f6d39a 19%,#fff6e4 24%,#f4dcc7 32%);
-}
-.playing-card[data-edition=foil] .edition-frame {padding:3px}
 .playing-card .foil-stamp {
   position:absolute; top:0; left:50%; transform:translateX(-50%);
   width:24%; height:15%; display:grid; place-items:center; pointer-events:none;
@@ -338,12 +326,6 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 }
 .foil-stamp svg {width:56%; height:72%; align-self:start; fill:#fff1b7}
 
-[data-edition=holographic] {--finish:repeating-linear-gradient(45deg,#8a3eb5,#ff9df2 8%,#a9ffff 13%,#7663bc 18%)}
-[data-edition=polychrome] {--finish:linear-gradient(120deg,#eb4c7a,#ffc44e,#64e69d,#51d4ff,#8b72ff,#ff6cc1,#eb4c7a)}
-.playing-card:is(:hover,[aria-pressed=true]) .edition-frame {animation:card-iridescence 2.6s ease-in-out infinite alternate}
-@keyframes card-iridescence {to{background-position:100% 100%}}
-.still .edition-frame {animation:none!important}
-@media(prefers-reduced-motion:reduce){.playing-card .edition-frame {animation:none!important}}
 .card-display {display:grid;place-items:center;height:94px;margin:0 auto 5px}
 .card-display .card-preview {height:100%;width:auto;max-height:none;cursor:inherit;--lift:0}
 .card-display .corner-rank {font-size:17px}
@@ -442,14 +424,6 @@ body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
   position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;
   background:var(--glaze);box-shadow:inset 0 0 0 2px var(--rim),inset 0 0 12px var(--rim);
 }
-.finish-polychrome {
-  --rim:#ffe2a2;
-  --glaze:linear-gradient(125deg,#ff5b9f70,#ffbd5560,#a7ff755c,#36f7e973,#9391ff75,#ff80cb72,#ff5b9f70);
-  background-size:210% 210%;animation:familiar-prism 5s ease-in-out infinite alternate;
-}
-.finish-foil {--rim:#b6edff;--glint:#d7faff88}
-.finish-holographic {--rim:#ffadf2;--glaze:repeating-linear-gradient(145deg,#6ef1ff36 0 6%,#fba1ff66 12%,transparent 22%)}
-.finish-negative {--rim:#caabff;--glaze:radial-gradient(ellipse,transparent 32%,#25113980 64%,#d7b7ff99)}
 .finish-chips {--rim:#57c6ff;--glint:#63caff35}
 .finish-mult {--rim:#ff726f;--glint:#ff6d7835}
 .familiar-burst {
@@ -457,7 +431,6 @@ body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
   text-shadow:0 0 8px white,0 0 15px var(--rim);background:radial-gradient(circle,#fff3b894,transparent 64%);
   animation:familiar-awaken 1050ms ease-out both;
 }
-@keyframes familiar-prism {to {background-position:100% 100%}}
 @keyframes familiar-awaken {
   0% {transform:scale(.25) rotate(-45deg);opacity:0}
   25% {opacity:1}

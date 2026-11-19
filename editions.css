@@ -1,0 +1,105 @@
+/* Keep the coating on the card when it fans, tilts, or moves to the scoring area. */
+.cw-offer:has(> .edition-finish) { position:relative; isolation:isolate; }
+.edition-finish {
+  position:absolute;
+  inset:-1px;
+  z-index:2;
+  overflow:hidden;
+  border-radius:inherit;
+  pointer-events:none;
+  box-shadow:inset 0 0 0 2px var(--rim), inset 0 0 9px var(--edge-light);
+  background:var(--engraved-film);
+}
+.edition-finish::before, .edition-finish::after {
+  content:"";
+  position:absolute;
+  pointer-events:none;
+}
+.edition-finish::before {
+  inset:0 -30%;
+  background:var(--lacquer);
+  opacity:var(--film-strength,.68);
+}
+.edition-finish::after {
+  inset:0 -65%;
+  background:linear-gradient(113deg, transparent 36%, var(--reflection) 45%, transparent 48%,
+    var(--highlight) 50%, var(--reflection) 51%, transparent 55%);
+  transform:translateX(12%);
+  opacity:.75;
+}
+
+.finish-foil {
+  --rim:#dafaff;
+  --edge-light:#9edfffad;
+  --engraved-film:repeating-radial-gradient(ellipse at -15% 110%,transparent 0 5px,#d5f5ff42 5.5px,transparent 6.5px);
+  --lacquer:linear-gradient(119deg,#142d59aa 7%,#5188b773 22%,#d2f3ffac 33%,#fcfffadd 36%,#526d9b77 43%,#273e6d88 56%,#a6d8ecaa 69%,#fff4d699 74%,#304b7399 85%);
+  --reflection:#a1e3ff55;
+  --highlight:#f7ffffec;
+  --cycle:5.2s;
+}
+.finish-holographic {
+  --rim:#ffd9ff;
+  --edge-light:#e8a0ffad;
+  --engraved-film:repeating-radial-gradient(ellipse at 12% 108%,transparent 0 7px,#74f5ff62 8px,#f9adff59 9px,transparent 11px);
+  --lacquer:radial-gradient(ellipse at 72% 16%,#ffb8f4dc,transparent 43%),
+    radial-gradient(ellipse at 28% 65%,#68fbffe0,transparent 40%),
+    linear-gradient(135deg,#8763d9aa 15%,#aaf7ff72 38%,#f093e6ac 58%,#816bda9c 71%,#80edff99);
+  --reflection:#ed96ff50;
+  --highlight:#d4ffffc9;
+  --cycle:6.4s;
+}
+.finish-polychrome {
+  --rim:#fff3c9;
+  --edge-light:#ffb4f4c2;
+  --engraved-film:repeating-linear-gradient(122deg,transparent 0 8px,#fff1d32a 9px,transparent 10px);
+  --lacquer:repeating-linear-gradient(122deg,#fa387fc9 0%,#ff9c36cf 10%,#fff274c9 17%,#56f1adb8 25%,
+    #28cce9ce 33%,#7571f3c9 41%,#e75de0cf 48%,#fa387fc9 54%);
+  --film-strength:.84;
+  --reflection:#fff0b34f;
+  --highlight:#fffbe8cd;
+  --cycle:5.8s;
+}
+.finish-negative {
+  --rim:#bcffef;
+  --edge-light:#81c2e4aa;
+  --engraved-film:radial-gradient(1px 1px at 24% 39%,#e1fbff 78%,transparent),
+    radial-gradient(1px 1px at 66% 73%,#dabfff 80%,transparent);
+  background-size:31px 43px,57px 61px;
+  --lacquer:linear-gradient(136deg,#080d30b5 14%,#44368988 31%,#ab89ff83 42%,#10263d99 50%,#0d182f8f 65%,#61d9d794 80%,#22234591 91%);
+  --reflection:#8c80f047;
+  --highlight:#9cf4eb8c;
+  --cycle:7.4s;
+}
+
+/* Keep game information and controls legible above the moving light. */
+.playing-card:has(> .edition-finish) > :is(.corner-rank,.wax-seal,.foil-stamp,.card-enhance,.card-tally),
+.grimoire-card:has(> .edition-finish) > :is(.grimoire-name,.grimoire-jewel),
+.item-card:has(> .edition-finish) > :is(b,.item-mark,.type-badge,.familiar-stack),
+.cw-offer:has(> .edition-finish) > :is(h3,p,.cw-badges,.cw-item-type,.cw-btn),
+.moon-spell-card:has(> .edition-finish) > .moon-spell-name {
+  z-index:3;
+}
+.grimoire-card:has(> .edition-finish) .grimoire-name {
+  background:linear-gradient(#4b3c52ee,#261c32f2);
+  text-shadow:0 1px 2px #160c1b;
+}
+.edition-finish > .familiar-burst { z-index:1; }
+:where(.moon-item,.moon-companion,.item-card,.pack-slot,.playing-card,.pack-fan-card):nth-child(3n+2) { --edition-phase:-1.8s; }
+:where(.moon-item,.moon-companion,.item-card,.pack-slot,.playing-card,.pack-fan-card):nth-child(3n) { --edition-phase:-3.4s; }
+
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) .edition-finish::before {
+    animation:edition-color-drift var(--cycle) ease-in-out var(--edition-phase,0s) infinite alternate;
+  }
+  body:not(.still) .edition-finish::after {
+    animation:edition-light-pass var(--cycle) ease-in-out calc(var(--edition-phase,0s) - 1.3s) infinite;
+  }
+}
+@keyframes edition-color-drift {
+  from { transform:translateX(-13%); }
+  to { transform:translateX(13%); }
+}
+@keyframes edition-light-pass {
+  0% { transform:translateX(-52%); }
+  64%,100% { transform:translateX(52%); }
+}

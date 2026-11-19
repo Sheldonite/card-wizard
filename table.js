@@ -61,6 +61,21 @@
   function read(key) {try{return JSON.parse(localStorage.getItem(key));}catch{return null;}}
   function store(key,value) {try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}
   const profileStore=CWProgress.createStore();
+  let cardStyle;
+  function applyCardStyle(){
+    cardStyle=profileStore.getEquippedCardStyle();
+    const root=document.documentElement;
+    if(cardStyle){
+      root.dataset.cardStyle=cardStyle.id;
+      root.style.setProperty('--card-style-ink',cardStyle.color);
+      root.style.setProperty('--card-style-art','url("'+CWContent.portrait(cardStyle.art)+'")');
+    }else{
+      delete root.dataset.cardStyle;
+      root.style.removeProperty('--card-style-ink');
+      root.style.removeProperty('--card-style-art');
+    }
+  }
+  applyCardStyle();
   function loadRun(){
     const saved=profileStore.getRun();
     return saved && (CW.restore ? CW.restore(saved) : saved);
@@ -81,20 +96,26 @@
   let orderCardId=null;
   let unlockTimer;
   const unlockQueue=[];
-  function showFamiliarUnlock(){
+  function showUnlock(){
     if(unlockTimer || !unlockQueue.length)return;
-    const familiar=CW.item(unlockQueue.shift()), notice=$('familiar-unlock');
-    notice.innerHTML='<img alt="" src="'+esc(CWContent.portrait(familiar.art))+'"><div><small>Familiar unlocked</small><b>'+esc(familiar.name)+'</b><span>'+esc(familiar.unlock)+'</span></div>';
+    const reward=unlockQueue.shift(), notice=$('familiar-unlock');
+    notice.innerHTML='<img alt="" src="'+esc(CWContent.portrait(reward.art))+'"><div><small>'+esc(reward.title)+'</small><b>'+esc(reward.name)+'</b><span>'+esc(reward.hint)+'</span></div>';
     notice.hidden=false;
     unlockTimer=setTimeout(()=>{
       notice.hidden=true;
       unlockTimer=null;
-      showFamiliarUnlock();
+      showUnlock();
     },4000);
   }
-  function announceFamiliarUnlocks(){
-    unlockQueue.push(...profileStore.takeFamiliarUnlocks());
-    showFamiliarUnlock();
+  function announceUnlocks(){
+    for(const id of profileStore.takeFamiliarUnlocks()){
+      const f=CW.item(id);
+      unlockQueue.push({title:'Familiar unlocked',name:f.name,art:f.art,hint:f.unlock});
+    }
+    for(const style of profileStore.takeCardStyleUnlocks()){
+      unlockQueue.push({title:'Card style unlocked',name:style.name,art:style.art,hint:style.goal});
+    }
+    showUnlock();
   }
   function save(){
     if(run.playtest){
@@ -102,7 +123,7 @@
       return;
     }
     const saved=hasRun && profileStore.saveRun(run);
-    announceFamiliarUnlocks();
+    announceUnlocks();
     $('save-note').innerHTML='<i data-icon="check">'+icon('check')+'</i>'+
       (saved?'Run saved':hasRun?'Playing this session':'Choose a run');
   }
@@ -143,6 +164,9 @@
       return '<span class="court-window" aria-hidden="true"></span>'+wildInk+
         '<img alt="" class="court" src="'+portrait+'">'+suitsBand;
     }
+    if(cardStyle && card.rank===14){
+      return wildInk+'<span class="illustrated-ace" aria-hidden="true"></span>';
+    }
     if(wildInk) return wildInk;
     if(card.rank===14) return '<div class="pips ace-orbit">'+stampedPip(card.suit,50,50,'ace')+'<svg class="ace-spark" viewBox="0 0 10 10" aria-hidden="true"><path fill="currentColor" d="m5 0 1.2 3.7L10 5 6.2 6.3 5 10 3.8 6.3 0 5l3.8-1.3z"/></svg></div>';
     return '<div class="pips">'+spots[card.rank].map(([x,y])=>stampedPip(card.suit,x,y,y>50?'invert':'')).join('')+'</div>';
@@ -159,7 +183,7 @@
     const face=bonus==='stone'?'<span class="stone-face" aria-hidden="true">'+icon('diamond')+'</span>':
       '<span class="corner-rank">'+rank+'</span>'+art(c)+'<span class="corner-rank flipped">'+rank+'</span>';
     const badge=bonus?'<span class="card-enhance" aria-hidden="true">'+icon(enhancementIcons[bonus])+'<b>'+esc(bonus)+'</b></span>':'';
-    const finish=c.edition?'<span class="edition-frame" aria-hidden="true"></span>':'';
+    const finish=window.CWContent.cardFinish(c);
     const foilStamp=c.edition==='foil'?'<span class="foil-stamp" aria-hidden="true">'+icon('spark')+'</span>':'';
     const element=preview && !packTarget?'div':'button';
     const controls=packTarget
@@ -206,7 +230,7 @@
       const badge=marks.length?'<small class="item-mark" aria-hidden="true">'+esc(marks[0].charAt(0))+'</small>':'';
       const stack=it.stackAmount?'<small class="familiar-stack stat-'+(it.stackStat==='chips'?'chips':'mult')+'" aria-hidden="true">'+esc(it.stackAmount)+'</small>':'';
       const frame=window.CWFamiliarFrames;
-      return '<button class="item-slot item-card"'+(frame?.attribute(it) || '')+' data-family="'+type+'" data-item="'+esc(ids[i])+'" aria-expanded="false" data-slot="'+i+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" '+CWCardTip.attribute(CWCardTip.details(it))+(spell?'':CWCardTip.attribute(CWCardTip.details(it,false,true),'data-extra-tip'))+'><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+(frame?.ornament(it) || '')+window.CWContent.typeBadge(type,true)+window.CWContent.familiarFinish(it,upgradeAge(it))+badge+stack+(it.bossMuted?CWCardTip.cross:'')+'<b>'+esc(it.name)+'</b></button>';
+      return '<button class="item-slot item-card"'+(frame?.attribute(it) || '')+' data-family="'+type+'" data-item="'+esc(ids[i])+'" aria-expanded="false" data-slot="'+i+'" data-base-item="'+esc(it.baseId || it.id)+'" data-edition="'+esc(it.edition || '')+'" aria-label="'+esc(label)+'" '+CWCardTip.attribute(CWCardTip.details(it))+'><img src="'+window.CWContent.portrait(it.art)+'" alt="">'+(frame?.ornament(it) || '')+window.CWContent.typeBadge(type,true)+window.CWContent.cardFinish(it,upgradeAge(it))+badge+stack+(it.bossMuted?CWCardTip.cross:'')+'<b>'+esc(it.name)+'</b></button>';
     }).join('');
   }
   function selectedInPlayOrder(){return currentHand.filter(c=>selected.has(c.id)).map(c=>c.id);}
@@ -854,7 +878,7 @@
     if(!hasRun)return false;
     if(showLobby){
       profileStore.resumeRun(run);
-      announceFamiliarUnlocks();
+      announceUnlocks();
     }
     showLobby=false;
     render(false);
@@ -868,6 +892,7 @@
     $('familiar-unlock').hidden=true;
     selected.clear();
     orderCardId=null;
+    applyCardStyle();
     run=loadRun();
     hasRun=Boolean(run);
     showLobby=true;
@@ -1059,6 +1084,12 @@
     getSelection:spell=>spell?.effect==='rankCopy' ? [...selected] : selectedInPlayOrder(),
     getSettings:()=>({...prefs}),
     getProgress:()=>profileStore.getProgress(),
+    equipCardStyle:id=>{
+      if(!profileStore.equipCardStyle(id))return false;
+      applyCardStyle();
+      render(false);
+      return true;
+    },
     setDeckDifficulty:(deckId,stakeId)=>profileStore.setDeckDifficulty(deckId,stakeId),
     getProfiles:()=>profileStore.profiles(),
     changeProfile:id=>changeProfile(profileStore.switchProfile(id)),

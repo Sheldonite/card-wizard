@@ -7,9 +7,7 @@
     const name = playing ? (card.enhancement === 'stone' ? 'Stone Card' : (ranks[card.rank] || card.rank)+' of '+suits[card.suit]) : card.name;
     const lines = [name];
     if (playing && card.tallyChips) lines.push("Permanent bonus: +"+card.tallyChips+" Chips.");
-    if (!descriptionVisible && !playing && card.description) lines.push(card.description);
-    const example = card.kind === 'familiar' && root.CWPlaytest?.deals[card.baseId || card.id]?.example;
-    if (example) lines.push(example);
+    if (!playing && card.description && (card.kind === 'familiar' || !descriptionVisible)) lines.push(card.description);
     for (const [field, catalog] of [['enhancement','enhancements'],['edition','editions'],['seal','seals'],['sticker','stickers']]) {
       const effect = root.CWMarket[catalog][card[field]];
       if (effect) {
@@ -25,9 +23,9 @@
     if (playing && lines.length === 1) lines.push('Standard playing card.');
     return lines.join('\n');
   }
-  function attribute(value, key = "data-card-tip") {
+  function attribute(value) {
     if (!value) return "";
-    return ' '+key+'="'+value.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'"';
+    return ' data-card-tip="'+value.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'"';
   }
   const cross = '<span class="boss-cross" aria-hidden="true">&times;</span>';
   root.CWCardTip = {details, attribute, cross};
@@ -43,10 +41,7 @@
     tip.hidden = true;
   }
   function show(node, x, y) {
-    let content = node?.dataset.cardTip;
-    if (node?.closest('#familiars') && document.getElementById('relic-readout')?.offsetWidth) {
-      content = node.dataset.extraTip;
-    }
+    const content = node?.dataset.cardTip;
     if (!content) { hide(); return; }
     if (active !== node) {
       hide();

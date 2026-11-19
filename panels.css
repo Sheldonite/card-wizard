@@ -450,20 +450,91 @@
   .rank-smoke i {animation:none; transform:translateY(-8px); opacity:.68}
 }
 
-[data-page="pack"] .cw-body:has(.cw-pack-hand) {padding:clamp(10px,2dvh,22px) clamp(8px,3vw,44px)}
-.cw-body:has(.cw-pack-hand) .pack-spread {padding-block:18px}
-.cw-body:has(.cw-pack-hand) .pack-slot:has([data-cw="prepare-pack-spell"]:enabled) .cw-btn::after {
+.cw-dialog.casting-pack .cw-head {padding:clamp(4px,1dvh,12px) clamp(10px,2vw,36px)}
+.casting-pack .pack-status {flex-direction:row}
+.casting-pack .pack-purse {width:clamp(42px,6dvh,66px)}
+.cw-dialog.casting-pack .cw-body {padding:4px clamp(8px,2vw,36px)}
+.casting-pack .pack-spread {flex-wrap:nowrap;gap:clamp(6px,1vw,20px);padding:14px 6px 18px}
+.casting-pack .pack-slot {position:relative;width:min(17vw,232px);min-width:0}
+.casting-pack .pack-slot:has([data-cw="prepare-pack-spell"]:enabled) .cw-btn::after {
   content:"";position:absolute;inset:0;border-radius:8px;
 }
-[data-page="pack"] .cw-pack-hand {
-  flex:none;margin-top:auto;background:radial-gradient(ellipse at bottom,#443550,#292236 78%);
+.cw-dialog.casting-pack .cw-footer {
+  --card-width:clamp(44px,min(7vw,10dvh),82px);
+  grid-template-columns:minmax(0,1fr) minmax(0,2.8fr) minmax(0,1fr);
+  gap:clamp(4px,1.2vw,24px);padding:5px clamp(8px,2vw,36px) 7px;
 }
-@media (max-width:620px) {
-  .cw-body:has(.cw-pack-hand) .pack-spread {
-    flex:none;flex-wrap:nowrap;justify-content:safe center;overflow-x:auto;
-    padding-inline:7px;scrollbar-width:thin;scroll-snap-type:x proximity;
+.casting-pack .pack-inventory-group:last-child {grid-column:3}
+.cw-dialog.casting-pack .cw-pack-hand {
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
+  width:100%;max-width:920px;justify-self:center;margin:0;padding:4px 8px 0;
+  background:radial-gradient(ellipse at bottom,#443550,#292236 78%);
+}
+.casting-pack .spell-hand-heading {min-height:32px;align-items:center;gap:8px}
+.casting-pack .cw-pack-hand > .cw-btn {min-height:32px;padding:4px 10px}
+.casting-pack .spell-hand-scroll {grid-column:1/-1}
+.casting-pack .pack-playing-cards {
+  --face:clamp(50px,min(9vw,13dvh),110px);
+  --step:clamp(24px,calc((100cqi - var(--face) - 36px) / max(1,var(--gaps))),calc(var(--face) * .76));
+  padding-block:24px 16px;
+}
+.casting-pack .rank-stencil-hand {padding-top:40px}
+@media (max-height:650px) {
+  .casting-pack .pack-slot .cw-item-image {height:clamp(45px,13dvh,84px);margin-bottom:3px}
+  .casting-pack .pack-slot .cw-offer {padding:5px}
+  .casting-pack .pack-slot .cw-btn {min-height:29px;padding:3px}
+  .casting-pack .pack-slot p {line-height:1.2;margin-bottom:5px}
+}
+@media (max-width:720px) and (orientation:portrait) {
+  .casting-pack .cw-kicker {display:none}
+  .casting-pack .cw-head {gap:4px}
+  .casting-pack .cw-head h2 {font-size:clamp(19px,5vw,30px)}
+  .casting-pack .pack-status {gap:4px}
+  .casting-pack .pack-status .cw-btn {font-size:12px;padding:3px 6px;min-height:32px}
+  .casting-pack .pack-spread {flex-direction:column;gap:4px;padding:4px 0}
+  .casting-pack .pack-slot {width:100%;transform:none}
+  .casting-pack .pack-slot .cw-offer {
+    display:grid;grid-template-columns:clamp(36px,6dvh,52px) minmax(0,1fr) auto;
+    align-items:center;column-gap:6px;padding:3px 5px;
   }
-  .cw-body:has(.cw-pack-hand) .pack-slot {flex:none;scroll-snap-align:center}
+  .casting-pack .pack-slot .cw-item-image {grid-row:1/3;width:100%;height:44px;margin:0}
+  .casting-pack .pack-slot .type-badge {display:none}
+  .casting-pack .pack-slot h3 {grid-column:2;margin:0;font-size:15px}
+  .casting-pack .pack-slot p {grid-column:2/-1;margin:1px 0;font-size:12px;line-height:1.2}
+  .casting-pack .pack-slot .cw-btn {grid-column:3;grid-row:1;min-height:24px;margin:0;padding:2px 6px;font-size:11px}
+  .casting-pack .pack-slot:has(.cw-item-type,.cw-badges) :is(.cw-item-type,.cw-badges) {grid-column:2}
+  .cw-dialog.casting-pack .cw-footer {--card-width:clamp(38px,6dvh,55px);grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:3px 7px}
+  .cw-dialog.casting-pack .cw-pack-hand {grid-row:1;grid-column:1/-1}
+  .casting-pack .pack-inventory-group:last-child {grid-column:2}
+  .casting-pack .pack-inventory-fan {padding-block:7px 9px}
+  .casting-pack .pack-playing-cards {--face:clamp(54px,8dvh,80px)}
+}
+@media (max-width:720px) and (max-height:710px) and (orientation:portrait) {
+  .casting-pack .pack-spread {gap:2px;padding:2px 0}
+  .casting-pack .pack-slot .cw-offer {padding-block:2px}
+  .casting-pack .pack-inventory-group {display:flex;align-items:center;justify-content:center;gap:3px}
+  .casting-pack .pack-inventory-group h3 {display:grid;justify-items:center;gap:1px;font-size:12px}
+  .casting-pack .pack-inventory-group h3 svg {display:none}
+  .casting-pack .pack-fan-scroll {min-width:0}
+  .casting-pack .pack-inventory-fan {min-width:0;padding:6px 7px 8px}
+  .casting-pack .pack-playing-cards {--face:50px;padding-block:18px 12px}
+  .casting-pack .rank-stencil-hand {padding-top:31px}
+  .casting-pack .spell-hand-face:has([aria-pressed="true"]) {--raise:13px}
+}
+@media (max-height:480px) and (orientation:landscape) {
+  .cw-dialog.casting-pack .cw-head {padding-block:2px}
+  .casting-pack .cw-kicker {display:none}
+  .casting-pack .cw-head h2 {font-size:23px}
+  .casting-pack .pack-spread {padding-block:5px;gap:5px}
+  .casting-pack .pack-slot {width:min(19%,220px);transform:none}
+  .casting-pack .pack-slot .cw-item-image {height:32px}
+  .casting-pack .pack-slot .type-badge {display:none}
+  .casting-pack .pack-slot h3 {font-size:15px}
+  .casting-pack .pack-slot .cw-btn {min-height:25px}
+  .casting-pack .pack-playing-cards {--face:48px;padding-block:18px 11px}
+  .casting-pack .rank-stencil-hand {padding-top:31px}
+  .casting-pack .spell-hand-face:has([aria-pressed="true"]) {--raise:13px}
+  .cw-dialog.casting-pack .cw-footer {padding-block:2px}
 }
 
 #familiar-unlock:not([hidden]) {

@@ -86,11 +86,6 @@
 :is(.cw-item-image,.cw-owned-emblem,.item-card)[data-family=familiar]:is(.cw-edition-negative,[data-familiar-edition=negative]) > img {
   filter:grayscale(1) invert(1) sepia(.82) saturate(2.4) hue-rotate(143deg) contrast(1.18);
 }
-.familiar-finish.finish-negative {
-  --rim:#b7edff;
-  --glaze:linear-gradient(146deg,#ab8bfa63,transparent 35%,transparent 58%,#7ee9ff52),radial-gradient(ellipse,transparent 46%,#34265265 85%);
-  box-shadow:inset 0 0 0 1px #c3faffaa,inset 0 0 9px #393063;
-}
 .grimoire-card[data-familiar-edition=negative] {
   --frame-edge:#b0e9f5;
   --frame-dark:#292740;

@@ -80,8 +80,19 @@
     return familiars[id] || spells[id] || vouchers[id] || packs[id];
   }
 
+  const styleUrls = new Map();
   function portrait(name) {
-    return root.CWEmbeddedArt?.[name] || "art/" + name + ".png";
+    const embedded = root.CWEmbeddedArt?.[name];
+    if (!name.startsWith("card-styles/")) return embedded || "art/" + name + ".png";
+    if (!embedded) return "art/" + name + ".jpg";
+    // Reuse one short URL per illustration whenever gallery panels repaint.
+    if (!styleUrls.has(name)) {
+      const binary = atob(embedded.slice(embedded.indexOf(",") + 1));
+      const bytes = new Uint8Array(binary.length);
+      for (let i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      styleUrls.set(name, URL.createObjectURL(new Blob([bytes], {type:"image/jpeg"})));
+    }
+    return styleUrls.get(name);
   }
   function colorStats(container) {
     const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);
@@ -136,17 +147,17 @@
     const [name, drawing] = cardTypes[type];
     return '<span class="type-badge"'+(compact?' title="'+name+'"':'')+'><svg aria-hidden="true" viewBox="0 0 24 24">'+drawing+'</svg><span'+(compact?' class="visually-hidden"':'')+'>'+name+'</span></span>';
   }
-  function familiarFinish(d, elapsed = Infinity) {
-    if (d.kind !== 'familiar') return '';
-    const edition = ['foil','holographic','polychrome','negative'].includes(d.edition) ? d.edition : '';
+  function cardFinish(d, elapsed = Infinity) {
+    const edition = Object.hasOwn(market.editions, d.edition) ? d.edition : '';
     const value = Number(d.stackAmount?.replace(/^x/, ''));
-    const charged = value > (d.stackStat === 'xmult' ? 1 : 0);
+    const charged = d.kind === 'familiar' && value > (d.stackStat === 'xmult' ? 1 : 0);
     const finish = edition || (charged && (d.stackStat === 'chips' ? 'chips' : 'mult'));
     if (!finish) return '';
     const burst = elapsed < 1050 ? '<i class="familiar-burst" style="animation-delay:-'+elapsed+'ms">✦</i>' : '';
-    return '<span class="familiar-finish finish-'+finish+'" aria-hidden="true">'+burst+'</span>';
+    const layer = edition ? 'edition-finish' : 'familiar-finish';
+    return '<span class="'+layer+' finish-'+finish+'" aria-hidden="true">'+burst+'</span>';
   }
-  const api = { familiarFinish, cardTypes, cardType, typeBadge, familiars, spells, vouchers, packs, get, portrait, colorStats };
+  const api = { cardFinish, cardTypes, cardType, typeBadge, familiars, spells, vouchers, packs, get, portrait, colorStats };
   root.CWContent = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);
