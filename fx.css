@@ -391,7 +391,7 @@ button.stock-face {position:relative;display:grid;width:100%;max-width:145px;mar
 #cw-card-tooltip[hidden] {display:none}
 #cw-card-tooltip>b {display:block;color:#ffdf9c;font-size:15px}
 #cw-card-tooltip>div {margin-top:5px}
-.cw-fx-card[data-card-tip], .cast-faces [data-card-tip] {pointer-events:auto}
+.cw-fx-card[data-card-tip] {pointer-events:auto}
 
 body span.stat-money {color:#ffd66d;font-weight:700;white-space:nowrap}
 .stat-money::before {content:"";display:inline-block;width:1.15em;height:.9em;vertical-align:-.08em;margin-right:.14em;background:url("assets/coin-pile.svg") center/contain no-repeat}

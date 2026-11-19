@@ -1081,7 +1081,7 @@
   CWP.configure({
     cardPreview:(c,packTarget)=>cardMarkup(c,0,1,true,packTarget),
     getState:()=>run,
-    getSelection:spell=>spell?.effect==='rankCopy' ? [...selected] : selectedInPlayOrder(),
+    getSelection:spell=>['rankCopy','suitCopy'].includes(spell?.effect) ? [...selected] : selectedInPlayOrder(),
     getSettings:()=>({...prefs}),
     getProgress:()=>profileStore.getProgress(),
     equipCardStyle:id=>{
@@ -1098,7 +1098,7 @@
     hasSavedRun:()=>hasRun,
     hasRun:()=>hasRun,
     showMenu,continueRun,setSetting,restart,startPractice,
-    upgradeAge,onChange:()=>render(),playFamiliarEvents,
+    upgradeAge,saveRun:save,toast,onChange:render,playFamiliarEvents,
     playSound:(name,step)=>audio.event(name,step)
   });
   updatePrefs();render();

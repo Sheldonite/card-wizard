@@ -11,6 +11,7 @@
   let deckTab = 'draw';
   let targets = [];
   let castSourceRect;
+  let casting = false;
   let restartDeck = '';
   let restartChallenge = '';
   let restartSeed = '';
@@ -80,6 +81,7 @@
     sellTab.style.top = Math.max(4, Math.min(card.top + (card.height-height)/2, innerHeight-height-4))+'px';
   }
   function toggleSell(card,index,category='familiars') {
+    if (casting) return;
     const alreadyOpen = sellAnchor === card;
     dismissSell();
     if (alreadyOpen) return;
@@ -289,6 +291,7 @@
     dialog().focus({preventScroll:true});
   }
   function open(next, value = '', sourceRect) {
+    if (casting) return;
     const s = state();
     const names = {codex:'guide',info:'run',options:'settings'};
     next = names[next] || next;
@@ -309,6 +312,7 @@
     route(next, value);
   }
   function close() {
+    if (casting) return;
     if (page && !isDismissible()) return;
     const leaving = page;
     const previous = backStack.pop() || [readPhase(state()), ''];
@@ -319,6 +323,7 @@
     }
   }
   function sync() {
+    if (casting) return;
     const now = readPhase(state());
     if (renderedPhase !== now) {
       renderedPhase = now;
@@ -755,7 +760,7 @@
     }).join('');
     return result(data.profile?.name || '','Collection',tabs+summary+(list?'<div class="cw-collection-items">'+list+'</div>':'<p class="cw-empty">No entries match this view.</p>'),button('close','Back'));
   }
-  function targetCards(cards,d,action='target',control='') {
+  function targetCards(cards,d,action='target') {
     const rankStencil = d?.effect === 'rankCopy';
     const marker = rankStencil ? '<span class="rank-smoke" aria-hidden="true"><i></i><i></i><i></i></span><span class="rank-source-tab" aria-hidden="true">Source</span>' : '';
     const faces = cards.map((c,i)=>{
@@ -766,7 +771,7 @@
         options.cardPreview(c,{action,selected:targets.includes(c.id)})+marker+'</div></div>';
     }).join('');
     return '<div class="spell-hand-heading" aria-live="polite" aria-atomic="true"><h3 class="cw-subheading"></h3><span class="spell-hand-count"></span></div>'+
-      control+'<div class="spell-hand-scroll"><div role="group" aria-label="Playing cards" class="pack-playing-cards'+(rankStencil?' rank-stencil-hand':'')+
+      '<div class="spell-hand-scroll"><div role="group" aria-label="Playing cards" class="pack-playing-cards'+(rankStencil?' rank-stencil-hand':'')+
       '" style="--gaps:'+Math.max(0,cards.length-1)+'">'+faces+'</div></div>';
   }
   function targetLabel(d) {
@@ -802,9 +807,15 @@
     });
     layer.querySelector('.spell-hand-count').textContent=targets.length+' selected';
     layer.querySelector('.spell-hand-heading h3').textContent=invalidCard ? 'Stone cards have no rank or suit' : d ? targetLabel(d) : 'Your hand';
-    const cast=layer.querySelector('[data-cw="pick-cast"],[data-cw="buy-use-cast"],[data-cw="cast"]');
-    if (cast) cast.disabled=!(pack ? api().canPick(s,index,targets) :
-      shopping ? api().canBuyAndUse(s,index,targets) : api().canUse(s,index,targets));
+    if (pack) {
+      for (const button of layer.querySelectorAll('[data-cw="choose-pack-spell"]:not(:disabled)')) {
+        const i=Number(button.dataset.value);
+        button.textContent=api().canPick(s,i,targets) ? 'Cast' : i===index && d ? 'Choose cards' : 'Select spell';
+      }
+    } else {
+      const cast=layer.querySelector('[data-cw="buy-use-cast"],[data-cw="cast"]');
+      if (cast) cast.disabled=!(shopping ? api().canBuyAndUse(s,index,targets) : api().canUse(s,index,targets));
+    }
   }
   function spellView(s) {
     const index=Number(detail);
@@ -922,7 +933,7 @@
         ? d.description.replace(' of '+d.choices+' ', ' of '+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+' ')
         : d.description;
       const details=global.CWCardTip.details({...d,description},false).split('\n');
-      details.splice(1,0,type+(d.kind==='familiar' && d.rarity?' · '+d.rarity:''));
+      if (d.kind!=='familiar') details.splice(1,0,type);
       if (reason) details.push(reason);
       if (ok) details.push('Buy for '+cash(price));
       const tip=global.CWCardTip.attribute(details.join('\n'));
@@ -986,15 +997,14 @@
       const targeted=isSpell(d) && d.maxTargets>0;
       const fallback=d.kind==='familiar' && d.edition!=='negative' && s.familiars.length>=cap.familiars;
       const blocked=api().canPick ? !api().canPick(s,i) : fallback || (targeted && hand.length < (d.minTargets || 0));
-      const action=targeted?'prepare-pack-spell':'pick';
+      const action=targeted?'choose-pack-spell':'pick';
       const label=blocked?'Unavailable':targeted?(active===i?'Selected':'Select spell'):isSpell(d)?'Cast':'Take';
       const offset=position++ - (spread-1)/2;
       const delay=(240+i*80)/speed-elapsed;
       return '<div class="pack-slot'+(active===i?' chosen':'')+'" style="--tilt:'+offset*2+'deg;--drop:'+Math.abs(offset)*5+'px;--from:'+(-offset*70)+'px;--delay:'+delay+'ms">'+offer(d,button(action,label,active===i?'cw-active':'cw-primary',i,blocked))+'</div>';
     }).join('');
     const d=active>=0?item(s.pack.choices[active]):null;
-    const cast=d?button('pick-cast','Cast '+d.name,'cw-primary',active,true):'';
-    const dealt=hand.length?'<section class="cw-pack-hand">'+targetCards(hand,d,'pack-target',cast)+'</section>':'';
+    const dealt=hand.length?'<section class="cw-pack-hand">'+targetCards(hand,d,'pack-target')+'</section>':'';
     const wrapper=elapsed<700/speed?'<div aria-hidden="true" class="pack-wrapper" style="--age:'+(-elapsed)+'ms;--duration:'+(650/speed)+'ms">'+picture(item(s.pack.id))+'</div>':'';
     const castingPack=['spell','spectral'].includes(s.pack.pool) || hand.length>0;
     const skip=button('close-pack','Skip remaining');
@@ -1089,64 +1099,96 @@
       (won && !s.challengeId?button('endless','Continue Endless','verdict-endless'):'');
     return result('Ante '+s.ante+'  /  Round '+s.round,won?'You won!':'You lost',crest+summary+stats,actions);
   }
-  function resolveCast(s,d,action,index,ids) {
-    const before=ids.map(id=>({...usableCards(s).find(c=>c.id===id)}));
-    const deckSize=s.deck.length;
+  const wait = ms => new Promise(resolve=>setTimeout(resolve,ms));
+
+  async function revealCard(node,card,effect,delay,speed,reduced) {
+    if (!reduced) {
+      if (delay) await wait(delay/speed);
+      node.animate([{filter:'brightness(1)'},{filter:'brightness(1.55)'}],{duration:140/speed});
+      await wait(140/speed);
+    }
+    if (!card) {
+      if (reduced) node.style.opacity='.3';
+      else node.animate([{opacity:1},{opacity:0,clipPath:'inset(0 0 100% 0)',filter:'sepia(1)'}],
+        {duration:440/speed,fill:'forwards'});
+      return;
+    }
+    // Replace the printed face while keeping the original button, fan pose and selection.
+    const template=document.createElement('template');
+    template.innerHTML=options.cardPreview(card);
+    const face=template.content.firstElementChild;
+    for (const key of ['suit','edition','enhanced','enhancement','debuffed','cardTip']) node.dataset[key]=face.dataset[key];
+    node.style.setProperty('--suit',face.style.getPropertyValue('--suit'));
+    node.setAttribute('aria-label',face.getAttribute('aria-label'));
+    node.replaceChildren(...face.childNodes);
+    const flash=document.createElement('span');
+    flash.className='spell-imprint';
+    flash.dataset.ink=card.edition || card.enhancement || card.seal || effect;
+    flash.style.setProperty('--imprint-time',(510/speed)+'ms');
+    flash.setAttribute('aria-hidden','true');
+    node.append(flash);
+  }
+
+  async function resolveCast(s,d,action,index,ids,control) {
+    const pack=page==='pack', picker=page==='spell' || page==='shop-spell';
+    const hand=page ? layer.querySelector('.pack-playing-cards') : document.getElementById('hand');
+    const faces=hand?.querySelectorAll('.playing-card') || [];
+    const byId=new Map(Array.from(faces,node=>[node.dataset.card || node.dataset.value,node]));
+    const source=control?.closest('.pack-slot,.moon-item') || control;
+    const origin=(picker && castSourceRect) || source?.getBoundingClientRect();
+    const deckSize=s.deck.length, balance=s.money-(action==='buyAndUse'?api().price(s,s.offers[index]):0);
     const bag=[...s.familiars,...s.consumables.filter((_,i)=>action!=='use' || i!==index)];
     const levels={...s.levels};
-    const balance=s.money-(action==='buyAndUse'?api().price(s,s.offers[index]):0);
-    if (!api()[action](s,index,ids)) return false;
-    const results=[];
-    const push=(oldFace,newFace,label,style='turn')=>results.push({oldFace,newFace,label,style});
-    const face=c=>'<div class="card-display">'+options.cardPreview(c)+'</div>';
-    for (const old of before) {
-      const card=s.deck.find(c=>c.id===old.id);
-      if (!card) { push(face(old),'','Removed','burn'); continue; }
-      if (d.effect==='copy') {
-        for (const copy of s.deck.slice(deckSize)) push('',face(copy),'Copy added','copy');
-        continue;
-      }
-      const changes=[];
-      if (old.rank!==card.rank) changes.push(rank(old.rank)+' → '+rank(card.rank));
-      if (old.suit!==card.suit) changes.push(suits[old.suit]+' → '+suits[card.suit]);
-      for (const key of ['enhancement','edition','seal']) {
-        if (old[key]===card[key]) continue;
-        changes.push(card[key]?(key==='seal'?card[key]+' seal':card[key]):old[key]+' removed');
-      }
-      const sourceLabel = old.id===ids[0] && ({rankCopy:'Rank source',suitCopy:'Suit source'})[d.effect];
-      push(face(old),face(card),changes.join(' · ') || sourceLabel || 'Unchanged',d.effect==='seal'?'stamp':'turn');
+    if (!api()[action](s,index,ids)) {
+      announce('Choose valid cards or make inventory space first.');
+      return;
     }
-    if (d.effect==='generate' || d.effect==='inventoryEdition') {
-      for (const ref of [...s.familiars,...s.consumables]) {
-        const i=bag.indexOf(ref);
-        if (i>=0) { bag.splice(i,1); continue; }
-        const reward=item(ref);
-        push('',picture({...reward,upgradeAge:0}),reward.name+(d.effect==='inventoryEdition'?' · Negative':''),'copy');
+    casting=true;
+    try {
+      options.saveRun?.();
+      dismissSell();
+      options.playSound?.(action==='use'?'select':'buy');
+      const speed=options.getSettings?.()?.speed || 1;
+      const reduced=options.getSettings?.()?.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches || !layer.animate;
+      dialog().setAttribute('aria-busy','true');
+      const results=[];
+      if (d.effect==='generate' || d.effect==='inventoryEdition') {
+        for (const ref of [...s.familiars,...s.consumables]) {
+          const prior=bag.indexOf(ref);
+          if (prior>=0) bag.splice(prior,1);
+          else results.push(item(ref).name+(d.effect==='inventoryEdition'?' · Negative':''));
+        }
+        if (!results.length) results.push('No new cards');
       }
+      for (const key of Object.keys(levels)) if (levels[key]!==s.levels[key]) results.push(key+' · Lv '+s.levels[key]);
+      if (d.effect==='tally') results.push('+'+num(s.tallyPerPlay)+' Chips per play');
+      if (d.effect==='money' || d.effect==='cash') results.push('+'+cash(s.money-balance));
+      if (d.effect==='bossDisable') results.push('Boss ward active');
+      if (d.effect==='copy') results.push('+'+(s.deck.length-deckSize)+' to deck');
+      const notice=[d.name,...results].join(' · ');
+      const caption=page && (layer.querySelector('.spell-hand-heading h3') || layer.querySelector('.pack-status .pack-remaining') || layer.querySelector('.cw-message'));
+      if (caption) caption.textContent=notice;
+      else options.toast?.(notice);
+      if (!reduced) source?.animate([{filter:'brightness(1)'},{filter:'brightness(1.4)',offset:.35},{filter:'brightness(1)'}],{duration:400/speed});
+      const affected=['rankCopy','suitCopy'].includes(d.effect) ? ids.slice(1) : ids;
+      await Promise.all(affected.map((id,i)=>{
+        const node=byId.get(String(id));
+        if (node) return revealCard(node,s.deck.find(c=>c.id===id),d.effect,i*55,speed,reduced);
+      }));
+      await wait(reduced ? 260 : (affected.length ? 610 : 550)/speed);
+    } finally {
+      casting=false;
+      dialog().removeAttribute('aria-busy');
+      if (picker || action==='pick') { targets=[]; detail=''; }
+      else if (pack && d.maxTargets) targets=[];
+      if (picker) close();
+      options.onChange?.(false);
+      sync();
+      options.playFamiliarEvents?.(origin);
     }
-    if (!results.length) {
-      const gains=Object.keys(levels).filter(k=>levels[k]!==s.levels[k]).map(k=>k+' · Lv '+s.levels[k]);
-      if (d.effect==='tally') gains.push('Cards now bank +'+num(s.tallyPerPlay)+' Chips per play');
-      const label=gains.join(' / ') || (['money','cash'].includes(d.effect)?'+'+cash(s.money-balance):d.effect==='bossDisable'?'Boss ward active':'No new cards');
-      push('',picture(d),label,'copy');
-    }
-    showCast(d,results);
-    return true;
-  }
-  function showCast(d,results) {
-    document.querySelector('.cast-reveal')?.remove();
-    const el=document.createElement('aside');
-    el.className='cast-reveal';
-    el.dataset.family=global.CWContent.cardType(d);
-    el.setAttribute('role','status');
-    el.innerHTML='<strong>'+esc(d.name)+'</strong><div class="cast-results">'+results.map(r=>
-      '<div class="cast-result '+r.style+'"><div class="cast-faces"><div class="cast-before">'+r.oldFace+'</div><div class="cast-after">'+r.newFace+'</div></div><b>'+esc(r.label)+'</b></div>'
-    ).join('')+'</div>';
-    global.CWContent.colorStats(el);
-    document.body.append(el);
-    setTimeout(()=>el.remove(),2700);
   }
   function act(name, value, control) {
+    if (casting) return;
     const s=state() || {};
     const index=Number(value);
     if(name==='close') return close();
@@ -1231,16 +1273,12 @@
     }
     if(name==='use-item') {
       const d=ownedItem(s,'consumables',index);
-      const sourceRect=control?.getBoundingClientRect();
-      if (d.maxTargets>0 && page!=='pack') return open('spell',String(index),sourceRect);
-      if(resolveCast(s,d,'use',index,d.maxTargets ? targets : [])) {
-        if (d.maxTargets) targets=[];
-        changed('select',sourceRect);
-      }
-      else announce('That spell is unavailable right now.');
-      return;
+      const ids=d.maxTargets ? (page==='pack' ? targets : options.getSelection?.(d) || []) : [];
+      if (d.maxTargets && page!=='pack' && !api().canUse(s,index,ids)) return open('spell',String(index),control?.getBoundingClientRect());
+      return resolveCast(s,d,'use',index,ids,control);
     }
     if(name==='inspect-cast') {
+      if (!item(s.offers[index]).maxTargets) return act('buy-use',value,control);
       const art=control.closest('.moon-item')?.querySelector('.moon-art');
       return open('shop-spell',String(index),(art || control).getBoundingClientRect());
     }
@@ -1248,15 +1286,13 @@
       const d=item(s.offers[index]);
       const sourceRect=(control?.closest('.moon-item')?.querySelector('.moon-art') || control)?.getBoundingClientRect();
       if (d.maxTargets>0) return open('shop-spell',String(index),sourceRect);
-      if(resolveCast(s,d,'buyAndUse',index,[])) changed('buy',sourceRect);
-      else announce('That spell is unavailable right now.');
-      return;
+      return resolveCast(s,d,'buyAndUse',index,[],control);
     }
-    if(name==='prepare-pack-spell') {
+    if(name==='choose-pack-spell') {
+      if (api().canPick(s,index,targets)) return resolveCast(s,item(s.pack.choices[index]),'pick',index,targets,control);
       detail=value;
       paint(false);
-      const cast=layer.querySelector('[data-cw="pick-cast"]');
-      (cast && !cast.disabled ? cast : layer.querySelector('.cw-pack-hand .playing-card'))?.focus();
+      layer.querySelector('.cw-pack-hand .playing-card')?.focus({preventScroll:true});
       return;
     }
     if(name==='target' || name==='pack-target') {
@@ -1271,20 +1307,13 @@
     if(name==='cast' || name==='buy-use-cast') {
       const i=Number(detail), buying=name==='buy-use-cast';
       const d=buying?item(s.offers[i]):ownedItem(s,'consumables',i);
-      const sourceRect=castSourceRect || control?.getBoundingClientRect();
-      if(resolveCast(s,d,buying?'buyAndUse':'use',i,targets)) {
-        close();
-        message=d.name+' cast.';
-        changed(buying?'buy':'select',sourceRect);
-      }
-      else announce('Choose valid cards for this spell.');
-      return;
+      return resolveCast(s,d,buying?'buyAndUse':'use',i,targets,control);
     }
-    if(name==='pick' || name==='pick-cast') {
-      const ids=name==='pick-cast'?targets:[];
+    if(name==='pick') {
       const choice=item(s.pack.choices[index]);
-      const sourceRect=(control?.closest('.pack-slot') || layer.querySelector('.pack-slot.chosen') || control)?.getBoundingClientRect();
-      if(!(isSpell(choice)?resolveCast(s,choice,'pick',index,ids):api().pick(s,index,ids))) { announce('Choose valid cards or make inventory space first.'); return; }
+      if (isSpell(choice)) return resolveCast(s,choice,'pick',index,[],control);
+      const sourceRect=control?.getBoundingClientRect();
+      if(!api().pick(s,index)) { announce('Make inventory space first.'); return; }
       detail='';
       targets=[];
       changed('buy',sourceRect);
@@ -1305,5 +1334,5 @@
       perform(sourceRect,...commands[name]);
     }
   }
-  global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page,getPage:()=>page};
+  global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page || casting,getPage:()=>page};
 })(window);

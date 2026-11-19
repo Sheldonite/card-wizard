@@ -6,6 +6,7 @@
     const playing = Boolean(card.suit && card.rank);
     const name = playing ? (card.enhancement === 'stone' ? 'Stone Card' : (ranks[card.rank] || card.rank)+' of '+suits[card.suit]) : card.name;
     const lines = [name];
+    if (card.kind === 'familiar') lines.push(card.rarity ? card.rarity+' Familiar' : 'Familiar');
     if (playing && card.tallyChips) lines.push("Permanent bonus: +"+card.tallyChips+" Chips.");
     if (!playing && card.description && (card.kind === 'familiar' || !descriptionVisible)) lines.push(card.description);
     for (const [field, catalog] of [['enhancement','enhancements'],['edition','editions'],['seal','seals'],['sticker','stickers']]) {

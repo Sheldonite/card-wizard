@@ -355,29 +355,41 @@
   .pack-spread {gap:9px;padding:12px 0}
   .pack-slot {width:clamp(120px,42%,168px);--drop:0px!important;--tilt:0deg!important}
 }
-.cast-reveal {position:fixed;z-index:500;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;max-width:95vw;box-sizing:border-box;padding:14px 18px;border:1px solid var(--glow);border-radius:12px;background:radial-gradient(ellipse at top,#453047,#1b182a 80%);box-shadow:0 12px 48px #090812cf;--glow:#ffd38b;text-align:center;color:#ffefd5;animation:cast-notice 2.7s both}
-.cast-reveal[data-family="spectral"] {--glow:#99edfa;background:radial-gradient(ellipse at top,#254551,#171827 80%)}
-.cast-reveal>strong {font: bold clamp(18px,4vw,27px)/1.2 Georgia,serif;color:var(--glow)}
-.cast-results {display:flex;justify-content:center;gap:10px;margin-top:10px}
-.cast-result {width:clamp(70px,20vw,105px);font: bold 13px/1.2 system-ui;text-transform:capitalize}
-.cast-faces {height:100px;position:relative;perspective:450px;margin-bottom:6px}
-.cast-before,.cast-after {position:absolute;inset:0;display:grid;place-items:center}
-.cast-faces .card-display {height:94px;margin:0}
-.cast-faces .cw-item-image {margin:0;height:90px}
-.cast-before {animation:cast-fold .45s .16s both}
-.cast-after {animation:cast-unfold .45s .52s both}
-.burn .cast-before {animation:cast-ash 1.25s .2s both}
-.copy .cast-after {animation:cast-copy .62s both}
-.stamp .cast-after {animation:cast-stamp .48s .48s both}
-@keyframes cast-notice {0%,100% {opacity:0} 6%,91% {opacity:1}}
-@keyframes cast-fold {to {transform:rotateY(90deg);opacity:0}}
-@keyframes cast-unfold {from {transform:rotateY(-85deg);filter:brightness(2)}}
-@keyframes cast-ash {55% {filter:sepia(1) brightness(1.6);opacity:.9} to {transform:translateY(-13px) scale(.8);clip-path:inset(0 0 100%);opacity:0}}
-@keyframes cast-copy {from {opacity:0;transform:translateY(18px) scale(.7);filter:brightness(2)}}
-@keyframes cast-stamp {from {opacity:0;transform:scale(1.33);filter:brightness(2)} 70% {transform:scale(.94)}}
-.still .pack-slot,.still .cast-reveal,.still .cast-before,.still .cast-after {animation:none}
-.still .cast-before {visibility:hidden}
-.still .burn .cast-before {visibility:visible;filter:grayscale(1);opacity:.65}
+/* A sweep of light develops the new face on the selected card itself. */
+.spell-imprint {
+  --ink:#bdfcf4;
+  position:absolute;
+  inset:0;
+  z-index:7;
+  overflow:hidden;
+  border-radius:inherit;
+  pointer-events:none;
+  box-shadow:inset 0 0 0 2px var(--ink),inset 0 0 12px color-mix(in srgb,var(--ink) 65%,transparent);
+}
+.spell-imprint[data-ink=foil], .spell-imprint[data-ink=steel] {--ink:#a7e6ff}
+.spell-imprint[data-ink=lucky] {--ink:#abff93}
+.spell-imprint[data-ink=gold] {--ink:#ffd16b}
+.spell-imprint:is([data-ink=holographic],[data-ink=polychrome],[data-ink=rankCopy]) {--ink:#f4acff}
+.spell-imprint::before,.spell-imprint::after {
+  content:"";position:absolute;inset:0;pointer-events:none;
+}
+.spell-imprint::before {
+  inset:-12% -70%;
+  background:linear-gradient(115deg,transparent 39%,color-mix(in srgb,var(--ink) 65%,transparent) 47%,#fffde8 50%,transparent 57%);
+}
+.spell-imprint::after {
+  background:radial-gradient(ellipse 2% 8% at 73% 24%,#fff 12%,transparent 80%),
+    radial-gradient(ellipse 9% 2% at 73% 24%,var(--ink) 12%,transparent 85%),
+    radial-gradient(ellipse 2% 6% at 28% 65%,#fff 12%,transparent 85%),
+    radial-gradient(ellipse 7% 2% at 28% 65%,var(--ink) 12%,transparent 85%);
+}
+@media (prefers-reduced-motion:no-preference) {
+  body:not(.still) .spell-imprint {animation:imprint-settle var(--imprint-time) ease-out both}
+  body:not(.still) .spell-imprint::before {animation:imprint-sweep var(--imprint-time) ease-out both}
+}
+@keyframes imprint-settle {0%,25% {opacity:1} 100% {opacity:0}}
+@keyframes imprint-sweep {from {transform:translateX(-44%)} to {transform:translateX(44%)}}
+.still .pack-slot {animation:none}
 .pack-spread {position:relative}
 .pack-wrapper {position:absolute;left:50%;top:50%;pointer-events:none;z-index:3;width:110px;animation:pack-crack var(--duration) ease-out var(--age) both}
 .pack-wrapper .booster-face {height:145px;margin:0}
@@ -456,7 +468,7 @@
 .cw-dialog.casting-pack .cw-body {padding:4px clamp(8px,2vw,36px)}
 .casting-pack .pack-spread {flex-wrap:nowrap;gap:clamp(6px,1vw,20px);padding:14px 6px 18px}
 .casting-pack .pack-slot {position:relative;width:min(17vw,232px);min-width:0}
-.casting-pack .pack-slot:has([data-cw="prepare-pack-spell"]:enabled) .cw-btn::after {
+.casting-pack .pack-slot [data-cw="choose-pack-spell"]:enabled::after {
   content:"";position:absolute;inset:0;border-radius:8px;
 }
 .cw-dialog.casting-pack .cw-footer {
@@ -471,7 +483,6 @@
   background:radial-gradient(ellipse at bottom,#443550,#292236 78%);
 }
 .casting-pack .spell-hand-heading {min-height:32px;align-items:center;gap:8px}
-.casting-pack .cw-pack-hand > .cw-btn {min-height:32px;padding:4px 10px}
 .casting-pack .spell-hand-scroll {grid-column:1/-1}
 .casting-pack .pack-playing-cards {
   --face:clamp(50px,min(9vw,13dvh),110px);
