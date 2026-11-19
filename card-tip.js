@@ -2,6 +2,9 @@
   'use strict';
   const ranks = {11:'Jack',12:'Queen',13:'King',14:'Ace'};
   const suits = {S:'Spades',H:'Hearts',C:'Clubs',D:'Diamonds'};
+  // iPadOS can request desktop pages and identify itself as a Mac.
+  const mobile = navigator.userAgentData?.mobile || /Android|iPad|iPhone|iPod|Mobi/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   function details(card, debuffed, descriptionVisible = false) {
     const playing = Boolean(card.suit && card.rank);
     const name = playing ? (card.enhancement === 'stone' ? 'Stone Card' : (ranks[card.rank] || card.rank)+' of '+suits[card.suit]) : card.name;
@@ -19,7 +22,7 @@
       }
     }
     if (!descriptionVisible && card.perishRounds != null) lines.push(card.perishRounds+' winning blinds remaining.');
-    if (debuffed || card.debuffed) lines.push('Debuffed — Effects are inactive.');
+    if (debuffed || card.debuffed || card.bossMuted) lines.push('Debuffed - Effects are inactive.');
     if (descriptionVisible && lines.length === 1) return "";
     if (playing && lines.length === 1) lines.push('Standard playing card.');
     return lines.join('\n');
@@ -29,7 +32,7 @@
     return ' data-card-tip="'+value.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'"';
   }
   const cross = '<span class="boss-cross" aria-hidden="true">&times;</span>';
-  root.CWCardTip = {details, attribute, cross};
+  root.CWCardTip = {details, attribute, cross, mobile};
   const tip = document.createElement('div');
   tip.id = 'cw-card-tooltip';
   tip.setAttribute('role','tooltip');
@@ -42,6 +45,7 @@
     tip.hidden = true;
   }
   function show(node, x, y) {
+    if (mobile) return;
     const content = node?.dataset.cardTip;
     if (!content) { hide(); return; }
     if (active !== node) {

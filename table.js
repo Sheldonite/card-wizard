@@ -185,10 +185,10 @@
     const badge=bonus?'<span class="card-enhance" aria-hidden="true">'+icon(enhancementIcons[bonus])+'<b>'+esc(bonus)+'</b></span>':'';
     const finish=window.CWContent.cardFinish(c);
     const foilStamp=c.edition==='foil'?'<span class="foil-stamp" aria-hidden="true">'+icon('spark')+'</span>':'';
-    const element=preview && !packTarget?'div':'button';
+    const element=preview && !packTarget && !CWCardTip.mobile?'div':'button';
     const controls=packTarget
       ? 'type="button" data-cw="'+(packTarget.action==='target'?'target':'pack-target')+'" data-value="'+esc(c.id)+'" aria-pressed="'+packTarget.selected+'"'+(packTarget.disabled?' disabled':'')
-      : preview?'role="img" tabindex="0"':'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
+      : preview?(CWCardTip.mobile?'type="button" aria-haspopup="dialog"':'role="img" tabindex="0"'):'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
     return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" '+CWCardTip.attribute(CWCardTip.details(c,debuffed))+' style="--suit:'+suits[c.suit].color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+foilStamp+seal+badge+tally+(debuffed?CWCardTip.cross:'')+'</'+element+'>';
   }
   function describeFamiliar(id){
@@ -287,6 +287,7 @@
     document.querySelectorAll('[data-sort]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.sort===(run.cardOrderMode || prefs.sort))));
   }
   function render(shouldSave=true){
+    CWP.dismissPreview();
     CWP.dismissSell();
     const info=CW.blindInfo(run), capacity=CW.capacity(run);
     selected.forEach(id=>{if(!run.hand.some(c=>c.id===id))selected.delete(id);});
@@ -976,7 +977,11 @@
   document.addEventListener('click',e=>{
     if(CWP.isOpen())return;
     const button=e.target.closest('button');if(!button || button.disabled)return;
-    if(button.dataset.card!==undefined)return toggle(currentHand.find(c=>String(c.id)===button.dataset.card));
+    if(button.dataset.card!==undefined){
+      const card=currentHand.find(c=>String(c.id)===button.dataset.card);
+      if(CWCardTip.mobile && !busy && card) return CWP.inspectSelection(button,()=>toggle(card),selected.size>=5 && !selected.has(card.id));
+      return toggle(card);
+    }
     if(button.dataset.move){
       const i=currentHand.findIndex(c=>c.id===orderCardId);
       if(moveCard(orderCardId,i+Number(button.dataset.move)) && button.disabled)focusCard(orderCardId);
@@ -990,6 +995,10 @@
     }
     if(button.dataset.item && !busy)return CWP.toggleSell(button,Number(button.dataset.slot),button.closest('#spells')?'consumables':'familiars');
     const a=button.dataset.action;
+    if(a==='deck' && CWCardTip.mobile && !busy){
+      const counts=Array.from($('deck-suits').children,node=>node.getAttribute('aria-label')+(node.querySelector('.boss-cross')?' (debuffed)':''));
+      return CWP.inspect(button,[{label:'View deck',run:()=>openPanel('deck')}],{text:['Draw pile',$('deck-count').textContent+' cards',...counts].join('\n')});
+    }
     if(a==='mute')setSetting('muted',!prefs.muted);
     else if(a==='retry-practice' && run.playtest)startPractice(run.playtest);
     else if(a==='menu')showMenu();
@@ -1016,7 +1025,7 @@
     else if(k==='m')showMenu();
   });
   function moveFocus(direction){
-    const scope=document.querySelector('.cw-backdrop:not([hidden])') || document.querySelector('.game');
+    const scope=document.querySelector('.moon-preview[open]') || document.querySelector('.cw-backdrop:not([hidden])') || document.querySelector('.game');
     const controls=[...scope.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary')].filter(el=>el.getClientRects().length);
     const active=document.activeElement;
     if(!controls.includes(active)){controls[0]?.focus();return;}

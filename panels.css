@@ -74,6 +74,24 @@
 .cw-x, .cw-line-action { min-width: 34px; min-height: 34px; display: inline-grid; place-items: center; padding: 2px 7px; line-height: 1; }
 .cw-x { font-size: 22px !important; font-weight: 400 !important; }
 .cw-line-action { font-size: 15px !important; }
+.moon-preview {
+  --cw-ink:#f4ead7;--cw-gold:#f3c875;font:500 15px/1.4 "Trebuchet MS",Arial,sans-serif;
+  width:min(21rem,calc(100% - 24px));max-height:calc(100dvh - 24px);margin:auto;padding:0;
+  overflow:auto;overscroll-behavior:contain;border:1px solid #b19376;border-radius:12px;
+  background:#2b2233;color:var(--cw-ink);box-shadow:0 8px 35px #120d1bb3;
+}
+.moon-preview::backdrop {background:#130e1bb3}
+.moon-preview-body {padding:18px;text-align:left}
+.moon-preview-close {float:right;min-width:44px;min-height:44px}
+.moon-preview-body small {color:var(--accent,#dbb6f2);font-weight:700}
+.moon-preview-body h3 {margin:2px 48px 12px 0;color:#f6e3c0;font:700 23px/1.15 Georgia,serif}
+.moon-preview-body p {margin:6px 0;font-size:15px;line-height:1.4}
+.moon-preview-reason {color:#f4bcab}
+.moon-preview-actions {display:flex;flex-wrap:wrap;gap:8px;clear:both;padding-top:10px}
+.moon-preview-actions .cw-btn {flex:1 0 auto;min-height:44px}
+.moon-preview-actions .cw-primary .stat-money {color:inherit;text-shadow:none}
+.moon-preview button {font-family:inherit;cursor:pointer}
+.moon-preview :focus-visible {outline:2px solid var(--cw-gold);outline-offset:2px}
 .cw-subheading { margin: 20px 0 9px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .13em; color: var(--cw-purple); }
 .cw-body > .cw-subheading:first-child { margin-top: 0; }
 .cw-explain, .cw-empty, .cw-message { margin: 0; color: var(--cw-muted); line-height: 1.55; }
@@ -228,6 +246,7 @@
 .cw-collection-summary { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:7px; margin-bottom:10px; color:var(--cw-gold); }
 .cw-collection-summary .cw-tabs { margin:0; }
 .cw-collection-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:6px; }
+button.cw-collection-item {color:inherit;text-align:left}
 .cw-collection-item.unknown { border-style:dashed; color:var(--cw-muted); background:#272331; }
 .cw-volume { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
 .cw-volume input { width:clamp(75px,25vw,170px); accent-color:var(--cw-gold); }

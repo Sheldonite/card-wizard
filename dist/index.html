@@ -156,6 +156,24 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
 .cw-x, .cw-line-action { min-width: 34px; min-height: 34px; display: inline-grid; place-items: center; padding: 2px 7px; line-height: 1; }
 .cw-x { font-size: 22px !important; font-weight: 400 !important; }
 .cw-line-action { font-size: 15px !important; }
+.moon-preview {
+  --cw-ink:#f4ead7;--cw-gold:#f3c875;font:500 15px/1.4 "Trebuchet MS",Arial,sans-serif;
+  width:min(21rem,calc(100% - 24px));max-height:calc(100dvh - 24px);margin:auto;padding:0;
+  overflow:auto;overscroll-behavior:contain;border:1px solid #b19376;border-radius:12px;
+  background:#2b2233;color:var(--cw-ink);box-shadow:0 8px 35px #120d1bb3;
+}
+.moon-preview::backdrop {background:#130e1bb3}
+.moon-preview-body {padding:18px;text-align:left}
+.moon-preview-close {float:right;min-width:44px;min-height:44px}
+.moon-preview-body small {color:var(--accent,#dbb6f2);font-weight:700}
+.moon-preview-body h3 {margin:2px 48px 12px 0;color:#f6e3c0;font:700 23px/1.15 Georgia,serif}
+.moon-preview-body p {margin:6px 0;font-size:15px;line-height:1.4}
+.moon-preview-reason {color:#f4bcab}
+.moon-preview-actions {display:flex;flex-wrap:wrap;gap:8px;clear:both;padding-top:10px}
+.moon-preview-actions .cw-btn {flex:1 0 auto;min-height:44px}
+.moon-preview-actions .cw-primary .stat-money {color:inherit;text-shadow:none}
+.moon-preview button {font-family:inherit;cursor:pointer}
+.moon-preview :focus-visible {outline:2px solid var(--cw-gold);outline-offset:2px}
 .cw-subheading { margin: 20px 0 9px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .13em; color: var(--cw-purple); }
 .cw-body > .cw-subheading:first-child { margin-top: 0; }
 .cw-explain, .cw-empty, .cw-message { margin: 0; color: var(--cw-muted); line-height: 1.55; }
@@ -310,6 +328,7 @@ button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3p
 .cw-collection-summary { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:7px; margin-bottom:10px; color:var(--cw-gold); }
 .cw-collection-summary .cw-tabs { margin:0; }
 .cw-collection-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:6px; }
+button.cw-collection-item {color:inherit;text-align:left}
 .cw-collection-item.unknown { border-style:dashed; color:var(--cw-muted); background:#272331; }
 .cw-volume { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
 .cw-volume input { width:clamp(75px,25vw,170px); accent-color:var(--cw-gold); }
@@ -1497,11 +1516,11 @@ body.still .potion-eruption .vessel-drops {opacity:0}
 .moon-art .type-badge { display:none; }
 .moon-purchase {position:absolute;inset:0;width:100%;height:100%;background:transparent;border:0;border-radius:8px;padding:0}
 .moon-purchase[aria-disabled="true"] {cursor:default}
-.moon-display:has(.moon-purchase[aria-disabled="true"]) .moon-art {filter:saturate(.72)}
+.moon-display:has(.moon-purchase:is([aria-disabled="true"],[data-unavailable])) .moon-art {filter:saturate(.72)}
 .moon-price,.moon-cast {position:absolute;line-height:1.15;border-radius:5px;white-space:nowrap;box-shadow:0 2px 4px #140d20ad}
 .moon-price {top:4%;left:1%;padding:4px 7px;border:1px solid #c5a266;background:#392a2b;font:800 13px var(--sans)}
-.moon-purchase[aria-disabled="true"] .moon-price {background:#302a34;border-color:#756876}
-.moon-purchase:is(:hover,:focus-visible):not([aria-disabled]) .moon-price {background:#563b29;border-color:#ffe2a4}
+.moon-purchase:is([aria-disabled="true"],[data-unavailable]) .moon-price {background:#302a34;border-color:#756876}
+.moon-purchase:is(:hover,:focus-visible):not([aria-disabled],[data-unavailable]) .moon-price {background:#563b29;border-color:#ffe2a4}
 .moon-cast {bottom:3%;left:50%;transform:translateX(-50%);min-height:26px;padding:2px 7px;border:1px solid #bca4ca;background:#352540;color:#f4e4ff;font:700 12px var(--sans)}
 .moon-vouchers .moon-price {top:24%}
 .moon-sold {display:grid;place-items:center;min-height:var(--face-height);color:#c3acc4;border-style:dashed;font-family:Georgia,serif;}
@@ -6733,6 +6752,9 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   'use strict';
   const ranks = {11:'Jack',12:'Queen',13:'King',14:'Ace'};
   const suits = {S:'Spades',H:'Hearts',C:'Clubs',D:'Diamonds'};
+  // iPadOS can request desktop pages and identify itself as a Mac.
+  const mobile = navigator.userAgentData?.mobile || /Android|iPad|iPhone|iPod|Mobi/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   function details(card, debuffed, descriptionVisible = false) {
     const playing = Boolean(card.suit && card.rank);
     const name = playing ? (card.enhancement === 'stone' ? 'Stone Card' : (ranks[card.rank] || card.rank)+' of '+suits[card.suit]) : card.name;
@@ -6750,7 +6772,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       }
     }
     if (!descriptionVisible && card.perishRounds != null) lines.push(card.perishRounds+' winning blinds remaining.');
-    if (debuffed || card.debuffed) lines.push('Debuffed — Effects are inactive.');
+    if (debuffed || card.debuffed || card.bossMuted) lines.push('Debuffed - Effects are inactive.');
     if (descriptionVisible && lines.length === 1) return "";
     if (playing && lines.length === 1) lines.push('Standard playing card.');
     return lines.join('\n');
@@ -6760,7 +6782,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     return ' data-card-tip="'+value.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'"';
   }
   const cross = '<span class="boss-cross" aria-hidden="true">&times;</span>';
-  root.CWCardTip = {details, attribute, cross};
+  root.CWCardTip = {details, attribute, cross, mobile};
   const tip = document.createElement('div');
   tip.id = 'cw-card-tooltip';
   tip.setAttribute('role','tooltip');
@@ -6773,6 +6795,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     tip.hidden = true;
   }
   function show(node, x, y) {
+    if (mobile) return;
     const content = node?.dataset.cardTip;
     if (!content) { hide(); return; }
     if (active !== node) {
@@ -8145,6 +8168,45 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function stat(label, value) { return '<div class="cw-stat"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>'; }
   function formula(chips, mult) { return '<span class="cw-formula"><b>' + num(chips) + '</b> <span>×</span> <b>' + num(mult) + '</b></span>'; }
   function cash(n) { return '$' + num(n); }
+  const mobile = global.CWCardTip.mobile;
+  let preview;
+  function dismissPreview() {
+    if (preview?.open) preview.close();
+    preview?.remove();
+    preview = null;
+  }
+  function inspect(control, actions = [], {text = control.dataset.cardTip, type = '', reason = ''} = {}) {
+    if (!text || casting) return;
+    dismissPreview();
+    const [name,...effects] = text.split('\n');
+    const popup = document.createElement('dialog');
+    popup.className = 'moon-preview';
+    popup.setAttribute('aria-labelledby','item-preview-name');
+    popup.innerHTML = '<div class="moon-preview-body"><button type="button" class="cw-x moon-preview-close" aria-label="Close item details">&times;</button>'+
+      (type ? '<small>'+esc(type)+'</small>' : '')+'<h3 id="item-preview-name">'+esc(name)+'</h3>'+
+      effects.map(line=>'<p>'+esc(line)+'</p>').join('')+(reason ? '<p class="moon-preview-reason">'+esc(reason)+'</p>' : '')+
+      (actions.length ? '<div class="moon-preview-actions">'+actions.map((a,i)=>
+        '<button type="button" class="cw-btn'+(i===0?' cw-primary':'')+'" data-preview-action="'+i+'"'+(a.disabled?' disabled':'')+'>'+esc(a.label)+'</button>'
+      ).join('')+'</div>' : '')+'</div>';
+    popup.addEventListener('click', event=>{
+      event.stopPropagation();
+      const button = event.target.closest('button');
+      if (event.target !== popup && !button) return;
+      const action = button && actions[button.dataset.previewAction];
+      if (button?.disabled) return;
+      dismissPreview();
+      if (control.isConnected) action?.run();
+    });
+    popup.addEventListener('close',()=>{ if (preview===popup) dismissPreview(); },{once:true});
+    (control.closest('.cw-dialog') || document.body).append(popup);
+    global.CWContent.colorStats(popup);
+    preview = popup;
+    popup.showModal();
+  }
+  function inspectSelection(control,select,disabled=false) {
+    const selected = control.getAttribute('aria-pressed') === 'true';
+    inspect(control,[{label:selected?'Deselect card':'Select card',disabled,run:select}]);
+  }
   let sellAnchor, sellTab;
   function dismissSell() {
     sellAnchor?.setAttribute('aria-expanded','false');
@@ -8167,32 +8229,37 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const s = state(), id = s[category][index];
     if (!id) return;
     const entry = ownedItem(s,category,index);
+    const canSell=api().canSell(s,category,index);
+    const sale={
+      label:canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
+      disabled:!canSell, run:()=>perform(card.getBoundingClientRect(),category==='familiars'?'sell':'sellConsumable',index)
+    };
+    const actions=[sale];
+    if (category==='consumables') {
+      const ids=page==='pack' && entry.maxTargets ? targets : undefined;
+      const use={label:'Use',disabled:!api().canUse(s,index,ids),run:()=>act('use-item',String(index),card)};
+      if (mobile) actions.unshift(use);
+      else actions.push(use);
+    }
+    if (mobile) return inspect(card,actions);
     sellAnchor = card;
     card.setAttribute('aria-expanded','true');
     sellTab = document.createElement('div');
     sellTab.className = 'owned-action-tab';
     sellTab.popover = 'manual';
-    function addAction(label,enabled,activate) {
+    for (const {label,disabled,run} of actions) {
       const button=document.createElement('button');
       button.type='button';
       button.className='familiar-sell-tab';
-      button.disabled=!enabled;
+      button.disabled=disabled;
       button.textContent=label;
       button.setAttribute('aria-label',label+' '+entry.name);
       button.addEventListener('click',event=>{
         event.stopPropagation();
-        const sourceRect=card.getBoundingClientRect();
         dismissSell();
-        if (card.isConnected && state()===s && s[category][index]===id) activate(sourceRect);
+        if (card.isConnected && state()===s && s[category][index]===id) run();
       });
       sellTab.append(button);
-    }
-    const canSell=api().canSell(s,category,index);
-    addAction(canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
-      canSell,sourceRect=>perform(sourceRect,category==='familiars'?'sell':'sellConsumable',index));
-    if (category==='consumables') {
-      const ids=page==='pack' && entry.maxTargets ? targets : undefined;
-      addAction('Use',api().canUse(s,index,ids),()=>act('use-item',String(index),card));
     }
     card.after(sellTab);
     global.CWContent.colorStats(sellTab);
@@ -8224,7 +8291,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function cardTip(card, descriptionVisible = false) {
     const run = state();
     const muted = card.suit && run?.phase === 'play' && api().debuffed(run,card);
-    return global.CWCardTip.attribute(global.CWCardTip.details(card,muted,descriptionVisible));
+    return global.CWCardTip.attribute(global.CWCardTip.details(card,muted,descriptionVisible && !mobile));
   }
   function picture(d, compact = false, {frame = global.CWFamiliarFrames, includeFinish = true} = {}) {
     if(d.kind==='card' && options.cardPreview) return '<div class="card-display">'+options.cardPreview(d)+'</div>';
@@ -8319,9 +8386,31 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       if (companion) return toggleSell(companion,Number(companion.dataset.companion));
       if (e.target === layer) { if (isDismissible()) close(); return; }
       const b = e.target.closest('[data-cw]');
+      if (mobile) {
+        const offer=e.target.closest('.cw-offer');
+        if (offer && page==='pack') return inspectPackChoice(offer);
+        const action=b?.dataset.cw;
+        const activate=()=>act(action,b.dataset.value ?? '',b);
+        if (action==='target' || action==='pack-target') return inspectSelection(b,activate,b.disabled);
+        if (b?.matches('.practice-choice')) return inspect(b,[{label:'Start playtest',run:activate}]);
+        if (action==='reward-pack') {
+          const s=state(), pack=item(s.rewardPacks[0]);
+          return inspect(b,[{label:'Open free pack',run:activate}],{text:global.CWCardTip.details({...pack,description:packDescription(s,pack)})});
+        }
+        const entry=e.target.closest('[data-card-tip]');
+        if (!b && entry) return inspect(entry);
+      }
       if (b && !b.disabled) act(b.dataset.cw, b.dataset.value ?? '', b);
     });
     document.addEventListener('keydown', event => {
+      if (preview?.open) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          dismissPreview();
+        }
+        return;
+      }
       if (!page) return;
       if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') &&
           (page === 'lobby' || page === 'restart') && !event.altKey && !event.metaKey && !event.ctrlKey &&
@@ -8346,6 +8435,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function dialog() { return layer?.querySelector('.cw-dialog'); }
   function isDismissible() { return page !== readPhase(state()); }
   function route(next, value = '') {
+    dismissPreview();
     const wasOpen = !!page;
     if(wasOpen && page!==next){
       dialog()?.querySelector('.familiar-proc-witnesses')?.remove();
@@ -8416,6 +8506,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function configure(config) { options = config; shell(); sync(); }
   function result(kicker,title,body,footer = '') { return {kicker,title,body,footer}; }
   function paint(reset) {
+    dismissPreview();
     dismissSell();
     if (!page) return;
     const s = state() || {};
@@ -8729,7 +8820,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   function playtestView() {
     const cards = Object.keys(global.CWPlaytest.deals).map(id => {
       const familiar = item(id);
-      return '<button type="button" class="practice-choice" data-cw="start-practice" data-value="'+id+'">'+
+      return '<button type="button" class="practice-choice" data-cw="start-practice" data-value="'+id+'"'+(mobile?cardTip(familiar)+' aria-haspopup="dialog"':'')+'>'+
         '<img alt="" src="'+esc(global.CWContent.portrait(familiar.art))+'"><span><strong>'+esc(familiar.name)+'</strong>'+
         '<small>'+esc(familiar.description)+'</small></span></button>';
     }).join('');
@@ -8828,14 +8919,17 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     if (active?.key==='decks') visible.sort((a,b)=>Number(a.locked)-Number(b.locked));
     const available=active?.key==='familiars' ? entries.filter(e=>!e.locked).length+' / '+entries.length+' unlocked &middot; ' : '';
     const summary='<div class="cw-collection-summary"><strong>'+available+entries.filter(e=>e.discovered).length+' / '+entries.length+' discovered</strong><div class="cw-tabs">'+tab('collection-filter','all','All',collectionFilter)+tab('collection-filter','known','Discovered',collectionFilter)+tab('collection-filter','unknown',familiarTab?'Undiscovered':'Unknown',collectionFilter)+(familiarTab?tab('collection-filter','locked','Locked',collectionFilter):'')+'</div></div>';
+    const tag=mobile?'button':'article';
+    const inspectable=mobile?' type="button" aria-haspopup="dialog"':'';
+    const row=(classes,tip,body)=>'<'+tag+' class="cw-collection-item'+classes+'"'+inspectable+tip+'>'+body+'</'+tag+'>';
     const list=visible.map(entry=>{
       const deckId=active.key==='decks' && entry.id.replace(/^deck_/,'');
       if (deckId && !entry.discovered && data.unlocked?.decks?.includes(deckId)) {
         const emblem=({arcane:'grimoire',alchemist:'potion',oracle:'orb'})[deckId] || 'grimoire';
-        return '<article class="cw-collection-item available-deck"><img alt="" src="'+global.CWContent.portrait(emblem)+'"><div><b>'+esc(entry.name)+'</b><small>Available to play</small></div></article>';
+        return row(' available-deck',mobile?cardTip(entry):'','<img alt="" src="'+global.CWContent.portrait(emblem)+'"><div><b>'+esc(entry.name)+'</b><small>Available to play</small></div>');
       }
       if (!entry.discovered || (active.key==='familiars' && entry.locked)) return '<article class="cw-collection-item unknown"><span class="cw-owned-emblem" aria-hidden="true">'+(entry.locked?'◇':'?')+'</span><div><b>'+esc(entry.locked?'Locked':'Undiscovered')+'</b>'+(entry.unlockHint?'<small>'+esc(entry.unlockHint)+'</small>':'')+'</div></article>';
-      return '<article class="cw-collection-item"'+cardTip(entry,true)+'>'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
+      return row('',cardTip(entry,true),picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div>');
     }).join('');
     return result(data.profile?.name || '','Collection',tabs+summary+(list?'<div class="cw-collection-items">'+list+'</div>':'<p class="cw-empty">No entries match this view.</p>'),button('close','Back'));
   }
@@ -8887,6 +8981,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     layer.querySelector('.spell-hand-count').textContent=targets.length+' selected';
     layer.querySelector('.spell-hand-heading h3').textContent=invalidCard ? 'Stone cards have no rank or suit' : d ? targetLabel(d) : 'Your hand';
     if (pack) {
+      if (mobile) return;
       for (const button of layer.querySelectorAll('[data-cw="choose-pack-spell"]:not(:disabled)')) {
         const i=Number(button.dataset.value);
         button.textContent=api().canPick(s,i,targets) ? 'Cast' : i===index && d ? 'Choose cards' : 'Select spell';
@@ -8915,6 +9010,16 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const rarity=d.rarity && ![family,'booster'].includes(d.rarity.toLowerCase())?'<div class="cw-item-type">'+esc(d.rarity)+'</div>':'';
     const finish = d.kind === 'card' ? '' : global.CWContent.cardFinish(d,d.upgradeAge);
     return '<article class="cw-offer"'+cardTip(d,true)+'>'+picture(d,false,{includeFinish:false})+finish+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
+  }
+  function inspectPackChoice(offer) {
+    const control=offer.querySelector('[data-cw]');
+    const s=state(), i=Number(control.dataset.value);
+    const targeted=control.dataset.cw==='choose-pack-spell';
+    const cast=isSpell(item(s.pack.choices[i]));
+    const label=targeted && !api().canPick(s,i,targets) ? 'Choose targets' : cast ? 'Cast' : 'Take';
+    const disabled=!api().canPick(s,i);
+    inspect(control,[{label,disabled,run:()=>act(control.dataset.cw,control.dataset.value,control)}],
+      {text:offer.dataset.cardTip,reason:disabled?'Unavailable':''});
   }
   function companionRail(s) {
     const cap=api().capacity(s).familiars;
@@ -8993,39 +9098,50 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     return result('Moonlit Market','Leave with unused rewards?',body,
       button('close','Back to shop','cw-primary')+button('leave-anyway','Leave shop'));
   }
+  function packDescription(s,pack) {
+    return pack.description.replace(' of '+pack.choices+' ', ' of '+(pack.choices+global.CWMarket.voucherPower(s,'packOptions'))+' ');
+  }
+  function shopOffer(s,i,cap) {
+    const id=s.offers[i];
+    const d=item(id), price=api().price(s,id), ok=api().canBuy(s,i);
+    const family=global.CWContent.cardType(d);
+    const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
+    let reason='';
+    if (!ok) {
+      if (!api().affordable(s,price)) reason='Need '+cash(price-api().funds(s))+' more';
+      else if (d.kind==='familiar' && s.familiars.length>=cap.familiars) reason='Roost full';
+      else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
+      else reason='Unavailable';
+    }
+    const castable=mayBuyAndUse(s,i,d);
+    const description=d.kind==='pack' ? packDescription(s,d) : d.description;
+    const details=global.CWCardTip.details({...d,description},false).split('\n');
+    return {d,price,reason,castable,type,details};
+  }
   function shopView(s) {
     const cap=api().capacity(s);
     function stockCard(i,slot,indices) {
       const id=s.offers[i];
-      const d=item(id), price=api().price(s,id), ok=api().canBuy(s,i);
+      const {d,price,reason,castable,type,details}=shopOffer(s,i,cap);
       const family=global.CWContent.cardType(d);
-      const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
-      let reason='';
-      if (!ok) {
-        if (!api().affordable(s,price)) reason='Need '+cash(price-api().funds(s))+' more';
-        else if (d.kind==='familiar' && s.familiars.length>=cap.familiars) reason='Roost full';
-        else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
-        else reason='Unavailable';
-      }
-      const castable=mayBuyAndUse(s,i,d);
-      const description=d.kind==='pack'
-        ? d.description.replace(' of '+d.choices+' ', ' of '+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+' ')
-        : d.description;
-      const details=global.CWCardTip.details({...d,description},false).split('\n');
-      if (d.kind!=='familiar') details.splice(1,0,type);
-      if (reason) details.push(reason);
-      if (ok) details.push('Buy for '+cash(price));
-      const tip=global.CWCardTip.attribute(details.join('\n'));
-      const label=esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''));
+      const ok=!reason;
       const before=s.catSale && api().price(s,id,false);
       const oldPrice=before>price?'<del aria-hidden="true">'+cash(before)+'</del>':'';
       const priceTag='<span class="moon-price">'+oldPrice+'<span class="stat-money">'+cash(price)+'</span></span>';
-      const buy='<button type="button" class="moon-purchase" '+(ok?'data-cw="buy"':'aria-disabled="true"')+' data-value="'+i+'" aria-label="'+label+'"'+tip+'>'+priceTag+'</button>';
-      const cast=castable?'<button type="button" class="moon-cast" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Buy and cast '+d.name+' for '+cash(price))+'">Buy &amp; cast</button>':'';
+      let controls;
+      if (mobile) {
+        controls='<button type="button" class="moon-purchase" data-cw="inspect-offer" data-value="'+i+'" aria-haspopup="dialog" aria-label="'+esc('Inspect '+d.name)+'"'+(ok?'':' data-unavailable')+'>'+priceTag+'</button>';
+      } else {
+        if (d.kind!=='familiar') details.splice(1,0,type);
+        const tip=global.CWCardTip.attribute([...details,reason || 'Buy for '+cash(price)].join('\n'));
+        const label=esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''));
+        controls='<button type="button" class="moon-purchase" '+(ok?'data-cw="buy"':'aria-disabled="true"')+' data-value="'+i+'" aria-label="'+label+'"'+tip+'>'+priceTag+'</button>';
+        if (castable) controls+='<button type="button" class="moon-cast" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Buy and cast '+d.name+' for '+cash(price))+'">Buy &amp; cast</button>';
+      }
       const tilt=(slot-(indices.length-1)/2)*Math.min(3,14/Math.max(1,indices.length-1));
       const pose='--slot:'+slot+';--tilt:'+tilt.toFixed(2)+'deg;--drop:'+Math.abs(tilt).toFixed(2)+'px';
       return '<article class="moon-item" data-stock-type="'+esc(family || d.kind)+'" style="'+pose+'"><div class="moon-display">'+
-        '<div class="moon-art" inert aria-hidden="true">'+marketObject(d)+'</div>'+buy+cast+'</div></article>';
+        '<div class="moon-art" inert aria-hidden="true">'+marketObject(d)+'</div>'+controls+'</div></article>';
     }
     const count=s.shopOfferCount ?? Math.max(0,s.offers.length-3);
     const shelf=(name,cls,indices,control='')=>{
@@ -9080,7 +9196,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       const label=blocked?'Unavailable':targeted?(active===i?'Selected':'Select spell'):isSpell(d)?'Cast':'Take';
       const offset=position++ - (spread-1)/2;
       const delay=(240+i*80)/speed-elapsed;
-      return '<div class="pack-slot'+(active===i?' chosen':'')+'" style="--tilt:'+offset*2+'deg;--drop:'+Math.abs(offset)*5+'px;--from:'+(-offset*70)+'px;--delay:'+delay+'ms">'+offer(d,button(action,label,active===i?'cw-active':'cw-primary',i,blocked))+'</div>';
+      return '<div class="pack-slot'+(active===i?' chosen':'')+'" style="--tilt:'+offset*2+'deg;--drop:'+Math.abs(offset)*5+'px;--from:'+(-offset*70)+'px;--delay:'+delay+'ms">'+offer(d,button(action,mobile?'Inspect':label,active===i?'cw-active':'cw-primary',i,blocked && !mobile))+'</div>';
     }).join('');
     const d=active>=0?item(s.pack.choices[active]):null;
     const dealt=hand.length?'<section class="cw-pack-hand">'+targetCards(hand,d,'pack-target')+'</section>':'';
@@ -9270,6 +9386,12 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     if (casting) return;
     const s=state() || {};
     const index=Number(value);
+    if (name==='inspect-offer') {
+      const {d,price,reason,castable,type,details}=shopOffer(s,index,api().capacity(s));
+      const actions=[{label:'Buy '+cash(price),disabled:Boolean(reason),run:()=>act('buy',value,control)}];
+      if (castable) actions.push({label:'Buy & cast '+cash(price),run:()=>act('inspect-cast',value,control)});
+      return inspect(control,actions,{text:details.join('\n'),type:d.kind==='familiar'?'':type,reason});
+    }
     if(name==='close') return close();
     if(name==='view-style')return open('card-styles',value);
     if(name==='preview-style' && page==='card-styles'){
@@ -9413,7 +9535,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
       perform(sourceRect,...commands[name]);
     }
   }
-  global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page || casting,getPage:()=>page};
+  global.CWP={configure,open,close,sync,toggleSell,dismissSell,inspect,inspectSelection,dismissPreview,isOpen:()=>!!page || casting || !!preview?.open,getPage:()=>page};
 })(window);
 
 ;
@@ -9604,10 +9726,10 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     const badge=bonus?'<span class="card-enhance" aria-hidden="true">'+icon(enhancementIcons[bonus])+'<b>'+esc(bonus)+'</b></span>':'';
     const finish=window.CWContent.cardFinish(c);
     const foilStamp=c.edition==='foil'?'<span class="foil-stamp" aria-hidden="true">'+icon('spark')+'</span>':'';
-    const element=preview && !packTarget?'div':'button';
+    const element=preview && !packTarget && !CWCardTip.mobile?'div':'button';
     const controls=packTarget
       ? 'type="button" data-cw="'+(packTarget.action==='target'?'target':'pack-target')+'" data-value="'+esc(c.id)+'" aria-pressed="'+packTarget.selected+'"'+(packTarget.disabled?' disabled':'')
-      : preview?'role="img" tabindex="0"':'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
+      : preview?(CWCardTip.mobile?'type="button" aria-haspopup="dialog"':'role="img" tabindex="0"'):'type="button" data-card="'+esc(c.id)+'" draggable="false" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-pressed="'+selected.has(c.id)+'"';
     return '<'+element+' '+controls+' class="playing-card'+(preview?' card-preview':'')+'" data-suit="'+esc(c.suit)+'" aria-label="'+esc(label)+'" data-edition="'+esc(c.edition || '')+'" data-enhanced="'+Boolean(bonus)+'" data-enhancement="'+esc(bonus)+'" data-debuffed="'+!!debuffed+'" '+CWCardTip.attribute(CWCardTip.details(c,debuffed))+' style="--suit:'+suits[c.suit].color+';--rot:'+rot+'deg;--arc:'+Math.min(10,offset*offset*.6)+'px">'+face+finish+foilStamp+seal+badge+tally+(debuffed?CWCardTip.cross:'')+'</'+element+'>';
   }
   function describeFamiliar(id){
@@ -9706,6 +9828,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     document.querySelectorAll('[data-sort]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.sort===(run.cardOrderMode || prefs.sort))));
   }
   function render(shouldSave=true){
+    CWP.dismissPreview();
     CWP.dismissSell();
     const info=CW.blindInfo(run), capacity=CW.capacity(run);
     selected.forEach(id=>{if(!run.hand.some(c=>c.id===id))selected.delete(id);});
@@ -10395,7 +10518,11 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
   document.addEventListener('click',e=>{
     if(CWP.isOpen())return;
     const button=e.target.closest('button');if(!button || button.disabled)return;
-    if(button.dataset.card!==undefined)return toggle(currentHand.find(c=>String(c.id)===button.dataset.card));
+    if(button.dataset.card!==undefined){
+      const card=currentHand.find(c=>String(c.id)===button.dataset.card);
+      if(CWCardTip.mobile && !busy && card) return CWP.inspectSelection(button,()=>toggle(card),selected.size>=5 && !selected.has(card.id));
+      return toggle(card);
+    }
     if(button.dataset.move){
       const i=currentHand.findIndex(c=>c.id===orderCardId);
       if(moveCard(orderCardId,i+Number(button.dataset.move)) && button.disabled)focusCard(orderCardId);
@@ -10409,6 +10536,10 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     }
     if(button.dataset.item && !busy)return CWP.toggleSell(button,Number(button.dataset.slot),button.closest('#spells')?'consumables':'familiars');
     const a=button.dataset.action;
+    if(a==='deck' && CWCardTip.mobile && !busy){
+      const counts=Array.from($('deck-suits').children,node=>node.getAttribute('aria-label')+(node.querySelector('.boss-cross')?' (debuffed)':''));
+      return CWP.inspect(button,[{label:'View deck',run:()=>openPanel('deck')}],{text:['Draw pile',$('deck-count').textContent+' cards',...counts].join('\n')});
+    }
     if(a==='mute')setSetting('muted',!prefs.muted);
     else if(a==='retry-practice' && run.playtest)startPractice(run.playtest);
     else if(a==='menu')showMenu();
@@ -10435,7 +10566,7 @@ window.CWEmbeddedArt = {"blind":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
     else if(k==='m')showMenu();
   });
   function moveFocus(direction){
-    const scope=document.querySelector('.cw-backdrop:not([hidden])') || document.querySelector('.game');
+    const scope=document.querySelector('.moon-preview[open]') || document.querySelector('.cw-backdrop:not([hidden])') || document.querySelector('.game');
     const controls=[...scope.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary')].filter(el=>el.getClientRects().length);
     const active=document.activeElement;
     if(!controls.includes(active)){controls[0]?.focus();return;}

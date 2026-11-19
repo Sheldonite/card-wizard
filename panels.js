@@ -66,6 +66,45 @@
   function stat(label, value) { return '<div class="cw-stat"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>'; }
   function formula(chips, mult) { return '<span class="cw-formula"><b>' + num(chips) + '</b> <span>×</span> <b>' + num(mult) + '</b></span>'; }
   function cash(n) { return '$' + num(n); }
+  const mobile = global.CWCardTip.mobile;
+  let preview;
+  function dismissPreview() {
+    if (preview?.open) preview.close();
+    preview?.remove();
+    preview = null;
+  }
+  function inspect(control, actions = [], {text = control.dataset.cardTip, type = '', reason = ''} = {}) {
+    if (!text || casting) return;
+    dismissPreview();
+    const [name,...effects] = text.split('\n');
+    const popup = document.createElement('dialog');
+    popup.className = 'moon-preview';
+    popup.setAttribute('aria-labelledby','item-preview-name');
+    popup.innerHTML = '<div class="moon-preview-body"><button type="button" class="cw-x moon-preview-close" aria-label="Close item details">&times;</button>'+
+      (type ? '<small>'+esc(type)+'</small>' : '')+'<h3 id="item-preview-name">'+esc(name)+'</h3>'+
+      effects.map(line=>'<p>'+esc(line)+'</p>').join('')+(reason ? '<p class="moon-preview-reason">'+esc(reason)+'</p>' : '')+
+      (actions.length ? '<div class="moon-preview-actions">'+actions.map((a,i)=>
+        '<button type="button" class="cw-btn'+(i===0?' cw-primary':'')+'" data-preview-action="'+i+'"'+(a.disabled?' disabled':'')+'>'+esc(a.label)+'</button>'
+      ).join('')+'</div>' : '')+'</div>';
+    popup.addEventListener('click', event=>{
+      event.stopPropagation();
+      const button = event.target.closest('button');
+      if (event.target !== popup && !button) return;
+      const action = button && actions[button.dataset.previewAction];
+      if (button?.disabled) return;
+      dismissPreview();
+      if (control.isConnected) action?.run();
+    });
+    popup.addEventListener('close',()=>{ if (preview===popup) dismissPreview(); },{once:true});
+    (control.closest('.cw-dialog') || document.body).append(popup);
+    global.CWContent.colorStats(popup);
+    preview = popup;
+    popup.showModal();
+  }
+  function inspectSelection(control,select,disabled=false) {
+    const selected = control.getAttribute('aria-pressed') === 'true';
+    inspect(control,[{label:selected?'Deselect card':'Select card',disabled,run:select}]);
+  }
   let sellAnchor, sellTab;
   function dismissSell() {
     sellAnchor?.setAttribute('aria-expanded','false');
@@ -88,32 +127,37 @@
     const s = state(), id = s[category][index];
     if (!id) return;
     const entry = ownedItem(s,category,index);
+    const canSell=api().canSell(s,category,index);
+    const sale={
+      label:canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
+      disabled:!canSell, run:()=>perform(card.getBoundingClientRect(),category==='familiars'?'sell':'sellConsumable',index)
+    };
+    const actions=[sale];
+    if (category==='consumables') {
+      const ids=page==='pack' && entry.maxTargets ? targets : undefined;
+      const use={label:'Use',disabled:!api().canUse(s,index,ids),run:()=>act('use-item',String(index),card)};
+      if (mobile) actions.unshift(use);
+      else actions.push(use);
+    }
+    if (mobile) return inspect(card,actions);
     sellAnchor = card;
     card.setAttribute('aria-expanded','true');
     sellTab = document.createElement('div');
     sellTab.className = 'owned-action-tab';
     sellTab.popover = 'manual';
-    function addAction(label,enabled,activate) {
+    for (const {label,disabled,run} of actions) {
       const button=document.createElement('button');
       button.type='button';
       button.className='familiar-sell-tab';
-      button.disabled=!enabled;
+      button.disabled=disabled;
       button.textContent=label;
       button.setAttribute('aria-label',label+' '+entry.name);
       button.addEventListener('click',event=>{
         event.stopPropagation();
-        const sourceRect=card.getBoundingClientRect();
         dismissSell();
-        if (card.isConnected && state()===s && s[category][index]===id) activate(sourceRect);
+        if (card.isConnected && state()===s && s[category][index]===id) run();
       });
       sellTab.append(button);
-    }
-    const canSell=api().canSell(s,category,index);
-    addAction(canSell?'Sell '+cash(api().sellPrice(s,id)):entry.sticker==='eternal'?'Eternal':'Sale unavailable',
-      canSell,sourceRect=>perform(sourceRect,category==='familiars'?'sell':'sellConsumable',index));
-    if (category==='consumables') {
-      const ids=page==='pack' && entry.maxTargets ? targets : undefined;
-      addAction('Use',api().canUse(s,index,ids),()=>act('use-item',String(index),card));
     }
     card.after(sellTab);
     global.CWContent.colorStats(sellTab);
@@ -145,7 +189,7 @@
   function cardTip(card, descriptionVisible = false) {
     const run = state();
     const muted = card.suit && run?.phase === 'play' && api().debuffed(run,card);
-    return global.CWCardTip.attribute(global.CWCardTip.details(card,muted,descriptionVisible));
+    return global.CWCardTip.attribute(global.CWCardTip.details(card,muted,descriptionVisible && !mobile));
   }
   function picture(d, compact = false, {frame = global.CWFamiliarFrames, includeFinish = true} = {}) {
     if(d.kind==='card' && options.cardPreview) return '<div class="card-display">'+options.cardPreview(d)+'</div>';
@@ -240,9 +284,31 @@
       if (companion) return toggleSell(companion,Number(companion.dataset.companion));
       if (e.target === layer) { if (isDismissible()) close(); return; }
       const b = e.target.closest('[data-cw]');
+      if (mobile) {
+        const offer=e.target.closest('.cw-offer');
+        if (offer && page==='pack') return inspectPackChoice(offer);
+        const action=b?.dataset.cw;
+        const activate=()=>act(action,b.dataset.value ?? '',b);
+        if (action==='target' || action==='pack-target') return inspectSelection(b,activate,b.disabled);
+        if (b?.matches('.practice-choice')) return inspect(b,[{label:'Start playtest',run:activate}]);
+        if (action==='reward-pack') {
+          const s=state(), pack=item(s.rewardPacks[0]);
+          return inspect(b,[{label:'Open free pack',run:activate}],{text:global.CWCardTip.details({...pack,description:packDescription(s,pack)})});
+        }
+        const entry=e.target.closest('[data-card-tip]');
+        if (!b && entry) return inspect(entry);
+      }
       if (b && !b.disabled) act(b.dataset.cw, b.dataset.value ?? '', b);
     });
     document.addEventListener('keydown', event => {
+      if (preview?.open) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          dismissPreview();
+        }
+        return;
+      }
       if (!page) return;
       if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') &&
           (page === 'lobby' || page === 'restart') && !event.altKey && !event.metaKey && !event.ctrlKey &&
@@ -267,6 +333,7 @@
   function dialog() { return layer?.querySelector('.cw-dialog'); }
   function isDismissible() { return page !== readPhase(state()); }
   function route(next, value = '') {
+    dismissPreview();
     const wasOpen = !!page;
     if(wasOpen && page!==next){
       dialog()?.querySelector('.familiar-proc-witnesses')?.remove();
@@ -337,6 +404,7 @@
   function configure(config) { options = config; shell(); sync(); }
   function result(kicker,title,body,footer = '') { return {kicker,title,body,footer}; }
   function paint(reset) {
+    dismissPreview();
     dismissSell();
     if (!page) return;
     const s = state() || {};
@@ -650,7 +718,7 @@
   function playtestView() {
     const cards = Object.keys(global.CWPlaytest.deals).map(id => {
       const familiar = item(id);
-      return '<button type="button" class="practice-choice" data-cw="start-practice" data-value="'+id+'">'+
+      return '<button type="button" class="practice-choice" data-cw="start-practice" data-value="'+id+'"'+(mobile?cardTip(familiar)+' aria-haspopup="dialog"':'')+'>'+
         '<img alt="" src="'+esc(global.CWContent.portrait(familiar.art))+'"><span><strong>'+esc(familiar.name)+'</strong>'+
         '<small>'+esc(familiar.description)+'</small></span></button>';
     }).join('');
@@ -749,14 +817,17 @@
     if (active?.key==='decks') visible.sort((a,b)=>Number(a.locked)-Number(b.locked));
     const available=active?.key==='familiars' ? entries.filter(e=>!e.locked).length+' / '+entries.length+' unlocked &middot; ' : '';
     const summary='<div class="cw-collection-summary"><strong>'+available+entries.filter(e=>e.discovered).length+' / '+entries.length+' discovered</strong><div class="cw-tabs">'+tab('collection-filter','all','All',collectionFilter)+tab('collection-filter','known','Discovered',collectionFilter)+tab('collection-filter','unknown',familiarTab?'Undiscovered':'Unknown',collectionFilter)+(familiarTab?tab('collection-filter','locked','Locked',collectionFilter):'')+'</div></div>';
+    const tag=mobile?'button':'article';
+    const inspectable=mobile?' type="button" aria-haspopup="dialog"':'';
+    const row=(classes,tip,body)=>'<'+tag+' class="cw-collection-item'+classes+'"'+inspectable+tip+'>'+body+'</'+tag+'>';
     const list=visible.map(entry=>{
       const deckId=active.key==='decks' && entry.id.replace(/^deck_/,'');
       if (deckId && !entry.discovered && data.unlocked?.decks?.includes(deckId)) {
         const emblem=({arcane:'grimoire',alchemist:'potion',oracle:'orb'})[deckId] || 'grimoire';
-        return '<article class="cw-collection-item available-deck"><img alt="" src="'+global.CWContent.portrait(emblem)+'"><div><b>'+esc(entry.name)+'</b><small>Available to play</small></div></article>';
+        return row(' available-deck',mobile?cardTip(entry):'','<img alt="" src="'+global.CWContent.portrait(emblem)+'"><div><b>'+esc(entry.name)+'</b><small>Available to play</small></div>');
       }
       if (!entry.discovered || (active.key==='familiars' && entry.locked)) return '<article class="cw-collection-item unknown"><span class="cw-owned-emblem" aria-hidden="true">'+(entry.locked?'◇':'?')+'</span><div><b>'+esc(entry.locked?'Locked':'Undiscovered')+'</b>'+(entry.unlockHint?'<small>'+esc(entry.unlockHint)+'</small>':'')+'</div></article>';
-      return '<article class="cw-collection-item"'+cardTip(entry,true)+'>'+picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div></article>';
+      return row('',cardTip(entry,true),picture(entry,true)+'<div><b>'+esc(entry.name)+'</b><small>'+itemDescription(entry)+'</small></div>');
     }).join('');
     return result(data.profile?.name || '','Collection',tabs+summary+(list?'<div class="cw-collection-items">'+list+'</div>':'<p class="cw-empty">No entries match this view.</p>'),button('close','Back'));
   }
@@ -808,6 +879,7 @@
     layer.querySelector('.spell-hand-count').textContent=targets.length+' selected';
     layer.querySelector('.spell-hand-heading h3').textContent=invalidCard ? 'Stone cards have no rank or suit' : d ? targetLabel(d) : 'Your hand';
     if (pack) {
+      if (mobile) return;
       for (const button of layer.querySelectorAll('[data-cw="choose-pack-spell"]:not(:disabled)')) {
         const i=Number(button.dataset.value);
         button.textContent=api().canPick(s,i,targets) ? 'Cast' : i===index && d ? 'Choose cards' : 'Select spell';
@@ -836,6 +908,16 @@
     const rarity=d.rarity && ![family,'booster'].includes(d.rarity.toLowerCase())?'<div class="cw-item-type">'+esc(d.rarity)+'</div>':'';
     const finish = d.kind === 'card' ? '' : global.CWContent.cardFinish(d,d.upgradeAge);
     return '<article class="cw-offer"'+cardTip(d,true)+'>'+picture(d,false,{includeFinish:false})+finish+rarity+'<h3>'+esc(d.name)+'</h3>'+badges(d)+'<p>'+itemDescription(d)+'</p>'+control+'</article>';
+  }
+  function inspectPackChoice(offer) {
+    const control=offer.querySelector('[data-cw]');
+    const s=state(), i=Number(control.dataset.value);
+    const targeted=control.dataset.cw==='choose-pack-spell';
+    const cast=isSpell(item(s.pack.choices[i]));
+    const label=targeted && !api().canPick(s,i,targets) ? 'Choose targets' : cast ? 'Cast' : 'Take';
+    const disabled=!api().canPick(s,i);
+    inspect(control,[{label,disabled,run:()=>act(control.dataset.cw,control.dataset.value,control)}],
+      {text:offer.dataset.cardTip,reason:disabled?'Unavailable':''});
   }
   function companionRail(s) {
     const cap=api().capacity(s).familiars;
@@ -914,39 +996,50 @@
     return result('Moonlit Market','Leave with unused rewards?',body,
       button('close','Back to shop','cw-primary')+button('leave-anyway','Leave shop'));
   }
+  function packDescription(s,pack) {
+    return pack.description.replace(' of '+pack.choices+' ', ' of '+(pack.choices+global.CWMarket.voucherPower(s,'packOptions'))+' ');
+  }
+  function shopOffer(s,i,cap) {
+    const id=s.offers[i];
+    const d=item(id), price=api().price(s,id), ok=api().canBuy(s,i);
+    const family=global.CWContent.cardType(d);
+    const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
+    let reason='';
+    if (!ok) {
+      if (!api().affordable(s,price)) reason='Need '+cash(price-api().funds(s))+' more';
+      else if (d.kind==='familiar' && s.familiars.length>=cap.familiars) reason='Roost full';
+      else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
+      else reason='Unavailable';
+    }
+    const castable=mayBuyAndUse(s,i,d);
+    const description=d.kind==='pack' ? packDescription(s,d) : d.description;
+    const details=global.CWCardTip.details({...d,description},false).split('\n');
+    return {d,price,reason,castable,type,details};
+  }
   function shopView(s) {
     const cap=api().capacity(s);
     function stockCard(i,slot,indices) {
       const id=s.offers[i];
-      const d=item(id), price=api().price(s,id), ok=api().canBuy(s,i);
+      const {d,price,reason,castable,type,details}=shopOffer(s,i,cap);
       const family=global.CWContent.cardType(d);
-      const type={pack:d.kind==='pack' ? global.CWContent.cardTypes[packFamily(d)][0]+' pack' : 'Booster pack',voucher:'Run upgrade',card:'Playing card',spectral:'Spectral spell',constellation:'Constellation',familiar:'Familiar',spell:'Spell'}[family || d.kind] || d.kind;
-      let reason='';
-      if (!ok) {
-        if (!api().affordable(s,price)) reason='Need '+cash(price-api().funds(s))+' more';
-        else if (d.kind==='familiar' && s.familiars.length>=cap.familiars) reason='Roost full';
-        else if (d.kind==='spell' && s.consumables.length>=cap.consumables) reason='Spell slots full';
-        else reason='Unavailable';
-      }
-      const castable=mayBuyAndUse(s,i,d);
-      const description=d.kind==='pack'
-        ? d.description.replace(' of '+d.choices+' ', ' of '+(d.choices+global.CWMarket.voucherPower(s,'packOptions'))+' ')
-        : d.description;
-      const details=global.CWCardTip.details({...d,description},false).split('\n');
-      if (d.kind!=='familiar') details.splice(1,0,type);
-      if (reason) details.push(reason);
-      if (ok) details.push('Buy for '+cash(price));
-      const tip=global.CWCardTip.attribute(details.join('\n'));
-      const label=esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''));
+      const ok=!reason;
       const before=s.catSale && api().price(s,id,false);
       const oldPrice=before>price?'<del aria-hidden="true">'+cash(before)+'</del>':'';
       const priceTag='<span class="moon-price">'+oldPrice+'<span class="stat-money">'+cash(price)+'</span></span>';
-      const buy='<button type="button" class="moon-purchase" '+(ok?'data-cw="buy"':'aria-disabled="true"')+' data-value="'+i+'" aria-label="'+label+'"'+tip+'>'+priceTag+'</button>';
-      const cast=castable?'<button type="button" class="moon-cast" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Buy and cast '+d.name+' for '+cash(price))+'">Buy &amp; cast</button>':'';
+      let controls;
+      if (mobile) {
+        controls='<button type="button" class="moon-purchase" data-cw="inspect-offer" data-value="'+i+'" aria-haspopup="dialog" aria-label="'+esc('Inspect '+d.name)+'"'+(ok?'':' data-unavailable')+'>'+priceTag+'</button>';
+      } else {
+        if (d.kind!=='familiar') details.splice(1,0,type);
+        const tip=global.CWCardTip.attribute([...details,reason || 'Buy for '+cash(price)].join('\n'));
+        const label=esc('Buy '+d.name+' for '+cash(price)+(reason?'. '+reason:''));
+        controls='<button type="button" class="moon-purchase" '+(ok?'data-cw="buy"':'aria-disabled="true"')+' data-value="'+i+'" aria-label="'+label+'"'+tip+'>'+priceTag+'</button>';
+        if (castable) controls+='<button type="button" class="moon-cast" data-cw="inspect-cast" data-value="'+i+'" aria-label="'+esc('Buy and cast '+d.name+' for '+cash(price))+'">Buy &amp; cast</button>';
+      }
       const tilt=(slot-(indices.length-1)/2)*Math.min(3,14/Math.max(1,indices.length-1));
       const pose='--slot:'+slot+';--tilt:'+tilt.toFixed(2)+'deg;--drop:'+Math.abs(tilt).toFixed(2)+'px';
       return '<article class="moon-item" data-stock-type="'+esc(family || d.kind)+'" style="'+pose+'"><div class="moon-display">'+
-        '<div class="moon-art" inert aria-hidden="true">'+marketObject(d)+'</div>'+buy+cast+'</div></article>';
+        '<div class="moon-art" inert aria-hidden="true">'+marketObject(d)+'</div>'+controls+'</div></article>';
     }
     const count=s.shopOfferCount ?? Math.max(0,s.offers.length-3);
     const shelf=(name,cls,indices,control='')=>{
@@ -1001,7 +1094,7 @@
       const label=blocked?'Unavailable':targeted?(active===i?'Selected':'Select spell'):isSpell(d)?'Cast':'Take';
       const offset=position++ - (spread-1)/2;
       const delay=(240+i*80)/speed-elapsed;
-      return '<div class="pack-slot'+(active===i?' chosen':'')+'" style="--tilt:'+offset*2+'deg;--drop:'+Math.abs(offset)*5+'px;--from:'+(-offset*70)+'px;--delay:'+delay+'ms">'+offer(d,button(action,label,active===i?'cw-active':'cw-primary',i,blocked))+'</div>';
+      return '<div class="pack-slot'+(active===i?' chosen':'')+'" style="--tilt:'+offset*2+'deg;--drop:'+Math.abs(offset)*5+'px;--from:'+(-offset*70)+'px;--delay:'+delay+'ms">'+offer(d,button(action,mobile?'Inspect':label,active===i?'cw-active':'cw-primary',i,blocked && !mobile))+'</div>';
     }).join('');
     const d=active>=0?item(s.pack.choices[active]):null;
     const dealt=hand.length?'<section class="cw-pack-hand">'+targetCards(hand,d,'pack-target')+'</section>':'';
@@ -1191,6 +1284,12 @@
     if (casting) return;
     const s=state() || {};
     const index=Number(value);
+    if (name==='inspect-offer') {
+      const {d,price,reason,castable,type,details}=shopOffer(s,index,api().capacity(s));
+      const actions=[{label:'Buy '+cash(price),disabled:Boolean(reason),run:()=>act('buy',value,control)}];
+      if (castable) actions.push({label:'Buy & cast '+cash(price),run:()=>act('inspect-cast',value,control)});
+      return inspect(control,actions,{text:details.join('\n'),type:d.kind==='familiar'?'':type,reason});
+    }
     if(name==='close') return close();
     if(name==='view-style')return open('card-styles',value);
     if(name==='preview-style' && page==='card-styles'){
@@ -1334,5 +1433,5 @@
       perform(sourceRect,...commands[name]);
     }
   }
-  global.CWP={configure,open,close,sync,toggleSell,dismissSell,isOpen:()=>!!page || casting,getPage:()=>page};
+  global.CWP={configure,open,close,sync,toggleSell,dismissSell,inspect,inspectSelection,dismissPreview,isOpen:()=>!!page || casting || !!preview?.open,getPage:()=>page};
 })(window);
